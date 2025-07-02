@@ -1,0 +1,32 @@
+# Binaries created by 'go build'
+*.exe
+*.exe~
+*.test
+*.out
+
+# Output folders (if you start using these)
+bin/
+out/
+build/
+
+# Go workspace file (optional)
+go.work
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs and temp files
+*.log
+*.tmp
+*.bak
+
+# Other
+testing.go
+notes.txt
