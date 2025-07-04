@@ -1,12 +1,13 @@
 package data
 
 import (
-    "encoding/csv"
-    "os"
-		"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
-		"fmt"
-		"strconv"
-    "strings"
+	"encoding/csv"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
+	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
 )
 
 func getGeometryLine(coordinateStr string) []model.Coordinate {

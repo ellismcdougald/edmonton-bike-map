@@ -8,16 +8,24 @@ import (
 )
 
 /*
-query := `
-	[out:json][timeout:30];
-	area["name"="Edmonton"]["admin_level"="8"]->.a;
-	(
-		way["highway"]["area"!~"yes"]["highway"!~"motorway|motorway_link|raceway|construction|service"]["bicycle"!~"no"](area.a);
-		way["highway"="cycleway"]["bicycle"!~"no"](area.a);
-	);
-	out body;
-	>;
-	out skel qt;
+var query string = `
+[out:json][timeout:30];
+
+// Find Canada area by ISO3166 code (country)
+area["ISO3166-1"="CA"][admin_level=2]->.canada;
+
+// Find Edmonton area inside Canada (admin_level=8)
+area["name"="Edmonton"][admin_level=8](area.canada)->.edmonton_area;
+
+// Query ways inside Edmonton area
+(
+  way["highway"]["area"!~"yes"]["highway"!~"motorway|motorway_link|raceway|construction|service"]["bicycle"!~"no"](area.edmonton_area);
+  way["highway"="cycleway"]["bicycle"!~"no"](area.edmonton_area);
+);
+out body;
+>;
+out skel qt;
+`
 */
 
 func GetOSMData(query string) error {
