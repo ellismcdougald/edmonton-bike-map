@@ -16,10 +16,15 @@ func main() {
 	mux := http.NewServeMux()
 	server.RegisterRoutes(mux, network)
 
+	fileServer := http.FileServer(http.Dir("./web"))
+	mux.Handle("/", fileServer)
+
 	addr := ":8080"
 	log.Printf("Starting server on %s\n", addr)
 	err := http.ListenAndServe(addr, mux)
 	if err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
+
+	
 }
