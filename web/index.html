@@ -9,6 +9,7 @@
       href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
     />
     <link rel="stylesheet" href="/css/style.css" />
+    <script src="https://unpkg.com/htmx.org"></script>
   </head>
   <body>
     <h1>Edmonton Bike Map</h1>
@@ -16,5 +17,21 @@
 
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
     <script src="/js/map.js"></script>
+
+    <form id="route-form" onsubmit="return false;">
+      <input type="number" name="start" placeholder="Start node ID" />
+      <input type="number" name="end" placeholder="End node ID" />
+      <button type="submit">Get Route</button>
+    </form>
+
+    <!-- The fetched data will end up here -->
+    <div
+      id="route-data"
+      hx-get="/api/route"
+      hx-trigger="submit from:#route-form"
+      hx-target="#route-data"
+      hx-swap="none"
+      hx-include="#route-form"
+    ></div>
   </body>
 </html>
