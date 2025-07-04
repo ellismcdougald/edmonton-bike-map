@@ -34,12 +34,17 @@ func main() {
 
 	fileName := filepath.Join("osm_bike_data.json")
 	network, _ := data.BuildGraph(fileName)
+	allData, _ := data.GetAllGeoJsonData(fileName)
 
 	mux := http.NewServeMux()
-	server.RegisterRoutes(mux, network)
+	server.RegisterRoutes(mux, network, allData)
 
 	fileServer := http.FileServer(http.Dir("./web"))
-	mux.Handle("/", fileServer)
+	fileHandler := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Cache-Control", "no-store")
+		fileServer.ServeHTTP(writer, request)
+	})
+	mux.Handle("/", fileHandler)
 
 	addr := ":8080"
 	log.Printf("Starting server on %s\n", addr)

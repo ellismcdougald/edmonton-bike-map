@@ -24,6 +24,71 @@ type OSMElement struct {
     Tags  map[string]string `json:"tags,omitempty"`
 }
 
+type FeatureCollection struct {
+	Type     string    `json:"type"`
+	Features []Feature `json:"features"`
+}
+
+type Feature struct {
+	Type       string                 `json:"type"`
+	Properties map[string]interface{} `json:"properties"`
+	Geometry   Geometry               `json:"geometry"`
+}
+
+type Geometry struct {
+	Type        string        `json:"type"`
+	Coordinates [][2]float64   `json:"coordinates"`
+}
+
+// GetAllGeoJsonData transforms the data into GeoJSON format
+func GetAllGeoJsonData(filename string) ([]byte, error) {
+	resp, err := parseOSMJSON(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	nodeMap := make(map[int64]OSMElement)
+	for _, el := range resp.Elements {
+		if el.Type == "node" {
+			nodeMap[el.ID] = el
+		}
+	}
+
+	var allFeatures []Feature
+	for _, el := range resp.Elements {
+		if el.Type == "way" {
+			var coordinates = [][2]float64{}
+			for _, nodeID := range el.Nodes {
+				var nodeLonLat = [2]float64{}
+				nodeLonLat[0] = nodeMap[nodeID].Lon
+				nodeLonLat[1] = nodeMap[nodeID].Lat
+				coordinates = append(coordinates, nodeLonLat)
+			}
+
+			wayFeature := Feature{
+				Type: "Feature",
+				Properties: map[string]any{},
+				Geometry: Geometry{
+					Type: "LineString",
+					Coordinates: coordinates,
+				},
+			}
+			allFeatures = append(allFeatures, wayFeature)
+		}
+	}
+
+	featureCollection := FeatureCollection{
+		Type: "FeatureCollection",
+		Features: allFeatures,
+	}
+
+	jsonData, err := json.MarshalIndent(featureCollection, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return jsonData, nil
+}
+
 // BuildGraph reads OSM json data from a file and parses it into a graph structure
 func BuildGraph(filename string) (*model.Graph, error) {
 	resp, err := parseOSMJSON(filename)

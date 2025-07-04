@@ -39,3 +39,8 @@ func handleRoute(writer http.ResponseWriter, request *http.Request, network *mod
 	writer.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(writer).Encode(geojson)
 }
+
+func handleAllData(writer http.ResponseWriter, request *http.Request, allData []byte) {
+	writer.Header().Set("Content-Type", "application/json")
+	writer.Write(allData)
+}
