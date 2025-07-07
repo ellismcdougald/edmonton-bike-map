@@ -3,6 +3,7 @@ package data
 
 import (
 	"encoding/json"
+	"log"
 	"math"
 	"os"
 
@@ -67,7 +68,9 @@ func GetAllGeoJsonData(filename string) ([]byte, error) {
 
 			wayFeature := Feature{
 				Type: "Feature",
-				Properties: map[string]any{},
+				Properties: map[string]any{
+					"name": el.Tags["name"],
+				},
 				Geometry: Geometry{
 					Type: "LineString",
 					Coordinates: coordinates,
@@ -86,6 +89,15 @@ func GetAllGeoJsonData(filename string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	err = os.WriteFile("web/edmonton_bike_data_geo.json", jsonData, 0644)
+	if err != nil {
+		log.Printf("Error")
+		return nil, err
+	} else {
+		log.Printf("Success")
+	}
+
 	return jsonData, nil
 }
 
