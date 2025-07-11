@@ -20,7 +20,7 @@ func TestBuildGraphSimple(t *testing.T) {
 	if gotNumNodes != wantNumNodes {
 		t.Errorf("Wrong node count: got %d, want %d", gotNumNodes, wantNumNodes)
 	}
-	
+
 	gotNumEdges := len(network.Edges)
 	wantNumEdges := 2
 	if gotNumEdges != wantNumEdges {
@@ -28,7 +28,7 @@ func TestBuildGraphSimple(t *testing.T) {
 	}
 
 	gotNodes := network.Nodes
-	wantNodes := map[int64]model.Node {
+	wantNodes := map[int64]model.Node{
 		0: {Latitude: 53.2656877, Longitude: -113.6591141},
 		1: {Latitude: 53.265261, Longitude: -113.6591135},
 	}
@@ -43,7 +43,7 @@ func TestBuildGraphSimple(t *testing.T) {
 	}
 
 	gotEdges := network.Edges
-	wantEdges := map[int64][]model.Edge {
+	wantEdges := map[int64][]model.Edge{
 		0: {
 			{To: 1, Weight: 47.44689197914839},
 		},

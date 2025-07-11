@@ -41,7 +41,7 @@ func GetOSMData(query string) (err error) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return 
+		return
 	}
 
 	err = os.WriteFile("osm_bike_data.json", body, 0644)
