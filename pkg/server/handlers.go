@@ -28,10 +28,10 @@ func handleRoute(writer http.ResponseWriter, request *http.Request, network *mod
 		coordinates = append(coordinates, nodeLonLat)
 	}
 
-	geojson := map[string]any {
+	geojson := map[string]any{
 		"type": "Feature",
-		"geometry": map[string]any {
-			"type": "LineString",
+		"geometry": map[string]any{
+			"type":        "LineString",
 			"coordinates": coordinates,
 		},
 		"properties": map[string]any{},

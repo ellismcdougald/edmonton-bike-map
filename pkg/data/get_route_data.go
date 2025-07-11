@@ -24,7 +24,7 @@ func getGeometryLine(coordinateStr string) []model.Coordinate {
 		longitude, _ := strconv.ParseFloat(coords[1], 64)
 
 		allCoordinates = append(allCoordinates, model.Coordinate{
-			Latitude: latitude,
+			Latitude:  latitude,
 			Longitude: longitude,
 		})
 	}
@@ -41,22 +41,24 @@ func GetRouteData(fileName string) []model.Route {
 		fmt.Println(values[9])
 		getGeometryLine(values[9])
 		/*
-		for j, raw_coords := range values[9] {
-			coords := model.Coordinate {
-				Latitude: raw_coords[0],
-				Longitude: raw_coords[1],
+			for j, raw_coords := range values[9] {
+				coords := model.Coordinate {
+					Latitude: raw_coords[0],
+					Longitude: raw_coords[1],
+				}
+				allCoords[j] = coords
 			}
-			allCoords[j] = coords
-		}
 
-		route := model.Route {
-			Id: values[0],
-			Duration: values[4],
-			GeometryLine: allCoords,
-		}
-		routeData[i] = route
+			route := model.Route {
+				Id: values[0],
+				Duration: values[4],
+				GeometryLine: allCoords,
+			}
+			routeData[i] = route
 		*/
-		if i == 1 { break }
+		if i == 1 {
+			break
+		}
 	}
 
 	return routeData
