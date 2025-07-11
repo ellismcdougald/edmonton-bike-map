@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -37,5 +38,8 @@ func handleRoute(writer http.ResponseWriter, request *http.Request, network *mod
 	}
 
 	writer.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(writer).Encode(geojson)
+	err := json.NewEncoder(writer).Encode(geojson)
+	if err != nil {
+		log.Printf("handleRoute error encoding json: %v", err)
+	}
 }
