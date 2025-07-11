@@ -28,21 +28,25 @@ out skel qt;
 `
 */
 
-func GetOSMData(query string) error {
+func GetOSMData(query string) (err error) {
 	resp, err := http.Post("https://overpass-api.de/api/interpreter", "application/x-www-form-urlencoded", bytes.NewBuffer([]byte("data="+query)))
 	if err != nil {
-		return err
+		return
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		return 
 	}
 
 	err = os.WriteFile("osm_bike_data.json", body, 0644)
 	if err != nil {
-		return err
+		return
 	}
-	return nil
+	return
 }

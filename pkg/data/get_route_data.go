@@ -3,6 +3,7 @@ package data
 import (
 	"encoding/csv"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -32,7 +33,7 @@ func getGeometryLine(coordinateStr string) []model.Coordinate {
 }
 
 func GetRouteData(fileName string) []model.Route {
-	var rawData [][]string = readCsv(fileName)
+	rawData := readCsv(fileName)
 
 	var routeData []model.Route
 	for i, values := range rawData {
@@ -63,7 +64,11 @@ func GetRouteData(fileName string) []model.Route {
 
 func readCsv(fileName string) [][]string {
 	f, _ := os.Open(fileName)
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil {
+			log.Printf("Error closing file %s in readCsv: %v", fileName, cerr)
+		}
+	}()
 
 	csvReader := csv.NewReader(f)
 	records, _ := csvReader.ReadAll()
