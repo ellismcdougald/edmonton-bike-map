@@ -17,6 +17,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "© OpenStreetMap contributors",
 }).addTo(map);
 
+// Get data
 fetch("edmonton_bike_data_geo.json")
   .then((response) => {
     if (!response.ok) throw new Error("No response from file.");
@@ -61,5 +62,24 @@ document.body.addEventListener("htmx:afterOnLoad", (event) => {
     } catch (err) {
       console.error("Error parsing or displaying GeoJSON:", err);
     }
+  }
+});
+
+// Track start and end locations
+let startMarker = null;
+let endMarker = null;
+map.on("click", function (e) {
+  const { lat, lng } = e.latlng;
+
+  if (!startMarker) {
+    startMarker = L.marker([lat, lng], { draggable: true })
+      .addTo(map)
+      .bindPopup("Start")
+      .openPopup();
+  } else if (!endMarker) {
+    endMarker = L.marker([lat, lng], { draggable: true })
+      .addTo(map)
+      .bindPopup("End")
+      .openPopup();
   }
 });
