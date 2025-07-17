@@ -3,6 +3,7 @@ package data
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"math"
 	"os"
@@ -120,7 +121,10 @@ func BuildGraph(filename string) (*model.Graph, error) {
 			}
 		}
 	}
-	for _, el := range resp.Elements {
+	for j, el := range resp.Elements {
+		if j == 0 {
+			fmt.Printf("%+v", el)
+		}
 		if el.Type == "way" {
 			for i := 0; i < len(el.Nodes)-1; i++ {
 				fromID := el.Nodes[i]
@@ -129,19 +133,63 @@ func BuildGraph(filename string) (*model.Graph, error) {
 				toCoord := network.Nodes[toID]
 
 				dist := haversineDistance(fromCoord.Latitude, fromCoord.Longitude, toCoord.Latitude, toCoord.Longitude)
+				weight := computeWayWeight(dist, el.Tags)
 
 				network.Edges[fromID] = append(network.Edges[fromID], model.Edge{
 					To:     toID,
-					Weight: dist,
+					Weight: weight,
 				})
 				network.Edges[toID] = append(network.Edges[toID], model.Edge{
 					To:     fromID,
-					Weight: dist,
+					Weight: weight,
 				})
 			}
 		}
 	}
 	return &network, nil
+}
+
+func computeWayWeight(distance float64, tags map[string]string) float64 {
+	highwayPenalty := map[string]float64{
+		"cycleway":    0.5,
+		"residential": 1,
+		"tertiary":    1.2,
+		"secondary":   1.5,
+		"primary":     2.0,
+		"motorway":    math.Inf(1),
+		"trunk":       math.Inf(1),
+	}
+	surfacePenalty := map[string]float64{
+		"concrete": 1.0,
+		"asphalt": 1.0,
+		"gravel": 1.5,
+		"dirt": 1.75,
+	}
+
+	highwayMultiplier, found := highwayPenalty[tags["highway"]]
+	if !found {
+		highwayMultiplier = 1.5
+	}
+
+	surfaceMultiplier, found := surfacePenalty[tags["surface"]]
+	if !found {
+		surfaceMultiplier = 1.75
+	}
+
+	bikeFriendlyMultiplier := 1.0
+	if tags["cycleway"] != "" {
+		bikeFriendlyMultiplier *= 0.8
+	}
+	if tags["bicycle"] == "designated" {
+		bikeFriendlyMultiplier *= 0.9
+	} else if tags["bicycle"] == "yes" || tags["bike"] == "yes" {
+		bikeFriendlyMultiplier *= 0.95
+	}
+	if tags["motor_vehicle"] == "no" {
+		bikeFriendlyMultiplier *= 0.7
+	}
+
+	return distance * highwayMultiplier * surfaceMultiplier * bikeFriendlyMultiplier
 }
 
 func haversineDistance(lat1, lon1, lat2, lon2 float64) float64 {
