@@ -19,7 +19,7 @@ func handleRouteByCoordinates(writer http.ResponseWriter, request *http.Request,
 		result, err = strconv.ParseFloat(param, 64)
 		if err != nil {
 			log.Printf("Error extracting parameter %s from query %v: %v", paramName, query, err)
-			http.Error(writer, "Invalid " + paramName + err.Error(), http.StatusBadRequest)
+			http.Error(writer, "Invalid "+paramName+err.Error(), http.StatusBadRequest)
 			return 0, err
 		}
 		return
@@ -42,7 +42,7 @@ func handleRouteByCoordinates(writer http.ResponseWriter, request *http.Request,
 		return
 	}
 
-	// do something with the coordinates	
+	// do something with the coordinates
 	_, pathIds := routing.FindRouteFromCoordinates(network, startLatitude, startLongitude, endLatitude, endLongitude)
 
 	var coordinates = [][2]float64{}

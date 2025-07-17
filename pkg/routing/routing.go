@@ -10,7 +10,7 @@ import (
 func squaredEucDistance(lat1, lon1, lat2, lon2 float64) float64 {
 	distLat := lat2 - lat1
 	distLon := lon2 - lon1
-	return distLat * distLat + distLon * distLon
+	return distLat*distLat + distLon*distLon
 }
 
 func FindRouteFromCoordinates(network *model.Graph, startLatitude, startLongitude, endLatitude, endLongitude float64) (dist float64, path []int64) {
