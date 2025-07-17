@@ -1,4 +1,4 @@
-// Package data handles fetching OSM data and parsing it into a graph structure
+// Package data handles fetching OSM data and parsing it into a graph structure suitable for bike routing
 package data
 
 import (
@@ -11,12 +11,12 @@ import (
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
 )
 
-// OSMResponse consists of a list of OSMElements
+// OSMResponse consists of a list of OSMElements.
 type OSMResponse struct {
 	Elements []OSMElement `json:"elements"`
 }
 
-// OSMElement represents OSM 'nodes' and 'ways'
+// OSMElement represents OSM 'nodes' and 'ways' with associated tags and coordinates.
 type OSMElement struct {
 	Type  string            `json:"type"` // "node" or "way"
 	ID    int64             `json:"id"`
@@ -26,17 +26,20 @@ type OSMElement struct {
 	Tags  map[string]string `json:"tags,omitempty"`
 }
 
+// FeatureCollection represents a GeoJSON FeatureCollection.
 type FeatureCollection struct {
 	Type     string    `json:"type"`
 	Features []Feature `json:"features"`
 }
 
+// Feature represents a GeoJSON feature with associated properties and geometry.
 type Feature struct {
 	Type       string                 `json:"type"`
 	Properties map[string]interface{} `json:"properties"`
 	Geometry   Geometry               `json:"geometry"`
 }
 
+// Geometry represents the GeoJSON geometry of a feature.
 type Geometry struct {
 	Type        string       `json:"type"`
 	Coordinates [][2]float64 `json:"coordinates"`
@@ -149,6 +152,7 @@ func BuildGraph(filename string) (*model.Graph, error) {
 	return &network, nil
 }
 
+// computeWayWeight computes a weight for an edge by modifying the distance using the tags
 func computeWayWeight(distance float64, tags map[string]string) float64 {
 	highwayPenalty := map[string]float64{
 		"cycleway":    0.5,
@@ -161,9 +165,9 @@ func computeWayWeight(distance float64, tags map[string]string) float64 {
 	}
 	surfacePenalty := map[string]float64{
 		"concrete": 1.0,
-		"asphalt": 1.0,
-		"gravel": 1.5,
-		"dirt": 1.75,
+		"asphalt":  1.0,
+		"gravel":   1.5,
+		"dirt":     1.75,
 	}
 
 	highwayMultiplier, found := highwayPenalty[tags["highway"]]
@@ -183,10 +187,13 @@ func computeWayWeight(distance float64, tags map[string]string) float64 {
 	if tags["bicycle"] == "designated" {
 		bikeFriendlyMultiplier *= 0.9
 	} else if tags["bicycle"] == "yes" || tags["bike"] == "yes" {
-		bikeFriendlyMultiplier *= 0.95
+		bikeFriendlyMultiplier *= 0.9
 	}
 	if tags["motor_vehicle"] == "no" {
 		bikeFriendlyMultiplier *= 0.7
+	}
+	if tags["lcn"] == "yes" {
+		bikeFriendlyMultiplier *= 0.9
 	}
 
 	return distance * highwayMultiplier * surfaceMultiplier * bikeFriendlyMultiplier
