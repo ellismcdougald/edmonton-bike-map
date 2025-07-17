@@ -15,33 +15,12 @@
     <h1>Edmonton Bike Map</h1>
     <div id="map"></div>
 
+    <button type="button" id="selectStartButton">Select Start Location</button>
+    <button type="button" id="selectEndButton">Select End Location</button>
+    <button type="button" id="findRouteButton">Find Route</button>
+    <button type="button" id="resetButton">Reset</button>
+
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-    <script src="/js/map.js"></script>
-
-    <form id="route-form" onsubmit="return false;">
-      <input
-        type="number"
-        name="start"
-        placeholder="Start node ID"
-        value="5290475311"
-      />
-      <input
-        type="number"
-        name="end"
-        placeholder="End node ID"
-        value="5910765578"
-      />
-      <button type="submit">Get Route</button>
-    </form>
-
-    <!-- The fetched data will end up here -->
-    <div
-      id="route-data"
-      hx-get="/api/route"
-      hx-trigger="submit from:#route-form"
-      hx-target="#route-data"
-      hx-swap="none"
-      hx-include="#route-form"
-    ></div>
+    <script type="module" src="js/main.js"></script>
   </body>
 </html>

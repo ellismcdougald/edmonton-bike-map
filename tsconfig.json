@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "es6",
+    "rootDir": "web/ts",
+    "outDir": "./web/js",
+    "strict": true,
+    "esModuleInterop": true
+  },
+  "include": ["web/ts/**/*"]
+}
