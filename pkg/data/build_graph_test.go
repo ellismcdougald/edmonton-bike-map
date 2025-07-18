@@ -82,7 +82,7 @@ func TestComputeWayWeightBikeLane(t *testing.T) {
 		"motor_vehicle": "no",
 	}
 
-	wantWeight := distance * 0.5 * 1.75 * 0.9 * 0.9 * 0.7
+	wantWeight := distance * 0.9 * 0.9 * 0.9 * 0.9
 	gotWeight := computeWayWeight(distance, tags)
 
 	if math.Abs(gotWeight-wantWeight) > 1e-6 {

@@ -3,7 +3,6 @@ package data
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"math"
 	"os"
@@ -124,10 +123,7 @@ func BuildGraph(filename string) (*model.Graph, error) {
 			}
 		}
 	}
-	for j, el := range resp.Elements {
-		if j == 0 {
-			fmt.Printf("%+v", el)
-		}
+	for _, el := range resp.Elements {
 		if el.Type == "way" {
 			for i := 0; i < len(el.Nodes)-1; i++ {
 				fromID := el.Nodes[i]
@@ -155,7 +151,7 @@ func BuildGraph(filename string) (*model.Graph, error) {
 // computeWayWeight computes a weight for an edge by modifying the distance using the tags
 func computeWayWeight(distance float64, tags map[string]string) float64 {
 	highwayPenalty := map[string]float64{
-		"cycleway":    0.5,
+		"cycleway":    0.9,
 		"residential": 1,
 		"tertiary":    1.2,
 		"secondary":   1.5,
@@ -163,26 +159,30 @@ func computeWayWeight(distance float64, tags map[string]string) float64 {
 		"motorway":    math.Inf(1),
 		"trunk":       math.Inf(1),
 	}
-	surfacePenalty := map[string]float64{
-		"concrete": 1.0,
-		"asphalt":  1.0,
-		"gravel":   1.5,
-		"dirt":     1.75,
-	}
+	/*
+		surfacePenalty := map[string]float64{
+			"concrete": 1.0,
+			"asphalt":  1.0,
+			"gravel":   1.5,
+			"dirt":     1.75,
+		}
+	*/
 
 	highwayMultiplier, found := highwayPenalty[tags["highway"]]
 	if !found {
 		highwayMultiplier = 1.5
 	}
 
-	surfaceMultiplier, found := surfacePenalty[tags["surface"]]
-	if !found {
-		surfaceMultiplier = 1.75
-	}
+	/*
+		surfaceMultiplier, found := surfacePenalty[tags["surface"]]
+		if !found {
+			surfaceMultiplier = 1.75
+		}
+	*/
 
 	bikeFriendlyMultiplier := 1.0
 	if tags["cycleway"] != "" {
-		bikeFriendlyMultiplier *= 0.8
+		bikeFriendlyMultiplier *= 0.9
 	}
 	if tags["bicycle"] == "designated" {
 		bikeFriendlyMultiplier *= 0.9
@@ -190,13 +190,18 @@ func computeWayWeight(distance float64, tags map[string]string) float64 {
 		bikeFriendlyMultiplier *= 0.9
 	}
 	if tags["motor_vehicle"] == "no" {
-		bikeFriendlyMultiplier *= 0.7
+		bikeFriendlyMultiplier *= 0.9
 	}
 	if tags["lcn"] == "yes" {
 		bikeFriendlyMultiplier *= 0.9
 	}
 
-	return distance * highwayMultiplier * surfaceMultiplier * bikeFriendlyMultiplier
+	// Do not punish non-cycleways if they are cycle designated
+	if bikeFriendlyMultiplier < 1 && highwayMultiplier > 1 {
+		highwayMultiplier = 1
+	}
+
+	return distance * highwayMultiplier * bikeFriendlyMultiplier
 }
 
 func haversineDistance(lat1, lon1, lat2, lon2 float64) float64 {
