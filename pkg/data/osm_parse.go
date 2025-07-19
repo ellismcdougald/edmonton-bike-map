@@ -6,21 +6,6 @@ import (
 	"os"
 )
 
-// OSMResponse consists of a list of OSMElements.
-type OSMResponse struct {
-	Elements []OSMElement `json:"elements"`
-}
-
-// OSMElement represents OSM 'nodes' and 'ways' with associated tags and coordinates.
-type OSMElement struct {
-	Type  string            `json:"type"` // "node" or "way"
-	ID    int64             `json:"id"`
-	Lat   float64           `json:"lat,omitempty"`   // only nodes
-	Lon   float64           `json:"lon,omitempty"`   // only nodes
-	Nodes []int64           `json:"nodes,omitempty"` // only ways
-	Tags  map[string]string `json:"tags,omitempty"`
-}
-
 // FeatureCollection represents a GeoJSON FeatureCollection.
 type FeatureCollection struct {
 	Type     string    `json:"type"`
@@ -100,6 +85,22 @@ func GetAllGeoJsonData(filename string) ([]byte, error) {
 	return jsonData, nil
 }
 
+// OSMResponse consists of a list of OSMElements.
+type OSMResponse struct {
+	Elements []OSMElement `json:"elements"`
+}
+
+// OSMElement represents OSM 'nodes' and 'ways' with associated tags and coordinates.
+type OSMElement struct {
+	Type  string            `json:"type"` // "node" or "way"
+	ID    int64             `json:"id"`
+	Lat   float64           `json:"lat,omitempty"`   // only nodes
+	Lon   float64           `json:"lon,omitempty"`   // only nodes
+	Nodes []int64           `json:"nodes,omitempty"` // only ways
+	Tags  map[string]string `json:"tags,omitempty"`
+}
+
+// parseOSMJSON parses OSM data from a file into the OSMResponse struct
 func parseOSMJSON(filename string) (*OSMResponse, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
