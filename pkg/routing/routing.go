@@ -1,3 +1,5 @@
+// Package routing provides functions to find optimal bike routes using a graph of nodes and edges representing the bike network.
+// Pathfinding is via Dijkstra's algorithm. Start and end locations can be given as coordinates and the nearest node in the network will be used.
 package routing
 
 import (
@@ -7,19 +9,22 @@ import (
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
 )
 
+// squaredEucDistance computes the squared Euclidean distance between two latitude-longitude pairs.
 func squaredEucDistance(lat1, lon1, lat2, lon2 float64) float64 {
 	distLat := lat2 - lat1
 	distLon := lon2 - lon1
 	return distLat*distLat + distLon*distLon
 }
 
+// FindRouteFromCoordinates returns the lowest-cost route between two latitude-longitude pairs.
 func FindRouteFromCoordinates(network *model.Graph, startLatitude, startLongitude, endLatitude, endLongitude float64) (dist float64, path []int64) {
-	startNodeID := findNearestNode(startLatitude, startLongitude, network.Nodes)
-	endNodeID := findNearestNode(endLatitude, endLongitude, network.Nodes)
+	startNodeID := nearestNode(startLatitude, startLongitude, network.Nodes)
+	endNodeID := nearestNode(endLatitude, endLongitude, network.Nodes)
 	return findRoute(network, startNodeID, endNodeID)
 }
 
-func findNearestNode(latitude float64, longitude float64, nodes map[int64]model.Node) (nodeID int64) {
+// nearestNode returns the ID of the closest node in the network to the given latitude-longitude pair.
+func nearestNode(latitude float64, longitude float64, nodes map[int64]model.Node) (nodeID int64) {
 	smallestDistance := math.Inf(1)
 	var smallestNodeID int64 = -1
 	for id, node := range nodes {
@@ -32,8 +37,9 @@ func findNearestNode(latitude float64, longitude float64, nodes map[int64]model.
 	return smallestNodeID
 }
 
+// findRoute returns the lowest-cost route between two nodes using Dijkstra's algorithm.
 func findRoute(network *model.Graph, start, end int64) (dist float64, path []int64) {
-	distMap, prev, found := djikstra(network, start, end)
+	distMap, prev, found := dijkstra(network, start, end)
 	if !found {
 		return math.Inf(1), nil
 	}
@@ -42,12 +48,12 @@ func findRoute(network *model.Graph, start, end int64) (dist float64, path []int
 	return dist, path
 }
 
-// dijkstra finds shortest path from start to goal and stops early when goal is reached.
+// dijkstra finds the shortest path from start to goal and stops early when goal is reached.
 // Returns:
-// - dist: map[nodeID]distance from start to node
+// - dist: map[nodeID]distance from start to each node
 // - prev: map[nodeID]previous node in path for reconstruction
-// - bool: true if goal reachable, false otherwise
-func djikstra(g *model.Graph, start, goal int64) (dist map[int64]float64, prev map[int64]int64, found bool) {
+// - found: true if goal reachable, false otherwise
+func dijkstra(g *model.Graph, start, goal int64) (dist map[int64]float64, prev map[int64]int64, found bool) {
 	dist = make(map[int64]float64)
 	prev = make(map[int64]int64)
 
@@ -92,14 +98,20 @@ func djikstra(g *model.Graph, start, goal int64) (dist map[int64]float64, prev m
 	return dist, prev, found
 }
 
-// reconstructPath returns the shortest path from start to target using prev map.
+// reconstructPath returns the shortest path from start to target using the prev map.
 func reconstructPath(prev map[int64]int64, target int64) []int64 {
 	var path []int64
-	for current, ok := target, true; ok; current, ok = prev[current] {
-		path = append([]int64{current}, path...)
-		if _, found := prev[current]; !found {
+	for current := target; ; {
+		path = append(path, current)
+		prevNode, ok := prev[current]
+		if !ok {
 			break
 		}
+		current = prevNode
+	}
+	// Reverse the path
+	for i, j := 0, len(path)-1; i < j; i, j = i+1, j-1 {
+		path[i], path[j] = path[j], path[i]
 	}
 	return path
 }

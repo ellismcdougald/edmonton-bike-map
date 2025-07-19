@@ -1,12 +1,14 @@
 package data
 
 import (
+	"math"
 	"path/filepath"
 	"testing"
 
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
 )
 
+// BuildGraph:
 func TestBuildGraphSimple(t *testing.T) {
 	input := filepath.Join("testdata", "test_osm_data.json")
 
@@ -67,5 +69,37 @@ func TestBuildGraphSimple(t *testing.T) {
 				t.Errorf("Edge mismatch for id %d at index %d: got %+v, want %+v", id, i, gotEdge, wantEdge)
 			}
 		}
+	}
+}
+
+// computeWayWeight:
+func TestComputeWayWeightBikeLane(t *testing.T) {
+	distance := 10.0
+	tags := map[string]string{
+		"bicycle":       "designated",
+		"highway":       "cycleway",
+		"lcn":           "yes",
+		"motor_vehicle": "no",
+	}
+
+	wantWeight := distance * 0.9 * 0.9 * 0.95
+	gotWeight := computeWayWeight(distance, tags)
+
+	if math.Abs(gotWeight-wantWeight) > 1e-6 {
+		t.Errorf("Wrong weight: got %f, wanted %f", gotWeight, wantWeight)
+	}
+}
+
+func TestComputeWayWeightPoorBikeRoad(t *testing.T) {
+	distance := 5.75
+	tags := map[string]string{
+		"highway": "trunk",
+	}
+
+	wantWeight := distance * math.Inf(1)
+	gotWeight := computeWayWeight(distance, tags)
+
+	if gotWeight != wantWeight {
+		t.Errorf("Wrong weight: got %f, wanted %f", gotWeight, wantWeight)
 	}
 }

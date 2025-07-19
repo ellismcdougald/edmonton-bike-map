@@ -16,7 +16,10 @@
       "type": "way",
       "id": 2,
       "nodes": [0, 1],
-      "tags": {}
+      "tags": {
+        "highway": "residential",
+        "surface": "concrete"
+      }
     }
   ]
 }
