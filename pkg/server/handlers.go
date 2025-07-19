@@ -11,6 +11,10 @@ import (
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/routing"
 )
 
+// handleRouteByCoordinates handles HTTP requests to compute a bike route between start and end coordinates.
+// Query parameters: startLatitude, startLongitude, endLatitude, endLongitude (float64).
+// Responds with a GeoJSON LineString representing the line path.
+// Returns HTTP 400 if parameters are missing or invalid.
 func handleRouteByCoordinates(writer http.ResponseWriter, request *http.Request, network *model.Graph) {
 	query := request.URL.Query()
 
@@ -68,39 +72,3 @@ func handleRouteByCoordinates(writer http.ResponseWriter, request *http.Request,
 		log.Printf("handleRoute error encoding json: %v", err)
 	}
 }
-
-/*
-func handleRoute(writer http.ResponseWriter, request *http.Request, network *model.Graph) {
-	query := request.URL.Query()
-
-	startStr := query.Get("start")
-	endStr := query.Get("end")
-
-	startID, _ := strconv.ParseInt(startStr, 10, 64)
-	endID, _ := strconv.ParseInt(endStr, 10, 64)
-	_, pathIds := routing.FindRoute(network, startID, endID)
-
-	var coordinates = [][2]float64{}
-	for _, nodeID := range pathIds {
-		var nodeLonLat = [2]float64{}
-		nodeLonLat[0] = network.Nodes[nodeID].Longitude
-		nodeLonLat[1] = network.Nodes[nodeID].Latitude
-		coordinates = append(coordinates, nodeLonLat)
-	}
-
-	geojson := map[string]any{
-		"type": "Feature",
-		"geometry": map[string]any{
-			"type":        "LineString",
-			"coordinates": coordinates,
-		},
-		"properties": map[string]any{},
-	}
-
-	writer.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(writer).Encode(geojson)
-	if err != nil {
-		log.Printf("handleRoute error encoding json: %v", err)
-	}
-}
-*/
