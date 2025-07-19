@@ -30,3 +30,5 @@ Thumbs.db
 # Other
 testing.go
 notes.txt
+web/test-results/
+web/node_modules/
