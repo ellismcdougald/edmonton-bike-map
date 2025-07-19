@@ -23,6 +23,10 @@ export class LeafletMap {
       maxBoundsViscosity: LeafletMap.MAX_BOUNDS_VISCOSITY,
       minZoom: LeafletMap.MIN_ZOOM,
     }).setView(LeafletMap.MAP_START, LeafletMap.INITIAL_ZOOM);
+    this.map.createPane("routePane");
+    this.map.getPane("routePane").style.zIndex = "650"; // display above overlayPane (zindex 400)
+    this.map.createPane("infoPane");
+    this.map.getPane("infoPane").style.zIndex = "600"; // display above overlayPane (zindex 400) but below routePane (zindex 650)
   }
 
   // Tile layer:
@@ -46,6 +50,7 @@ export class LeafletMap {
       this.infoLayer = null;
     }
     this.infoLayer = L.geoJSON(geojson, {
+      pane: "infoPane",
       style: style || { color: "red", weight: 1, opacity: 0 },
       interactive: true,
       onEachFeature: (feature: any, layer: any) => {
@@ -116,6 +121,7 @@ export class LeafletMap {
       this.routeLayer = null;
     }
     this.routeLayer = L.geoJSON(geojson, {
+      pane: "routePane",
       style: { color: "blue", weight: 5 },
       interactive: true,
       onEachFeature: (feature: any, layer: any) => {
