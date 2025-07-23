@@ -77,7 +77,9 @@ func handleRouteByCoordinates(writer http.ResponseWriter, request *http.Request,
 	}
 }
 
-func handleAllWays(writer http.ResponseWriter, request *http.Request, db *sql.DB) {
+func handleAllWays(writer http.ResponseWriter, _ *http.Request, db *sql.DB) {
+	writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+
 	allNodes, err := model.GetAllNodes(db) // map nodeId -> node
 	if err != nil {
 		log.Printf("Could not get nodes from db: %v", err)

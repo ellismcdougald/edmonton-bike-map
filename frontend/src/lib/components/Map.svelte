@@ -4,6 +4,8 @@
 
   let mapInstance: LeafletMap | null
 
+  const allWaysEndpoint = "http://localhost:8080/api/all-ways"
+
   onMount(async () => {
     const {LeafletMap } = await import('$lib/Map');
 
@@ -15,6 +17,14 @@
       "© OpenStreetMap contributors"
     );
 
+    try {
+      const res = await fetch(allWaysEndpoint);
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      const geojson = await res.json()
+      mapInstance.loadInfoLayer(geojson);
+    } catch (err) {
+      console.error("Error loading info layer.");
+    }
   });
 
   onDestroy(() => {
