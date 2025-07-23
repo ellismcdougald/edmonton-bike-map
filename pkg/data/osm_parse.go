@@ -27,7 +27,7 @@ type Geometry struct {
 
 // GetAllGeoJsonData transforms the data into GeoJSON format
 func GetAllGeoJsonData(filename string) ([]byte, error) {
-	resp, err := parseOSMJSON(filename)
+	resp, err := ParseOSMJSON(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +101,7 @@ type OSMElement struct {
 }
 
 // parseOSMJSON parses OSM data from a file into the OSMResponse struct
-func parseOSMJSON(filename string) (*OSMResponse, error) {
+func ParseOSMJSON(filename string) (*OSMResponse, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
