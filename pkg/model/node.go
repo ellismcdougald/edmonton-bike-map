@@ -24,3 +24,37 @@ func GetNode(db *sql.DB, id int64) (*DBNode, error) {
 	}
 	return n, err
 }
+
+func GetAllNodes(db *sql.DB) (map[int64]DBNode, error) {
+	query := `
+		SELECT 
+			id,
+			latitude,
+			longitude
+		FROM nodes;
+	`
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	nodes := make(map[int64]DBNode)
+	for rows.Next() {
+		var node DBNode
+
+		err := rows.Scan(&node.ID, &node.Latitude, &node.Longitude)
+		if err != nil {
+			return nil, err
+		}
+
+		nodes[node.ID] = node
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return nodes, nil
+}

@@ -15,7 +15,7 @@ type FeatureCollection struct {
 // Feature represents a GeoJSON feature with associated properties and geometry.
 type Feature struct {
 	Type       string                 `json:"type"`
-	Properties map[string]interface{} `json:"properties"`
+	Properties map[string]string `json:"properties"`
 	Geometry   Geometry               `json:"geometry"`
 }
 
@@ -52,7 +52,7 @@ func GetAllGeoJsonData(filename string) ([]byte, error) {
 
 			wayFeature := Feature{
 				Type: "Feature",
-				Properties: map[string]any{
+				Properties: map[string]string{
 					"name": el.Tags["name"],
 				},
 				Geometry: Geometry{
