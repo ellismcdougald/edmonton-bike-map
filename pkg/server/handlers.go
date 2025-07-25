@@ -20,6 +20,8 @@ import (
 // Responds with a GeoJSON LineString representing the line path.
 // Returns HTTP 400 if parameters are missing or invalid.
 func handleRouteByCoordinates(writer http.ResponseWriter, request *http.Request, network *model.Graph) {
+	writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+	
 	query := request.URL.Query()
 
 	getFloatParam := func(query url.Values, paramName string) (result float64, err error) {
