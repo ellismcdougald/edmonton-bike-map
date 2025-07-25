@@ -1,6 +1,8 @@
 <script lang="ts">
   import {onMount, onDestroy} from 'svelte';
   import type { LeafletMap } from '$lib/Map';
+  import type { WayFeature } from '$lib/types';
+  import { selectedWay } from '$lib/stores/selectedWay';
 
   let mapInstance: LeafletMap | null
 
@@ -21,7 +23,11 @@
       const res = await fetch(allWaysEndpoint);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const geojson = await res.json()
-      mapInstance.loadInfoLayer(geojson);
+      mapInstance.loadInfoLayer(geojson, 
+        { color: 'red', weight: 1, opacity: 0 }, 
+        (way: WayFeature) => {
+          selectedWay.set(way);
+      });
     } catch (err) {
       console.error("Error loading info layer.");
     }

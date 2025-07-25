@@ -8,6 +8,8 @@ import type {
 	LatLngBoundsLiteral
 } from 'leaflet';
 
+import type { WayFeature } from './types';
+
 export class LeafletMap {
 	static readonly EDMONTON_BOUNDS: LatLngBoundsLiteral = [
 		[53.3951, -113.7167],
@@ -45,7 +47,11 @@ export class LeafletMap {
 		}).addTo(this.map);
 	}
 
-	loadInfoLayer(geojson: GeoJSON.GeoJsonObject, style?: PathOptions): void {
+	loadInfoLayer(
+		geojson: GeoJSON.GeoJsonObject,
+		style?: PathOptions,
+		onClick?: (way: WayFeature) => void
+	): void {
 		if (this.infoLayer) {
 			this.map.removeLayer(this.infoLayer);
 			this.infoLayer = null;
@@ -57,6 +63,16 @@ export class LeafletMap {
 			onEachFeature: (feature, layer) => {
 				const name = feature.properties?.name || 'Unnamed street';
 				layer.bindPopup(`<strong>${name}</strong>`);
+
+				if (onClick) {
+					layer.on('click', () => {
+						const wayFeature: WayFeature = {
+							id: feature.properties?.id,
+							tags: feature.properties || {}
+						};
+						onClick(wayFeature);
+					});
+				}
 			}
 		};
 		this.infoLayer = L.geoJSON(geojson, options).addTo(this.map);

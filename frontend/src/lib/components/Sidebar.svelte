@@ -1,4 +1,8 @@
 <script lang="ts">
+  import { selectedWay } from "$lib/stores/selectedWay";
+
+  $: way = $selectedWay;
+
 	let isVisible: boolean = true;
 
 	function toggleSidebar() {
@@ -16,7 +20,7 @@
 
 {#if isVisible}
 	<div id="sidebar-content" class="w-full p-2 h-full bg-white shadow-2xl pb-12">
-		<h1 class="text-xl font-bold">102 Avenue NW Protected Bike Lane</h1>
+		<h1 class="text-xl font-bold">{way?.tags?.name ? way?.tags?.name : "Unnamed Route"}</h1>
 
 		<section class="mb-2">
 			<h2 class="font-semibold">Type: <span class="font-normal">Bike Lane</span></h2>

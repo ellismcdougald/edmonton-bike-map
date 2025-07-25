@@ -114,6 +114,8 @@ func handleAllWays(writer http.ResponseWriter, _ *http.Request, db *sql.DB) {
 			Coordinates: coordinates,
 		}
 
+		way.Tags["id"] = strconv.FormatInt(way.ID, 10)
+
 		feature := data.Feature{
 			Type: "Feature",
 			Properties: way.Tags,
