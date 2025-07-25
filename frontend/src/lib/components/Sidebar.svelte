@@ -1,4 +1,6 @@
 <script lang="ts">
+	import ReviewContainer from './ReviewContainer.svelte';
+
 	import { selectedWay } from '$lib/stores/selectedWay';
 
 	$: way = $selectedWay;
@@ -101,31 +103,7 @@
 			<h2 class="font-semibold">Rating: <span class="font-normal">8 / 10</span></h2>
 		</section>
 
-		<section id="sidebar-review-container" class="border-t border-dotted border-gray-600 pt-1">
-			<h1 class="text-lg font-bold mb-2">Reviews:</h1>
-
-			<div class="mb-2 border border-gray-600 p-1 rounded-xs">
-				<div class="flex gap-2 text-sm text-gray-600 mb-1">
-					<span>User: emcd84</span>
-					<span>—</span>
-					<span>Date: July 20, 2025</span>
-					<span>—</span>
-					<span>Rating: 10 / 10</span>
-				</div>
-				<p>Well-paved bike lane, separated from road by barrier. On a quiet road.</p>
-			</div>
-
-			<div class="mb-2 border border-gray-600 p-1 rounded-xs">
-				<div class="flex gap-2 text-sm text-gray-600 mb-1">
-					<span>User: js1234</span>
-					<span>—</span>
-					<span>Date: July 10, 2025</span>
-					<span>—</span>
-					<span>Rating: 6 / 10</span>
-				</div>
-				<p>Good bike lane but often blocked by construction.</p>
-			</div>
-		</section>
+		<ReviewContainer />
 	</div>
 {/if}
 
