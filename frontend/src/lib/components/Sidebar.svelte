@@ -14,7 +14,6 @@
 	// determineRouteType uses the tags for a route to determine its road type (arterial, collector, local, etc) and bike infastructure (if possible)
 	// TODO: simplify and improve logic, continue to ensure that all common types are classified
 	function determineRouteType(tags: Record<string, string>): string {
-		console.log(tags);
 		var routeType: string;
 		if (tags.highway == 'residential') {
 			return 'Residential Street';
@@ -103,7 +102,7 @@
 			<h2 class="font-semibold">Rating: <span class="font-normal">8 / 10</span></h2>
 		</section>
 
-		<ReviewContainer />
+		<ReviewContainer wayId={way.id} />
 	</div>
 {/if}
 

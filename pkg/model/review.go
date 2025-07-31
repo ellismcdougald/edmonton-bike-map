@@ -17,10 +17,10 @@ func GetReviews(db *sql.DB, wayID int64) ([]Review, error) {
 		SELECT
 			r.way_id,
 			r.rating,
-			r.comment
+			r.comment,
 			r.created_at
 		FROM reviews r
-		WHERE r.way_id = ?
+		WHERE r.way_id = $1;
 	`
 
 	rows, err := db.Query(query, wayID)

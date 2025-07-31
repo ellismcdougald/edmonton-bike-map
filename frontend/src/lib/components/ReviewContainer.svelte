@@ -1,8 +1,26 @@
 <script lang="ts">
 	import Review from './Review.svelte';
 	import AddReviewPopup from './AddReviewPopup.svelte';
+  import type { Review as ReviewObj } from '$lib/types';
+  
+  let { wayId } = $props();
 
-	let addReviewActive: boolean = false;
+	let addReviewActive: boolean = $state(false);
+  let reviews: ReviewObj[] = $state([])
+
+  $effect(() => {
+    async function getReviews() {
+      try {
+        const res = await fetch(`http://localhost:8080/api/reviews?wayID=${wayId}`)
+        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`)
+        reviews = await res.json();
+      } catch (e) {
+        console.error("Failed to fetch reviews: ", e)
+        return []
+      }
+    }
+    getReviews();
+  });
 </script>
 
 <div id="review-container" class="border-t">
@@ -24,7 +42,13 @@
 		/>
 	{/if}
 
-	<Review />
+  {#if reviews}
+    <div>
+      {#each reviews as review (review.createdAt + review.rating)}
+        <Review {review} />
+      {/each}
+    </div>
+  {/if}
 </div>
 
 <style></style>
