@@ -140,6 +140,32 @@ func handleAllWays(writer http.ResponseWriter, _ *http.Request, db *sql.DB) {
 	}
 }
 
+func handleGetReviews(writer http.ResponseWriter, request *http.Request, db *sql.DB) {
+	writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+
+	query := request.URL.Query()
+	wayID, err := strconv.ParseInt(query.Get("wayID"), 10, 64)
+	if err != nil {
+		log.Printf("Error extracting parameter wayID from query %v: %v", query, err)
+		http.Error(writer, "Invalid wayID"+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	reviews, err := model.GetReviews(db, wayID)
+	if err != nil {
+		log.Printf("Error fetching reviews from database for wayID %d: %v", wayID, err)
+		http.Error(writer, "Could not fetch reviews"+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	writer.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(writer).Encode(reviews)
+	if err != nil {
+		log.Printf("Error encoding json")
+		http.Error(writer, "Could not encode json", http.StatusInternalServerError)
+	}
+}
+
 func handlePostReview(writer http.ResponseWriter, request *http.Request, db *sql.DB) {
 	writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
