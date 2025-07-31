@@ -1,8 +1,25 @@
-<script lang="ts">
-	let { closePopup } = $props();
-	import { wayState } from '../state.svelte';
+<!--
+  AddReviewPopup component
 
-	let wayId: number | undefined = wayState.selectedWay?.id;
+  Props:
+  - closePopup: function to close the popup/modal
+  - wayId: ID of the currently selected way to associate the review with
+
+  State:
+  - rating: number or null, user rating input
+  - reviewText: string or null, user review text input
+  - errorMsg: string, error message shown on validation or submission failure
+  - isSubmitting: boolean, disables form inputs and shows submission state
+
+  Behavior:
+  - Validates rating presence before submitting
+  - Sends POST request to submit review tied to wayId
+  - Resets inputs and closes popup on successful submission
+  - Shows error message if submission fails
+-->
+
+<script lang="ts">
+	let { closePopup, wayId } = $props();
 
 	let rating: number | null = $state(null);
 	let reviewText: string | null = $state(null);

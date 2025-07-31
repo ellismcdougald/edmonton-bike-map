@@ -1,25 +1,51 @@
+<!--
+  ReviewContainer.svelte
+  ----------------------
+  Displays a list of reviews for the given wayId.
+  Fetches reviews from the backend whenever wayId changes.
+  Allows users to open a popup to add a new review.
+
+  Props:
+    - wayId (number): The ID of the selected way to fetch reviews for.
+
+  State:
+    - addReviewActive (boolean): Controls visibility of the AddReviewPopup.
+    - reviews (ReviewObj[]): List of reviews fetched from the backend.
+
+  Behavior:
+    - Automatically fetches reviews when wayId changes.
+    - Opens AddReviewPopup on button click.
+    - Passes wayId and closePopup callback to AddReviewPopup.
+    - Renders each review using the Review component.
+
+  Improvements:
+    - Could implement a loading screen while reviews are being fetched.$$render
+    - Could add a message when no reviews are present
+-->
+
 <script lang="ts">
 	import Review from './Review.svelte';
 	import AddReviewPopup from './AddReviewPopup.svelte';
   import type { Review as ReviewObj } from '$lib/types';
   
-  let { wayId } = $props();
+  let { wayId }: { wayId: number } = $props();
 
 	let addReviewActive: boolean = $state(false);
   let reviews: ReviewObj[] = $state([])
 
-  $effect(() => {
-    async function getReviews() {
-      try {
-        const res = await fetch(`http://localhost:8080/api/reviews?wayID=${wayId}`)
-        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`)
-        reviews = await res.json();
-      } catch (e) {
-        console.error("Failed to fetch reviews: ", e)
-        return []
-      }
+  async function loadReviews(wayId: number) {
+    try {
+      const res = await fetch(`http://localhost:8080/api/reviews?wayID=${wayId}`)
+      if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`)
+      reviews = await res.json();
+    } catch (e) {
+      console.error("Failed to fetch reviews: ", e)
+      return []
     }
-    getReviews();
+  }
+
+  $effect(() => {
+    loadReviews(wayId);
   });
 </script>
 
@@ -39,6 +65,7 @@
 			closePopup={() => {
 				addReviewActive = false;
 			}}
+      wayId={wayId}
 		/>
 	{/if}
 

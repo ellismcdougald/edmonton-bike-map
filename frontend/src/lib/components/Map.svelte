@@ -1,8 +1,23 @@
+<!--
+  MapComponent.svelte
+
+  State:
+  - mapInstance: LeafletMap | null — reference to the map instance
+  - selectStartActive: boolean — whether "select start" mode is active
+  - selectEndActive: boolean — whether "select end" mode is active
+
+  Behaviour:
+  - Initializes LeafletMap on mount, loads tile and info layers
+  - Listens for map clicks to set start/end markers depending on mode
+  - Toggles select start/end modes with buttons, ensuring only one active at a time
+  - Fetches route from backend API with start/end coordinates on "Find Route"
+  - Cleans up map instance on destroy
+-->
+
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import type { LeafletMap } from '$lib/Map';
 	import type { WayFeature } from '$lib/types';
-	import { selectedWay } from '$lib/stores/selectedWay';
 	import { wayState } from '$lib/state.svelte';
 
 	let mapInstance: LeafletMap | null;
@@ -110,7 +125,6 @@
 				{ color: 'red', weight: 1, opacity: 0 },
 				(way: WayFeature) => {
 					way.id = Number(way.id);
-					selectedWay.set(way);
 					wayState.selectedWay = way;
 				}
 			);
