@@ -21,7 +21,7 @@ import (
 // Returns HTTP 400 if parameters are missing or invalid.
 func handleRouteByCoordinates(writer http.ResponseWriter, request *http.Request, network *model.Graph) {
 	writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
-	
+
 	query := request.URL.Query()
 
 	getFloatParam := func(query url.Values, paramName string) (result float64, err error) {
@@ -112,23 +112,23 @@ func handleAllWays(writer http.ResponseWriter, _ *http.Request, db *sql.DB) {
 		}
 
 		geometry := data.Geometry{
-			Type: "LineString",
+			Type:        "LineString",
 			Coordinates: coordinates,
 		}
 
 		way.Tags["id"] = strconv.FormatInt(way.ID, 10)
 
 		feature := data.Feature{
-			Type: "Feature",
+			Type:       "Feature",
 			Properties: way.Tags,
-			Geometry: geometry,
+			Geometry:   geometry,
 		}
 
 		allFeatures = append(allFeatures, feature)
 	}
 
 	featureCollection := data.FeatureCollection{
-		Type: "FeatureCollection",
+		Type:     "FeatureCollection",
 		Features: allFeatures,
 	}
 
@@ -138,4 +138,32 @@ func handleAllWays(writer http.ResponseWriter, _ *http.Request, db *sql.DB) {
 		log.Printf("Error encoding json")
 		http.Error(writer, "Could not encode json", http.StatusInternalServerError)
 	}
+}
+
+func handlePostReview(writer http.ResponseWriter, request *http.Request, db *sql.DB) {
+	if request.Method != http.MethodPost {
+		http.Error(writer, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var review model.Review
+	if err := json.NewDecoder(request.Body).Decode(&review); err != nil {
+		http.Error(writer, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	if review.Rating < 1 || review.Rating > 10 || review.ReviewText == "" {
+		http.Error(writer, "Invalid review: Rating must be between 1 and 10 inclusive", http.StatusBadRequest)
+		return
+	}
+
+	_, err := db.Exec(`
+	INSERT INTO reviews (way_id, rating, comment)
+	VALUES ($1, $2, $3)
+`, review.WayID, review.Rating, review.ReviewText)
+	if err != nil {
+		http.Error(writer, "Database error", http.StatusInternalServerError)
+		return
+	}
+
 }
