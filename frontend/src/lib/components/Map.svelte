@@ -3,6 +3,7 @@
 	import type { LeafletMap } from '$lib/Map';
 	import type { WayFeature } from '$lib/types';
 	import { selectedWay } from '$lib/stores/selectedWay';
+	import { wayState } from '$lib/state.svelte';
 
 	let mapInstance: LeafletMap | null;
 
@@ -108,7 +109,9 @@
 				geojson,
 				{ color: 'red', weight: 1, opacity: 0 },
 				(way: WayFeature) => {
+					way.id = Number(way.id);
 					selectedWay.set(way);
+					wayState.selectedWay = way;
 				}
 			);
 		} catch (err) {

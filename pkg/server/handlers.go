@@ -141,6 +141,15 @@ func handleAllWays(writer http.ResponseWriter, _ *http.Request, db *sql.DB) {
 }
 
 func handlePostReview(writer http.ResponseWriter, request *http.Request, db *sql.DB) {
+	writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+
+	if request.Method == http.MethodOptions {
+		writer.WriteHeader(http.StatusOK)
+		return
+	}
+
 	if request.Method != http.MethodPost {
 		http.Error(writer, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -148,7 +157,8 @@ func handlePostReview(writer http.ResponseWriter, request *http.Request, db *sql
 
 	var review model.Review
 	if err := json.NewDecoder(request.Body).Decode(&review); err != nil {
-		http.Error(writer, "Bad request", http.StatusBadRequest)
+		log.Printf("Error decoding review JSON: %v", err)
+		http.Error(writer, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
