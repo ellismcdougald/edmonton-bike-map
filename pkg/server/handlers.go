@@ -142,6 +142,8 @@ func handleAllWays(writer http.ResponseWriter, _ *http.Request, db *sql.DB) {
 
 func handleGetReviews(writer http.ResponseWriter, request *http.Request, db *sql.DB) {
 	writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 
 	query := request.URL.Query()
 	wayID, err := strconv.ParseInt(query.Get("wayID"), 10, 64)
