@@ -3,6 +3,7 @@ package server
 
 import (
 	"database/sql"
+	"log"
 	"net/http"
 
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
@@ -34,18 +35,29 @@ func RegisterRoutes(mux *http.ServeMux, network *model.Graph, db *sql.DB) {
 			http.Error(writer, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
-	
+
 	mux.HandleFunc("/api/signup", func(writer http.ResponseWriter, request *http.Request) {
-			writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
-			writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-			writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		log.Print("Hit")
+		switch request.Method {
+		case http.MethodOptions:
+			writer.WriteHeader(http.StatusNoContent)
+		default:
 			handleSignUp(writer, request, db)
+		}
 	})
 
 	mux.HandleFunc("/api/login", func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 		writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		handleLogin(writer, request, db)
+		switch request.Method {
+		case http.MethodOptions:
+			writer.WriteHeader(http.StatusNoContent)
+		default:
+			handleLogin(writer, request, db)
+		}
 	})
 }
