@@ -1,0 +1,95 @@
+package server
+
+import (
+	"database/sql"
+	"encoding/json"
+	"net/http"
+
+	"golang.org/x/crypto/bcrypt"
+
+	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
+	"github.com/ellismcdougald/edmonton-bike-map/pkg/utils"
+)
+
+func handleLogin(writer http.ResponseWriter, request *http.Request, db *sql.DB) {
+	if request.Method != http.MethodPost {
+		http.Error(writer, "Only POST allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var creds model.Credentials
+	err := json.NewDecoder(request.Body).Decode(&creds)
+	if err != nil {
+		http.Error(writer, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	user, err := model.GetUser(db, creds.Username)
+	if err != nil {
+		http.Error(writer, "Invalid username or password", http.StatusUnauthorized)
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(creds.Password)); err != nil {
+		http.Error(writer, "Invalid username or password", http.StatusUnauthorized)
+		return
+	}
+
+	token, err := utils.GenerateJWT(user.Username)
+	if err != nil {
+		http.Error(writer, "Could not generate token", http.StatusInternalServerError)
+		return
+	}
+
+	writer.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(writer).Encode(map[string]string{
+		"token": token,
+	})
+}
+
+func handleSignUp(writer http.ResponseWriter, request *http.Request, db *sql.DB) {
+	if request.Method != http.MethodPost {
+		http.Error(writer, "Only POST allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var creds model.Credentials
+	err := json.NewDecoder(request.Body).Decode(&creds)
+	if err != nil {
+		http.Error(writer, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if creds.Username == "" || creds.Password == "" {
+		http.Error(writer, "Username and password required", http.StatusBadRequest)
+	}
+
+	exists, err := model.UsernameExists(db, creds.Username)
+	if err != nil {
+		http.Error(writer, "Database error", http.StatusInternalServerError)
+		return
+	}
+	if exists {
+		http.Error(writer, "Username already taken", http.StatusBadRequest)
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(creds.Password), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(writer, "Error hashing password", http.StatusInternalServerError)
+		return
+	}
+
+	user := &model.User{
+		Username: creds.Username,
+		Password: string(hashedPassword),
+	}
+
+	err = user.Create(db)
+	if err != nil {
+		http.Error(writer, "Error creating user", http.StatusInternalServerError)
+		return
+	}
+
+	writer.WriteHeader(http.StatusCreated)
+}

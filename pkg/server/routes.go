@@ -34,4 +34,18 @@ func RegisterRoutes(mux *http.ServeMux, network *model.Graph, db *sql.DB) {
 			http.Error(writer, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
+	
+	mux.HandleFunc("/api/signup", func(writer http.ResponseWriter, request *http.Request) {
+			writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+			writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			handleSignUp(writer, request, db)
+	})
+
+	mux.HandleFunc("/api/login", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		handleLogin(writer, request, db)
+	})
 }
