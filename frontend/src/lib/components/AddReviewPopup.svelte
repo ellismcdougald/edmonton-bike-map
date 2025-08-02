@@ -24,13 +24,14 @@
 	let rating: number | null = $state(null);
 	let reviewText: string | null = $state(null);
 
-	let errorMsg: string = '';
-	let isSubmitting: boolean = false;
+	let errorMsg: string = $state('');
+	let isSubmitting: boolean = $state(false);
 
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
 		if (rating == null) {
 			errorMsg = 'Please provide a rating!';
+      return
 		}
 
 		isSubmitting = true;
@@ -46,8 +47,12 @@
 			rating = null;
 			reviewText = null;
 			closePopup();
-		} catch (err: any) {
-			errorMsg = err.message;
+		} catch (err: unknown) {
+      if (err instanceof Error) {
+        errorMsg = err.message;
+      } else {
+        errorMsg = String(err);
+      }
 		} finally {
 			isSubmitting = false;
 		}
@@ -81,11 +86,19 @@
 			bind:value={reviewText}
 		></textarea>
 
+		{#if errorMsg}
+			<p class="text-red-600 mb-4">{errorMsg}</p>
+		{/if}
+
 		<div class="flex justify-end gap-2">
 			<button type="button" class="px-4 py-2 rounded border" onclick={closePopup}>Cancel</button>
-			<button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
-				>Submit</button
+			<button
+				type="submit"
+				class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+				disabled={isSubmitting}
 			>
+				Submit
+			</button>
 		</div>
 	</form>
 </div>
