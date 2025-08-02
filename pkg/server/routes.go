@@ -7,57 +7,60 @@ import (
 	"net/http"
 
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
+	"github.com/ellismcdougald/edmonton-bike-map/pkg/server/handlers"
 )
 
-// RegisterRoutes registers HTTP routes on the given ServeMux.
-// Endpoints:
-// - /api/route: handles routing requests given latitude-longitude coordinates
+// RegisterRoutes registers HTTP handlers for all API endpoints on the given ServeMux.
+// It applies CORS middleware with appropriate allowed methods to each route.
+// Parameters:
+//   - mux: the HTTP request multiplexer where routes are registered.
+//   - network: the in-memory graph used by routing handlers.
+//   - db: the database connection pool used by handlers requiring database access.
+//
+// Routes registered:
+//   - GET /api/route       : compute bike routes between coordinates
+//   - GET /api/all-ways    : fetch all ways from the database
+//   - GET, POST /api/reviews : get or post reviews for ways
+//   - POST /api/signup     : user signup
+//   - POST /api/login      : user login
 func RegisterRoutes(mux *http.ServeMux, network *model.Graph, db *sql.DB) {
-	mux.HandleFunc("/api/route", func(writer http.ResponseWriter, request *http.Request) {
-		handleRouteByCoordinates(writer, request, network)
-	})
-	mux.HandleFunc("/api/all-ways", func(writer http.ResponseWriter, request *http.Request) {
-		handleAllWays(writer, request, db)
-	})
-	mux.HandleFunc("/api/reviews", func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
-		writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		switch request.Method {
+	mux.Handle("/api/route", corsMiddleware("GET", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handlers.HandleRouteByCoordinates(w, r, network)
+	})))
+
+	mux.Handle("/api/all-ways", corsMiddleware("GET", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handlers.HandleAllWays(w, r, db)
+	})))
+
+	mux.Handle("/api/reviews", corsMiddleware("GET", "POST", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
 		case http.MethodOptions:
-			writer.WriteHeader(http.StatusNoContent)
+			w.WriteHeader(http.StatusNoContent)
 		case http.MethodGet:
-			handleGetReviews(writer, request, db)
+			handlers.HandleGetReviews(w, r, db)
 		case http.MethodPost:
-			handlePostReview(writer, request, db)
+			handlers.HandlePostReview(w, r, db)
 		default:
-			writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
-			http.Error(writer, "Method not allowed", http.StatusMethodNotAllowed)
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
-	})
+	})))
 
-	mux.HandleFunc("/api/signup", func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
-		writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		log.Print("Hit")
-		switch request.Method {
+	mux.Handle("/api/signup", corsMiddleware("POST", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
 		case http.MethodOptions:
-			writer.WriteHeader(http.StatusNoContent)
+			w.WriteHeader(http.StatusNoContent)
 		default:
-			handleSignUp(writer, request, db)
+			log.Print("Signup endpoint hit")
+			handlers.HandleSignUp(w, r, db)
 		}
-	})
+	})))
 
-	mux.HandleFunc("/api/login", func(writer http.ResponseWriter, request *http.Request) {
-		writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
-		writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-		switch request.Method {
+	mux.Handle("/api/login", corsMiddleware("POST", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
 		case http.MethodOptions:
-			writer.WriteHeader(http.StatusNoContent)
+			w.WriteHeader(http.StatusNoContent)
 		default:
-			handleLogin(writer, request, db)
+			handlers.HandleLogin(w, r, db)
 		}
-	})
+	})))
 }

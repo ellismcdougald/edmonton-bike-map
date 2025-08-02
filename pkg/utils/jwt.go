@@ -9,16 +9,20 @@ import (
 
 var jwtKey []byte
 
+// SetJWTKey sets the secret key used for jwt generation and validation
 func SetJWTKey(key []byte) {
 	jwtKey = key
 }
 
+// Claims represents the JWT claims payload
 type Claims struct {
 	Username string `json:"username"`
 	jwt.RegisteredClaims
 }
 
 // GenerateJWT creates a signed JWT token string with username and expiry
+// The token expires 24 hours later
+// Returns the signed token string or an error on failure
 func GenerateJWT(username string) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
@@ -34,6 +38,7 @@ func GenerateJWT(username string) (string, error) {
 }
 
 // ValidateJWT parses and validates a JWT token string and returns the claims if valid
+// Returns the Claims if valid or an error if not
 func ValidateJWT(tokenString string) (*Claims, error) {
 	claims := &Claims{}
 

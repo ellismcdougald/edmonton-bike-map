@@ -8,8 +8,25 @@ import (
 type Review struct {
 	WayID			 int64	`json:"wayId"`
 	Rating     int    `json:"rating"`
-	ReviewText string `json:"reviewText"`
+	Comment string `json:"comment"`
 	CreatedAt	 time.Time `json:"createdAt"`
+}
+
+func (review *Review) Create(db *sql.DB) error {
+	query := `
+	INSERT INTO reviews (
+		way_id,
+		rating,
+		comment
+	)
+	VALUES (
+		$1,
+		$2,
+		$3
+	)
+	`
+	_, err := db.Exec(query, review.WayID, review.Rating, review.Comment)
+	return err
 }
 
 func GetReviews(db *sql.DB, wayID int64) ([]Review, error) {
@@ -33,7 +50,7 @@ func GetReviews(db *sql.DB, wayID int64) ([]Review, error) {
 	for rows.Next() {
 		var review Review
 		
-		err = rows.Scan(&review.WayID, &review.Rating, &review.ReviewText, &review.CreatedAt)
+		err = rows.Scan(&review.WayID, &review.Rating, &review.Comment, &review.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -45,5 +62,4 @@ func GetReviews(db *sql.DB, wayID int64) ([]Review, error) {
 	}
 
 	return reviews, nil
-
 }
