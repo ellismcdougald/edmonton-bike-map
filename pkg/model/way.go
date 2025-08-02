@@ -7,12 +7,17 @@ import (
 	"github.com/lib/pq"
 )
 
+// DBWay represents a way in the database, including its ID, tags as a map, and an ordered list of node IDs.
 type DBWay struct {
-	ID	int64
-	Tags map[string]string
+	ID      int64
+	Tags    map[string]string
 	NodeIDs []int64
 }
 
+// Insert inserts the DBWay into the database, including its tags and the ordered node IDs.
+// Uses a transaction to ensure atomicity.
+// If the way ID already exists, the insert does nothing.
+// Rolls back the transaction on any error.
 func (w *DBWay) Insert(db *sql.DB) error {
 	tagsJSON, err := json.Marshal(w.Tags)
 	if err != nil {
@@ -52,6 +57,9 @@ func (w *DBWay) Insert(db *sql.DB) error {
 	return nil
 }
 
+// GetAllWays retrieves all ways from the database along with their ordered node IDs.
+// Returns a slice of DBWay structs or an error.
+// Uses ARRAY_AGG to get node IDs in sequence order.
 func GetAllWays(db *sql.DB) ([]DBWay, error) {
 	query := `
 		SELECT

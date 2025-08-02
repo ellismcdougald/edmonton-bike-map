@@ -5,13 +5,15 @@ import (
 	"time"
 )
 
+// Review represents a review for a way with rating, comment, and creation timestamp.
 type Review struct {
-	WayID			 int64	`json:"wayId"`
-	Rating     int    `json:"rating"`
-	Comment string `json:"comment"`
-	CreatedAt	 time.Time `json:"createdAt"`
+	WayID     int64     `json:"wayId"`
+	Rating    int       `json:"rating"`
+	Comment   string    `json:"comment"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
+// Create inserts the Review into the database.
 func (review *Review) Create(db *sql.DB) error {
 	query := `
 	INSERT INTO reviews (
@@ -29,6 +31,8 @@ func (review *Review) Create(db *sql.DB) error {
 	return err
 }
 
+// GetReviews retrieves all reviews for a specific way by wayID from the database.
+// Returns a slice of Review and any error encountered.
 func GetReviews(db *sql.DB, wayID int64) ([]Review, error) {
 	query := `
 		SELECT
@@ -49,7 +53,6 @@ func GetReviews(db *sql.DB, wayID int64) ([]Review, error) {
 	var reviews []Review
 	for rows.Next() {
 		var review Review
-		
 		err = rows.Scan(&review.WayID, &review.Rating, &review.Comment, &review.CreatedAt)
 		if err != nil {
 			return nil, err
