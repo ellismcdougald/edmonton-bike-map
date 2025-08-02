@@ -14,9 +14,9 @@ type FeatureCollection struct {
 
 // Feature represents a GeoJSON feature with associated properties and geometry.
 type Feature struct {
-	Type       string                 `json:"type"`
+	Type       string            `json:"type"`
 	Properties map[string]string `json:"properties"`
-	Geometry   Geometry               `json:"geometry"`
+	Geometry   Geometry          `json:"geometry"`
 }
 
 // Geometry represents the GeoJSON geometry of a feature.
