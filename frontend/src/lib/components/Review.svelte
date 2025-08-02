@@ -10,10 +10,9 @@ Issues:
   - User functionality is not implemented yet, so the user is currently displayed as "TBD". This must be updated once users are added.
 -->
 
-
 <script lang="ts">
-  import type { Review as ReviewObj } from "$lib/types";
-  let { review }: { review: ReviewObj }= $props();
+	import type { Review as ReviewObj } from '$lib/types';
+	let { review }: { review: ReviewObj } = $props();
 </script>
 
 <div class="mb-2 border border-gray-600 p-1 rounded-xs">

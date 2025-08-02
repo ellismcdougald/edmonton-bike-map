@@ -128,7 +128,7 @@
 					wayState.selectedWay = way;
 				}
 			);
-		} catch (err) {
+		} catch {
 			console.error('Error loading info layer.');
 		}
 

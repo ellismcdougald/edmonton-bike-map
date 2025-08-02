@@ -31,7 +31,7 @@
 		event.preventDefault();
 		if (rating == null) {
 			errorMsg = 'Please provide a rating!';
-      return
+			return;
 		}
 
 		isSubmitting = true;
@@ -48,11 +48,11 @@
 			reviewText = null;
 			closePopup();
 		} catch (err: unknown) {
-      if (err instanceof Error) {
-        errorMsg = err.message;
-      } else {
-        errorMsg = String(err);
-      }
+			if (err instanceof Error) {
+				errorMsg = err.message;
+			} else {
+				errorMsg = String(err);
+			}
 		} finally {
 			isSubmitting = false;
 		}

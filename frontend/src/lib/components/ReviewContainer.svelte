@@ -26,27 +26,27 @@
 <script lang="ts">
 	import Review from './Review.svelte';
 	import AddReviewPopup from './AddReviewPopup.svelte';
-  import type { Review as ReviewObj } from '$lib/types';
-  
-  let { wayId }: { wayId: number } = $props();
+	import type { Review as ReviewObj } from '$lib/types';
+
+	let { wayId }: { wayId: number } = $props();
 
 	let addReviewActive: boolean = $state(false);
-  let reviews: ReviewObj[] = $state([])
+	let reviews: ReviewObj[] = $state([]);
 
-  async function loadReviews(wayId: number) {
-    try {
-      const res = await fetch(`http://localhost:8080/api/reviews?wayID=${wayId}`)
-      if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`)
-      reviews = await res.json();
-    } catch (e) {
-      console.error("Failed to fetch reviews: ", e)
-      return []
-    }
-  }
+	async function loadReviews(wayId: number) {
+		try {
+			const res = await fetch(`http://localhost:8080/api/reviews?wayID=${wayId}`);
+			if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+			reviews = await res.json();
+		} catch (e) {
+			console.error('Failed to fetch reviews: ', e);
+			return [];
+		}
+	}
 
-  $effect(() => {
-    loadReviews(wayId);
-  });
+	$effect(() => {
+		loadReviews(wayId);
+	});
 </script>
 
 <div id="review-container" class="border-t">
@@ -65,17 +65,17 @@
 			closePopup={() => {
 				addReviewActive = false;
 			}}
-      wayId={wayId}
+			{wayId}
 		/>
 	{/if}
 
-  {#if reviews}
-    <div>
-      {#each reviews as review (review.createdAt + review.rating)}
-        <Review {review} />
-      {/each}
-    </div>
-  {/if}
+	{#if reviews}
+		<div>
+			{#each reviews as review (review.createdAt + review.rating)}
+				<Review {review} />
+			{/each}
+		</div>
+	{/if}
 </div>
 
 <style></style>

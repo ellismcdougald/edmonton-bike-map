@@ -17,10 +17,10 @@
 
 <script lang="ts">
 	import ReviewContainer from './ReviewContainer.svelte';
-  import { wayState } from '$lib/state.svelte';
-  import type { WayFeature } from '$lib/types';
+	import { wayState } from '$lib/state.svelte';
+	import type { WayFeature } from '$lib/types';
 
-  let way: WayFeature | null = $derived(wayState.selectedWay);
+	let way: WayFeature | null = $derived(wayState.selectedWay);
 
 	let isVisible: boolean = $state(true);
 
@@ -31,7 +31,6 @@
 	// determineRouteType uses the tags for a route to determine its road type (arterial, collector, local, etc) and bike infastructure (if possible)
 	// TODO: simplify and improve logic, continue to ensure that all common types are classified
 	function determineRouteType(tags: Record<string, string>): string {
-		var routeType: string;
 		if (tags.highway == 'residential') {
 			return 'Residential Street';
 		} else if (tags.highway == 'tertiary') {
