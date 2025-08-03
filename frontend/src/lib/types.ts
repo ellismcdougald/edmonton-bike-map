@@ -5,6 +5,7 @@ export interface WayFeature {
 
 export interface Review {
 	wayID: number;
+	username: string;
 	rating: number;
 	comment: string;
 	createdAt: string;

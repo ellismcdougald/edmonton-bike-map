@@ -12,6 +12,7 @@ type Review struct {
 	Rating    int       `json:"rating"`
 	Comment   string    `json:"comment"`
 	CreatedAt time.Time `json:"createdAt"`
+	Username	string		`json:"username"`
 }
 
 // Create inserts the Review into the database.
@@ -39,11 +40,13 @@ func (review *Review) Create(db *sql.DB) error {
 func GetReviews(db *sql.DB, wayID int64) ([]Review, error) {
 	query := `
 		SELECT
-			r.way_id,
-			r.rating,
-			r.comment,
-			r.created_at
+  		r.way_id,
+  		r.rating,
+  		r.comment,
+  		r.created_at,
+  		u.username
 		FROM reviews r
+		LEFT JOIN users u ON r.user_id = u.id
 		WHERE r.way_id = $1;
 	`
 
@@ -56,7 +59,7 @@ func GetReviews(db *sql.DB, wayID int64) ([]Review, error) {
 	var reviews []Review
 	for rows.Next() {
 		var review Review
-		err = rows.Scan(&review.WayID, &review.Rating, &review.Comment, &review.CreatedAt)
+		err = rows.Scan(&review.WayID, &review.Rating, &review.Comment, &review.CreatedAt, &review.Username)
 		if err != nil {
 			return nil, err
 		}
