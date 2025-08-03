@@ -17,16 +17,18 @@ func SetJWTKey(key []byte) {
 // Claims represents the JWT claims payload
 type Claims struct {
 	Username string `json:"username"`
+	UserID	 int64	`json:"userId"`
 	jwt.RegisteredClaims
 }
 
 // GenerateJWT creates a signed JWT token string with username and expiry
 // The token expires 24 hours later
 // Returns the signed token string or an error on failure
-func GenerateJWT(username string) (string, error) {
+func GenerateJWT(username string, userID int64) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		Username: username,
+		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

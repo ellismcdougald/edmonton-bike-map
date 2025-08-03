@@ -19,10 +19,12 @@
 -->
 
 <script lang="ts">
+	import { getUserIdFromToken } from "$lib/utils/auth";
+
 	let { closePopup, wayId } = $props();
 
 	let rating: number | null = $state(null);
-	let reviewText: string | null = $state(null);
+	let comment: string | null = $state(null);
 
 	let errorMsg: string = $state('');
 	let isSubmitting: boolean = $state(false);
@@ -34,18 +36,25 @@
 			return;
 		}
 
+    var userId: number | null = getUserIdFromToken();
+    if (!userId) {
+      errorMsg = "User is not logged in!";
+      isSubmitting = false;
+      return;
+    }
+
 		isSubmitting = true;
 		try {
 			const res = await fetch('http://localhost:8080/api/reviews', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ wayId, rating, reviewText })
+				body: JSON.stringify({ wayId, userId, rating, comment })
 			});
 			if (!res.ok) {
 				throw new Error(`Failed to submit review: ${res.statusText}`);
 			}
 			rating = null;
-			reviewText = null;
+			comment = null;
 			closePopup();
 		} catch (err: unknown) {
 			if (err instanceof Error) {
@@ -78,12 +87,12 @@
 
 		<label class="block mb-2 font-semibold" for="reviewText">Review</label>
 		<textarea
-			id="reviewText"
+			id="comment"
 			rows="4"
 			placeholder="Write your review here..."
 			class="w-full border border-gray-300 rounded px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
 			required
-			bind:value={reviewText}
+			bind:value={comment}
 		></textarea>
 
 		{#if errorMsg}

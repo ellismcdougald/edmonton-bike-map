@@ -40,7 +40,7 @@ func HandleLogin(writer http.ResponseWriter, request *http.Request, db *sql.DB) 
 		return
 	}
 
-	token, err := utils.GenerateJWT(user.Username)
+	token, err := utils.GenerateJWT(user.Username, user.ID)
 	if err != nil {
 		http.Error(writer, "Could not generate token", http.StatusInternalServerError)
 		return

@@ -4,7 +4,7 @@ import "database/sql"
 
 // User represents a user in the system with a hashed password.
 type User struct {
-	ID       int
+	ID       int64
 	Username string
 	Password string // hashed password
 }

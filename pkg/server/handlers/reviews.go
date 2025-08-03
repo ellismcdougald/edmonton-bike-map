@@ -67,7 +67,8 @@ func HandlePostReview(writer http.ResponseWriter, request *http.Request, db *sql
 		return
 	}
 
-	if review.Rating < 1 || review.Rating > 10 || review.Comment == "" {
+	if review.Rating < 1 || review.Rating > 10 {
+		log.Printf("Invalid review: Rating must be between 1 and 10 inclusive")
 		http.Error(writer, "Invalid review: Rating must be between 1 and 10 inclusive", http.StatusBadRequest)
 		return
 	}

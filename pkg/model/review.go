@@ -8,6 +8,7 @@ import (
 // Review represents a review for a way with rating, comment, and creation timestamp.
 type Review struct {
 	WayID     int64     `json:"wayId"`
+	UserID		int64			`json:"userId"`
 	Rating    int       `json:"rating"`
 	Comment   string    `json:"comment"`
 	CreatedAt time.Time `json:"createdAt"`
@@ -18,16 +19,18 @@ func (review *Review) Create(db *sql.DB) error {
 	query := `
 	INSERT INTO reviews (
 		way_id,
+		user_id,
 		rating,
 		comment
 	)
 	VALUES (
 		$1,
 		$2,
-		$3
+		$3,
+		$4
 	)
 	`
-	_, err := db.Exec(query, review.WayID, review.Rating, review.Comment)
+	_, err := db.Exec(query, review.WayID, review.UserID, review.Rating, review.Comment)
 	return err
 }
 
