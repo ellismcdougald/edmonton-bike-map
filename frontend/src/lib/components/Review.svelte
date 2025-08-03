@@ -23,7 +23,7 @@ Issues:
 		<span>—</span>
 		<span>{`Rating: ${review.rating} / 10`}</span>
 	</div>
-	<p>{review.reviewText}</p>
+	<p>{review.comment}</p>
 </div>
 
 <style></style>

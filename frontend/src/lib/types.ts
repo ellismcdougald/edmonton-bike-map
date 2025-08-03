@@ -6,6 +6,6 @@ export interface WayFeature {
 export interface Review {
 	wayID: number;
 	rating: number;
-	reviewText: string;
+	comment: string;
 	createdAt: string;
 }

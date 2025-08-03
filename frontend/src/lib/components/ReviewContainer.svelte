@@ -64,6 +64,7 @@
 		<AddReviewPopup
 			closePopup={() => {
 				addReviewActive = false;
+        loadReviews(wayId);
 			}}
 			{wayId}
 		/>
