@@ -60,4 +60,8 @@
 			<p class="mt-4 text-center text-red-600">{errorMsg}</p>
 		{/if}
 	</form>
+	<p class="mt-4 text-sm text-center">
+		Already have an account?
+		<a href="/login" class="text-blue-600 hover:underline">Log in</a>
+	</p>
 </div>
