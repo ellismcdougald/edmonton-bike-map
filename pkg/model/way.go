@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 
 	"github.com/lib/pq"
 )
@@ -34,7 +35,9 @@ func (w *DBWay) Insert(db *sql.DB) error {
 		w.ID, tagsJSON,
 	)
 	if err != nil {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil {
+			log.Printf("Could not rollback transaction: %v", err)
+		}
 		return err
 	}
 
@@ -44,7 +47,9 @@ func (w *DBWay) Insert(db *sql.DB) error {
 			w.ID, nodeID, seq,
 		)
 		if err != nil {
-			tx.Rollback()
+			if err := tx.Rollback(); err != nil {
+				log.Printf("Could not rollback transaction: %v", err)
+			}
 			return err
 		}
 	}
@@ -74,7 +79,11 @@ func GetAllWays(db *sql.DB) ([]DBWay, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("Error closing rows: %v", err)
+		}
+	}()
 
 	var ways []DBWay
 	for rows.Next() {

@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"log"
 	"time"
 )
 
@@ -54,7 +55,11 @@ func GetReviews(db *sql.DB, wayID int64) ([]Review, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("Error closing rows: %v", err)
+		}
+	}()
 
 	var reviews []Review
 	for rows.Next() {

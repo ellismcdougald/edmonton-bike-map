@@ -30,7 +30,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not connect to db: %v", err)
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("Error closing db: %v", err)
+		}
+	}()
 
 	resp, err := data.ParseOSMJSON("osm_bike_data.json")
 	if err != nil {

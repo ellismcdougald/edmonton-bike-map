@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql"
 	"errors"
+	"log"
 )
 
 // DBNode represents a node with an ID and geographic coordinates stored in the database.
@@ -49,7 +50,11 @@ func GetAllNodes(db *sql.DB) (map[int64]DBNode, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("Error closing rows: %v", err)
+		}
+	}()
 
 	nodes := make(map[int64]DBNode)
 	for rows.Next() {
