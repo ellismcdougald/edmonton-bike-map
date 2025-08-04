@@ -19,7 +19,7 @@
 -->
 
 <script lang="ts">
-	import { getUserIdFromToken } from "$lib/utils/auth";
+	import { getUserIdFromToken } from '$lib/utils/auth';
 
 	let { closePopup, wayId } = $props();
 
@@ -36,12 +36,12 @@
 			return;
 		}
 
-    var userId: number | null = getUserIdFromToken();
-    if (!userId) {
-      errorMsg = "User is not logged in!";
-      isSubmitting = false;
-      return;
-    }
+		var userId: number | null = getUserIdFromToken();
+		if (!userId) {
+			errorMsg = 'User is not logged in!';
+			isSubmitting = false;
+			return;
+		}
 
 		isSubmitting = true;
 		try {
