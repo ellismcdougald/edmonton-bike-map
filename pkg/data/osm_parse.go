@@ -14,9 +14,9 @@ type FeatureCollection struct {
 
 // Feature represents a GeoJSON feature with associated properties and geometry.
 type Feature struct {
-	Type       string                 `json:"type"`
-	Properties map[string]interface{} `json:"properties"`
-	Geometry   Geometry               `json:"geometry"`
+	Type       string            `json:"type"`
+	Properties map[string]string `json:"properties"`
+	Geometry   Geometry          `json:"geometry"`
 }
 
 // Geometry represents the GeoJSON geometry of a feature.
@@ -27,7 +27,7 @@ type Geometry struct {
 
 // GetAllGeoJsonData transforms the data into GeoJSON format
 func GetAllGeoJsonData(filename string) ([]byte, error) {
-	resp, err := parseOSMJSON(filename)
+	resp, err := ParseOSMJSON(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func GetAllGeoJsonData(filename string) ([]byte, error) {
 
 			wayFeature := Feature{
 				Type: "Feature",
-				Properties: map[string]any{
+				Properties: map[string]string{
 					"name": el.Tags["name"],
 				},
 				Geometry: Geometry{
@@ -101,7 +101,7 @@ type OSMElement struct {
 }
 
 // parseOSMJSON parses OSM data from a file into the OSMResponse struct
-func parseOSMJSON(filename string) (*OSMResponse, error) {
+func ParseOSMJSON(filename string) (*OSMResponse, error) {
 	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err

@@ -1,4 +1,4 @@
-package server
+package handlers
 
 import (
 	"encoding/json"
@@ -11,11 +11,13 @@ import (
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/routing"
 )
 
-// handleRouteByCoordinates handles HTTP requests to compute a bike route between start and end coordinates.
+// HandleRouteByCoordinates handles HTTP requests to compute a bike route between start and end coordinates.
 // Query parameters: startLatitude, startLongitude, endLatitude, endLongitude (float64).
 // Responds with a GeoJSON LineString representing the line path.
 // Returns HTTP 400 if parameters are missing or invalid.
-func handleRouteByCoordinates(writer http.ResponseWriter, request *http.Request, network *model.Graph) {
+func HandleRouteByCoordinates(writer http.ResponseWriter, request *http.Request, network *model.Graph) {
+	writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+
 	query := request.URL.Query()
 
 	getFloatParam := func(query url.Values, paramName string) (result float64, err error) {

@@ -32,3 +32,4 @@ testing.go
 notes.txt
 web/test-results/
 web/node_modules/
+.env

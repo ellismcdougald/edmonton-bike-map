@@ -20,7 +20,7 @@ const (
 
 // BuildGraph reads OSM json data from a file and parses it into a graph structure
 func BuildGraph(filename string) (*model.Graph, error) {
-	resp, err := parseOSMJSON(filename)
+	resp, err := ParseOSMJSON(filename)
 	if err != nil {
 		return nil, err
 	}

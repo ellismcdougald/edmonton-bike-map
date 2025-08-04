@@ -2,16 +2,65 @@
 package server
 
 import (
+	"database/sql"
+	"log"
 	"net/http"
 
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
+	"github.com/ellismcdougald/edmonton-bike-map/pkg/server/handlers"
 )
 
-// RegisterRoutes registers HTTP routes on the given ServeMux.
-// Endpoints:
-// - /api/route: handles routing requests given latitude-longitude coordinates
-func RegisterRoutes(mux *http.ServeMux, network *model.Graph) {
-	mux.HandleFunc("/api/route", func(writer http.ResponseWriter, request *http.Request) {
-		handleRouteByCoordinates(writer, request, network)
-	})
+// RegisterRoutes registers HTTP handlers for all API endpoints on the given ServeMux.
+// It applies CORS middleware with appropriate allowed methods to each route.
+// Parameters:
+//   - mux: the HTTP request multiplexer where routes are registered.
+//   - network: the in-memory graph used by routing handlers.
+//   - db: the database connection pool used by handlers requiring database access.
+//
+// Routes registered:
+//   - GET /api/route       : compute bike routes between coordinates
+//   - GET /api/all-ways    : fetch all ways from the database
+//   - GET, POST /api/reviews : get or post reviews for ways
+//   - POST /api/signup     : user signup
+//   - POST /api/login      : user login
+func RegisterRoutes(mux *http.ServeMux, network *model.Graph, db *sql.DB) {
+	mux.Handle("/api/route", corsMiddleware("GET", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handlers.HandleRouteByCoordinates(w, r, network)
+	})))
+
+	mux.Handle("/api/all-ways", corsMiddleware("GET", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handlers.HandleAllWays(w, r, db)
+	})))
+
+	mux.Handle("/api/reviews", corsMiddleware("GET", "POST", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodOptions:
+			w.WriteHeader(http.StatusNoContent)
+		case http.MethodGet:
+			handlers.HandleGetReviews(w, r, db)
+		case http.MethodPost:
+			handlers.HandlePostReview(w, r, db)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})))
+
+	mux.Handle("/api/signup", corsMiddleware("POST", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodOptions:
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			log.Print("Signup endpoint hit")
+			handlers.HandleSignUp(w, r, db)
+		}
+	})))
+
+	mux.Handle("/api/login", corsMiddleware("POST", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodOptions:
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			handlers.HandleLogin(w, r, db)
+		}
+	})))
 }
