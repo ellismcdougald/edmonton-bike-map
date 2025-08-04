@@ -17,7 +17,7 @@ func SetJWTKey(key []byte) {
 // Claims represents the JWT claims payload
 type Claims struct {
 	Username string `json:"username"`
-	UserID	 int64	`json:"userId"`
+	UserID   int64  `json:"userId"`
 	jwt.RegisteredClaims
 }
 
@@ -28,7 +28,7 @@ func GenerateJWT(username string, userID int64) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		Username: username,
-		UserID: userID,
+		UserID:   userID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

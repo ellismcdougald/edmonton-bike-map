@@ -40,8 +40,8 @@ func main() {
 	for _, el := range resp.Elements {
 		if el.Type == "node" {
 			n := model.DBNode{
-				ID: el.ID, 
-				Latitude: el.Lat, 
+				ID:        el.ID,
+				Latitude:  el.Lat,
 				Longitude: el.Lon,
 			}
 			err = n.Insert(db)
@@ -54,8 +54,8 @@ func main() {
 	for _, el := range resp.Elements {
 		if el.Type == "way" {
 			w := model.DBWay{
-				ID: el.ID,
-				Tags: el.Tags,
+				ID:      el.ID,
+				Tags:    el.Tags,
 				NodeIDs: el.Nodes,
 			}
 			err = w.Insert(db)
