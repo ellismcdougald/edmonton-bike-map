@@ -1,7 +1,19 @@
 <script>
 	import '../app.css';
 	import Display from '$lib/components/Display.svelte';
+  import MenuBar from '$lib/components/MenuBar.svelte';
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+
+  onMount(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      goto('/login');
+    } else {
+
+    }
+  })
 </script>
 
-<h1 class="text-3xl font-bold p-2 flex items-center justify-center">Edmonton Bike Map</h1>
+<MenuBar />
 <Display />
