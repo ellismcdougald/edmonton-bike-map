@@ -16,7 +16,7 @@ import (
 // The username and password is validated against existing usernames and (hashed) passwords
 // Responds with a generated JWT token if login is successful
 // Returns HTTP 401 if username or password is rejected
-func HandleLogin(writer http.ResponseWriter, request *http.Request, db *sql.DB) {
+var HandleLogin = func(writer http.ResponseWriter, request *http.Request, db *sql.DB) {
 	if request.Method != http.MethodPost {
 		http.Error(writer, "Only POST allowed", http.StatusMethodNotAllowed)
 		return
@@ -60,7 +60,7 @@ func HandleLogin(writer http.ResponseWriter, request *http.Request, db *sql.DB) 
 // Request body includes proposed username and password
 // If username does not already exist, then the new user is created
 // Returns HTTP 201 on success.
-func HandleSignUp(writer http.ResponseWriter, request *http.Request, db *sql.DB) {
+var HandleSignUp = func(writer http.ResponseWriter, request *http.Request, db *sql.DB) {
 	if request.Method != http.MethodPost {
 		http.Error(writer, "Only POST allowed", http.StatusMethodNotAllowed)
 		return

@@ -13,7 +13,7 @@ import (
 // HandleGetReviews handles HTTP requests to get all reviews associated with a certain way
 // Query paramemters: wayID (int64)
 // Responds with a list of Review objects
-func HandleGetReviews(writer http.ResponseWriter, request *http.Request, db *sql.DB) {
+var HandleGetReviews = func(writer http.ResponseWriter, request *http.Request, db *sql.DB) {
 	writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	writer.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
@@ -45,7 +45,7 @@ func HandleGetReviews(writer http.ResponseWriter, request *http.Request, db *sql
 // Request body contains review details
 // The review is added to the database
 // Returns HTTP 400 if review details are invalid
-func HandlePostReview(writer http.ResponseWriter, request *http.Request, db *sql.DB) {
+var HandlePostReview = func(writer http.ResponseWriter, request *http.Request, db *sql.DB) {
 	writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 	writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")

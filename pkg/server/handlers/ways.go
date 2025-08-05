@@ -11,7 +11,7 @@ import (
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
 )
 
-func HandleAllWays(writer http.ResponseWriter, _ *http.Request, db *sql.DB) {
+var HandleAllWays = func(writer http.ResponseWriter, _ *http.Request, db *sql.DB) {
 	writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 
 	allNodes, err := model.GetAllNodes(db) // map nodeId -> node
