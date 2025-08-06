@@ -11,17 +11,23 @@ import (
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/server/handlers"
 )
 
-type StubHandlers struct {}
+type StubHandlers struct{}
 
-func (h* StubHandlers) HandleLogin() http.HandlerFunc {
+func (h *StubHandlers) HandleLogin() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("HandleLogin"))
 	}
 }
 
-func (h* StubHandlers) HandleSignup() http.HandlerFunc {
+func (h *StubHandlers) HandleSignup() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("HandleSignup"))
+	}
+}
+
+func (h *StubHandlers) HandleRouteByCoordinates() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("HandleRouteByCoordinates"))
 	}
 }
 
@@ -29,12 +35,9 @@ func (h* StubHandlers) HandleSignup() http.HandlerFunc {
 func TestRegisterRoutes(t *testing.T) {
 	mux := http.NewServeMux()
 	stubHandlers := &StubHandlers{}
+	stubHandlers.HandleRouteByCoordinates()
 	server.RegisterRoutes(mux, &model.Graph{}, &sql.DB{}, stubHandlers)
 
-	// Replace handlers with dummies
-	handlers.HandleRouteByCoordinates = func(w http.ResponseWriter, r *http.Request, network *model.Graph) {
-		w.Write([]byte("HandleRouteByCoordinates"))
-	}
 	handlers.HandleAllWays = func(w http.ResponseWriter, r *http.Request, _ *sql.DB) {
 		w.Write([]byte("HandleAllWays"))
 	}
@@ -46,12 +49,12 @@ func TestRegisterRoutes(t *testing.T) {
 	}
 
 	tests := []struct {
-		method           string
-		path             string
-		wantStatus       int
-		wantBody         string
-		allowedOrigin    string
-		allowedMethods   string
+		method         string
+		path           string
+		wantStatus     int
+		wantBody       string
+		allowedOrigin  string
+		allowedMethods string
 	}{
 		// GET requests
 		{"GET", "/api/all-ways", http.StatusOK, "HandleAllWays", "http://localhost:5173", "GET, OPTIONS"},

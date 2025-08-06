@@ -24,7 +24,8 @@ import (
 //   - POST /api/login      : user login
 func RegisterRoutes(mux *http.ServeMux, network *model.Graph, db *sql.DB, handlerFuncs handlers.APIHandlers) {
 	mux.Handle("/api/route", corsMiddleware("GET", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		handlers.HandleRouteByCoordinates(w, r, network)
+		handler := handlerFuncs.HandleRouteByCoordinates()
+		handler(w, r)
 	})))
 
 	mux.Handle("/api/all-ways", corsMiddleware("GET", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
