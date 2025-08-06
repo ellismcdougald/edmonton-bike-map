@@ -16,9 +16,9 @@ import (
 
 // Define MockUserStore:
 type MockUserStore struct {
-	GetUserFunc func(username string) (*model.User, error)
+	GetUserFunc        func(username string) (*model.User, error)
 	UsernameExistsFunc func(username string) (bool, error)
-	CreateUserFunc func(user *model.User) error
+	CreateUserFunc     func(user *model.User) error
 }
 
 func (m *MockUserStore) GetUser(username string) (*model.User, error) {
@@ -86,9 +86,9 @@ func TestHandleLogin(t *testing.T) {
 			wantToken:      false,
 		},
 		{
-			name:   "Invalid JSON",
-			method: http.MethodPost,
-			requestBody: nil,
+			name:           "Invalid JSON",
+			method:         http.MethodPost,
+			requestBody:    nil,
 			mockGetUser:    nil,
 			wantStatusCode: http.StatusBadRequest,
 			wantToken:      false,
@@ -180,12 +180,12 @@ func TestHandleSignUp(t *testing.T) {
 	utils.SetJWTKey([]byte("mysecretkey"))
 
 	tests := []struct {
-		name             string
-		method           string
-		requestBody      map[string]string
-		mockExists       func(username string) (bool, error)
-		mockCreateUser   func(user *model.User) error
-		wantStatusCode   int
+		name           string
+		method         string
+		requestBody    map[string]string
+		mockExists     func(username string) (bool, error)
+		mockCreateUser func(user *model.User) error
+		wantStatusCode int
 	}{
 		{
 			name:   "Successful signup",

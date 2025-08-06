@@ -10,7 +10,7 @@ import (
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/utils"
 )
 
-func (h* RealHandlers) HandleLogin() http.HandlerFunc {
+func (h *RealHandlers) HandleLogin() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != http.MethodPost {
 			http.Error(writer, "Only POST allowed", http.StatusMethodNotAllowed)
@@ -52,12 +52,12 @@ func (h* RealHandlers) HandleLogin() http.HandlerFunc {
 	}
 }
 
-func (h* RealHandlers) HandleSignup() http.HandlerFunc {
+func (h *RealHandlers) HandleSignup() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != http.MethodPost {
 			http.Error(writer, "Only POST allowed", http.StatusMethodNotAllowed)
 			return
-		}	
+		}
 
 		var creds model.Credentials
 		err := json.NewDecoder(request.Body).Decode(&creds)
