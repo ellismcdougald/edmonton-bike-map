@@ -11,10 +11,25 @@ import (
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/server/handlers"
 )
 
+type StubHandlers struct {}
+
+func (h* StubHandlers) HandleLogin() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("HandleLogin"))
+	}
+}
+
+func (h* StubHandlers) HandleSignup() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("HandleSignup"))
+	}
+}
+
 // TestRegisterRoutes checks that expected routes are registered and respond.
 func TestRegisterRoutes(t *testing.T) {
 	mux := http.NewServeMux()
-	server.RegisterRoutes(mux, &model.Graph{}, &sql.DB{}) // pass empty graph and db -- the real handlers will not be called
+	stubHandlers := &StubHandlers{}
+	server.RegisterRoutes(mux, &model.Graph{}, &sql.DB{}, stubHandlers)
 
 	// Replace handlers with dummies
 	handlers.HandleRouteByCoordinates = func(w http.ResponseWriter, r *http.Request, network *model.Graph) {
@@ -28,12 +43,6 @@ func TestRegisterRoutes(t *testing.T) {
 	}
 	handlers.HandlePostReview = func(w http.ResponseWriter, r *http.Request, _ *sql.DB) {
 		w.Write([]byte("HandlePostReview"))
-	}
-	handlers.HandleSignUp = func(w http.ResponseWriter, r *http.Request, _ *sql.DB) {
-		w.Write([]byte("HandleSignUp"))
-	}
-	handlers.HandleLogin = func(w http.ResponseWriter, r *http.Request, _ *sql.DB) {
-		w.Write([]byte("HandleLogin"))
 	}
 
 	tests := []struct {
@@ -51,7 +60,7 @@ func TestRegisterRoutes(t *testing.T) {
 
 		// POST requests
 		{"POST", "/api/reviews", http.StatusOK, "HandlePostReview", "http://localhost:5173", "GET, POST, OPTIONS"},
-		{"POST", "/api/signup", http.StatusOK, "HandleSignUp", "http://localhost:5173", "POST, OPTIONS"},
+		{"POST", "/api/signup", http.StatusOK, "HandleSignup", "http://localhost:5173", "POST, OPTIONS"},
 		{"POST", "/api/login", http.StatusOK, "HandleLogin", "http://localhost:5173", "POST, OPTIONS"},
 
 		// OPTIONS requests

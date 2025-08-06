@@ -9,7 +9,9 @@ import (
 	"path/filepath"
 
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/data"
+	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/server"
+	"github.com/ellismcdougald/edmonton-bike-map/pkg/server/handlers"
 	"github.com/joho/godotenv"
 )
 
@@ -63,7 +65,13 @@ func main() {
 	//allData, _ := data.GetAllGeoJsonData(fileName)
 
 	mux := http.NewServeMux()
-	server.RegisterRoutes(mux, network, db)
+	userStore := &model.DBUserStore{DB: db}
+	handlerFuncs := handlers.RealHandlers{
+		UserService: userStore,
+		DB: db,
+		Network: network,
+	}
+	server.RegisterRoutes(mux, network, db, &handlerFuncs)
 
 	fileServer := http.FileServer(http.Dir("./web"))
 	fileHandler := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
