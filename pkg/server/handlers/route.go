@@ -8,6 +8,10 @@ import (
 	"strconv"
 )
 
+// HandleRouteByCoordinates handles HTTP requests to compute a bike route between start and end coordinates.
+// Query parameters: startLatitude, startLongitude, endLatitude, endLongitude (float64).
+// Responds with a GeoJSON LineString representing the line path.
+// Returns HTTP 400 if parameters are missing or invalid.
 func (h *RealHandlers) HandleRouteByCoordinates() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		query := request.URL.Query()

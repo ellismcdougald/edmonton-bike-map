@@ -31,6 +31,12 @@ func (h *StubHandlers) HandleRouteByCoordinates() http.HandlerFunc {
 	}
 }
 
+func (h *StubHandlers) HandleAllWays() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("HandleAllWays"))
+	}
+}
+
 // TestRegisterRoutes checks that expected routes are registered and respond.
 func TestRegisterRoutes(t *testing.T) {
 	mux := http.NewServeMux()
@@ -38,9 +44,6 @@ func TestRegisterRoutes(t *testing.T) {
 	stubHandlers.HandleRouteByCoordinates()
 	server.RegisterRoutes(mux, &model.Graph{}, &sql.DB{}, stubHandlers)
 
-	handlers.HandleAllWays = func(w http.ResponseWriter, r *http.Request, _ *sql.DB) {
-		w.Write([]byte("HandleAllWays"))
-	}
 	handlers.HandleGetReviews = func(w http.ResponseWriter, r *http.Request, _ *sql.DB) {
 		w.Write([]byte("HandleGetReviews"))
 	}
