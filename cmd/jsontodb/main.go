@@ -41,6 +41,7 @@ func main() {
 		log.Fatalf("Could not parse osm data: %v", err)
 	}
 
+	nodeStore := model.DBNodeStore{DB: db}
 	for _, el := range resp.Elements {
 		if el.Type == "node" {
 			n := model.DBNode{
@@ -48,13 +49,14 @@ func main() {
 				Latitude:  el.Lat,
 				Longitude: el.Lon,
 			}
-			err = n.Insert(db)
+			err = nodeStore.Insert(n)
 			if err != nil {
 				log.Printf("Warning: inserting node %d failed with error: %v", el.ID, err)
 			}
 		}
 	}
 
+	wayStore := model.DBWayStore{DB: db}
 	for _, el := range resp.Elements {
 		if el.Type == "way" {
 			w := model.DBWay{
@@ -62,7 +64,7 @@ func main() {
 				Tags:    el.Tags,
 				NodeIDs: el.Nodes,
 			}
-			err = w.Insert(db)
+			err = wayStore.Insert(w)
 			if err != nil {
 				log.Printf("Warning: inserting way %d failed with error: %v", el.ID, err)
 			}

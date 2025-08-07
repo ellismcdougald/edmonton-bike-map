@@ -68,8 +68,8 @@ func main() {
 	userStore := &model.DBUserStore{DB: db}
 	handlerFuncs := handlers.RealHandlers{
 		UserService: userStore,
-		DB: db,
-		Network: network,
+		DB:          db,
+		Network:     network,
 	}
 	server.RegisterRoutes(mux, network, db, &handlerFuncs)
 

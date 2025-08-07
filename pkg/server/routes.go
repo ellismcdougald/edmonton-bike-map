@@ -38,9 +38,11 @@ func RegisterRoutes(mux *http.ServeMux, network *model.Graph, db *sql.DB, handle
 		case http.MethodOptions:
 			w.WriteHeader(http.StatusNoContent)
 		case http.MethodGet:
-			handlers.HandleGetReviews(w, r, db)
+			handler := handlerFuncs.HandleGetReviews()
+			handler(w, r)
 		case http.MethodPost:
-			handlers.HandlePostReview(w, r, db)
+			handler := handlerFuncs.HandlePostReview()
+			handler(w, r)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}

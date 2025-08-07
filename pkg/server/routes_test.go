@@ -8,7 +8,6 @@ import (
 
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/server"
-	"github.com/ellismcdougald/edmonton-bike-map/pkg/server/handlers"
 )
 
 type StubHandlers struct{}
@@ -37,19 +36,24 @@ func (h *StubHandlers) HandleAllWays() http.HandlerFunc {
 	}
 }
 
+func (h *StubHandlers) HandleGetReviews() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("HandleGetReviews"))
+	}
+}
+
+func (h *StubHandlers) HandlePostReview() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("HandlePostReview"))
+	}
+}
+
 // TestRegisterRoutes checks that expected routes are registered and respond.
 func TestRegisterRoutes(t *testing.T) {
 	mux := http.NewServeMux()
 	stubHandlers := &StubHandlers{}
 	stubHandlers.HandleRouteByCoordinates()
 	server.RegisterRoutes(mux, &model.Graph{}, &sql.DB{}, stubHandlers)
-
-	handlers.HandleGetReviews = func(w http.ResponseWriter, r *http.Request, _ *sql.DB) {
-		w.Write([]byte("HandleGetReviews"))
-	}
-	handlers.HandlePostReview = func(w http.ResponseWriter, r *http.Request, _ *sql.DB) {
-		w.Write([]byte("HandlePostReview"))
-	}
 
 	tests := []struct {
 		method         string
