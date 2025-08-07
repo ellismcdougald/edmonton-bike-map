@@ -24,7 +24,7 @@ func (s *DBUserStore) GetUser(username string) (*User, error) {
 	return &user, nil
 }
 
-func (s* DBUserStore) UsernameExists(username string) (bool, error) {
+func (s *DBUserStore) UsernameExists(username string) (bool, error) {
 	query := `
 		SELECT EXISTS (SELECT 1 FROM users WHERE username = $1)
 	`
@@ -40,6 +40,3 @@ func (s *DBUserStore) CreateUser(user *User) error {
 	_, err := s.DB.Exec(query, user.Username, user.Password)
 	return err
 }
-
-
-
