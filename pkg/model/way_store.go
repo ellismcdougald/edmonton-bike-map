@@ -8,6 +8,7 @@ import (
 	"github.com/lib/pq"
 )
 
+// DBWayStore provides methods to interact with the ways table in the database.
 type DBWayStore struct {
 	DB *sql.DB
 }

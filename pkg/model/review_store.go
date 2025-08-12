@@ -5,6 +5,7 @@ import (
 	"log"
 )
 
+// DBReviewStore provides methods to interact with the reviews table in the database.
 type DBReviewStore struct {
 	DB *sql.DB
 }

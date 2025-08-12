@@ -6,6 +6,7 @@ import (
 	"log"
 )
 
+// DBNodeStore provides methods to interact with the nodes table in the database.
 type DBNodeStore struct {
 	DB *sql.DB
 }
