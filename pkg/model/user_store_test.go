@@ -11,11 +11,11 @@ import (
 
 func TestDBUserStore_GetUser(t *testing.T) {
 	tests := []struct {
-		name        string
-		username    string
-		mockSetup   func(mock sqlmock.Sqlmock)
-		wantUser    *User
-		wantErr     bool
+		name      string
+		username  string
+		mockSetup func(mock sqlmock.Sqlmock)
+		wantUser  *User
+		wantErr   bool
 	}{
 		{
 			name:     "user found",

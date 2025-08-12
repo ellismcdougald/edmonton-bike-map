@@ -157,11 +157,11 @@ func TestDijkstra(t *testing.T) {
 			},
 		},
 		{
-			name:      "no path 4->1",
-			start:     4,
-			goal:      1,
-			wantFound: false,
-			wantDist:  math.Inf(1),
+			name:       "no path 4->1",
+			start:      4,
+			goal:       1,
+			wantFound:  false,
+			wantDist:   math.Inf(1),
 			validPaths: nil,
 		},
 		{
@@ -238,7 +238,7 @@ func TestFindRouteFromCoordinates(t *testing.T) {
 	}{
 		{
 			startLat: 0, startLon: 0,
-			endLat:   1, endLon:   0,
+			endLat: 1, endLon: 0,
 			wantDist: 4.0,
 			wantPaths: [][]int64{
 				{1, 4},
@@ -248,14 +248,14 @@ func TestFindRouteFromCoordinates(t *testing.T) {
 		},
 		{
 			startLat: 1, startLon: 0,
-			endLat:   0, endLon:   0,
-			wantDist: math.Inf(1),
+			endLat: 0, endLon: 0,
+			wantDist:  math.Inf(1),
 			wantPaths: nil,
 			wantFound: false,
 		},
 		{
 			startLat: 0, startLon: 1,
-			endLat:   0, endLon:   1,
+			endLat: 0, endLon: 1,
 			wantDist: 0,
 			wantPaths: [][]int64{
 				{2},
