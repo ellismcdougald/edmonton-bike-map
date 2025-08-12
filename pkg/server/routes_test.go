@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"database/sql"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,37 +15,55 @@ type StubHandlers struct{}
 
 func (h *StubHandlers) HandleLogin() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("HandleLogin"))
+		_, err := w.Write([]byte("HandleLogin"))
+		if err != nil {
+			log.Printf("error writing response in HandleLogin: %v", err)
+		}
 	}
 }
 
 func (h *StubHandlers) HandleSignup() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("HandleSignup"))
+		_, err := w.Write([]byte("HandleSignup"))
+		if err != nil {
+			log.Printf("error writing response in HandleSignup: %v", err)
+		}
 	}
 }
 
 func (h *StubHandlers) HandleRouteByCoordinates() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("HandleRouteByCoordinates"))
+		_, err := w.Write([]byte("HandleRouteByCoordinates"))
+		if err != nil {
+			log.Printf("error writing response in HandleRouteByCoordinates: %v", err)
+		}
 	}
 }
 
 func (h *StubHandlers) HandleAllWays() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("HandleAllWays"))
+		_, err := w.Write([]byte("HandleAllWays"))
+		if err != nil {
+			log.Printf("error writing response in HandleAllWays: %v", err)
+		}
 	}
 }
 
 func (h *StubHandlers) HandleGetReviews() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("HandleGetReviews"))
+		_, err := w.Write([]byte("HandleGetReviews"))
+		if err != nil {
+			log.Printf("error writing response in HandleGetReviews: %v", err)
+		}
 	}
 }
 
 func (h *StubHandlers) HandlePostReview() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("HandlePostReview"))
+		_, err := w.Write([]byte("HandlePostReview"))
+		if err != nil {
+			log.Printf("error writing response in HandlePostReview: %v", err)
+		}
 	}
 }
 

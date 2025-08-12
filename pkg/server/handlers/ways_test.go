@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -155,7 +156,12 @@ func TestHandleAllWays(t *testing.T) {
 			handler(rec, req)
 
 			resp := rec.Result()
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					// Log or handle error
+					log.Printf("failed to close response body: %v", err)
+				}
+			}()
 
 			if resp.StatusCode != tt.wantStatusCode {
 				t.Errorf("status code = %d; want %d", resp.StatusCode, tt.wantStatusCode)

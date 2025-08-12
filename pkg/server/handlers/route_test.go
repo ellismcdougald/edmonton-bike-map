@@ -3,6 +3,7 @@ package handlers_test
 import (
 	"encoding/json"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -81,7 +82,12 @@ func TestHandleRouteByCoordinates(t *testing.T) {
 			handler(w, req)
 
 			resp := w.Result()
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					// Log or handle error
+					log.Printf("failed to close response body: %v", err)
+				}
+			}()
 
 			if resp.StatusCode != tt.wantStatus {
 				t.Fatalf("got status %d, want %d", resp.StatusCode, tt.wantStatus)

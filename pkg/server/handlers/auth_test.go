@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -155,7 +156,12 @@ func TestHandleLogin(t *testing.T) {
 			handler(rec, req)
 
 			resp := rec.Result()
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					// Log or handle error
+					log.Printf("failed to close response body: %v", err)
+				}
+			}()
 
 			if resp.StatusCode != tt.wantStatusCode {
 				t.Errorf("Status code = %d; want %d", resp.StatusCode, tt.wantStatusCode)
@@ -280,7 +286,12 @@ func TestHandleSignUp(t *testing.T) {
 			handler(rec, req)
 
 			resp := rec.Result()
-			defer resp.Body.Close()
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					// Log or handle error
+					log.Printf("failed to close response body: %v", err)
+				}
+			}()
 
 			if resp.StatusCode != tt.wantStatusCode {
 				t.Errorf("Status = %d; want %d", resp.StatusCode, tt.wantStatusCode)

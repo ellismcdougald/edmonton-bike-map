@@ -13,7 +13,11 @@ import (
 func TestCreateReview(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.NoError(t, err)
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	}()
 
 	store := &model.DBReviewStore{DB: db}
 
@@ -72,7 +76,11 @@ func TestCreateReview(t *testing.T) {
 func TestGetReviews(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.NoError(t, err)
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	}()
 
 	store := &model.DBReviewStore{DB: db}
 

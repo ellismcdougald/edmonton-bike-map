@@ -30,7 +30,11 @@ func TestDBWayStore_Insert(t *testing.T) {
 		t.Run("Insert_Success", func(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				if err := db.Close(); err != nil {
+					t.Errorf("failed to close db: %v", err)
+				}
+			}()
 
 			store := &model.DBWayStore{DB: db}
 
@@ -58,7 +62,11 @@ func TestDBWayStore_Insert(t *testing.T) {
 		t.Run("Insert_WaysInsertError", func(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				if err := db.Close(); err != nil {
+					t.Errorf("failed to close db: %v", err)
+				}
+			}()
 
 			store := &model.DBWayStore{DB: db}
 
@@ -83,7 +91,11 @@ func TestDBWayStore_Insert(t *testing.T) {
 			}
 			db, mock, err := sqlmock.New()
 			assert.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				if err := db.Close(); err != nil {
+					t.Errorf("failed to close db: %v", err)
+				}
+			}()
 
 			store := &model.DBWayStore{DB: db}
 
@@ -117,7 +129,11 @@ func TestDBWayStore_Insert(t *testing.T) {
 		t.Run("Insert_BeginError", func(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				if err := db.Close(); err != nil {
+					t.Errorf("failed to close db: %v", err)
+				}
+			}()
 
 			store := &model.DBWayStore{DB: db}
 
@@ -131,7 +147,11 @@ func TestDBWayStore_Insert(t *testing.T) {
 		t.Run("Insert_CommitError", func(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				if err := db.Close(); err != nil {
+					t.Errorf("failed to close db: %v", err)
+				}
+			}()
 
 			store := &model.DBWayStore{DB: db}
 
@@ -161,7 +181,11 @@ func TestDBWayStore_Insert(t *testing.T) {
 func TestDBWayStore_GetAllWays(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.NoError(t, err)
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			t.Errorf("failed to close db: %v", err)
+		}
+	}()
 
 	store := &model.DBWayStore{DB: db}
 

@@ -47,7 +47,11 @@ func TestDBUserStore_GetUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				if err := db.Close(); err != nil {
+					t.Errorf("failed to close db: %v", err)
+				}
+			}()
 
 			tt.mockSetup(mock)
 
@@ -116,7 +120,11 @@ func TestDBUserStore_UsernameExists(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				if err := db.Close(); err != nil {
+					t.Errorf("failed to close db: %v", err)
+				}
+			}()
 
 			tt.mockSetup(mock)
 
@@ -168,7 +176,11 @@ func TestDBUserStore_CreateUser(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				if err := db.Close(); err != nil {
+					t.Errorf("failed to close db: %v", err)
+				}
+			}()
 
 			tt.mockSetup(mock)
 
