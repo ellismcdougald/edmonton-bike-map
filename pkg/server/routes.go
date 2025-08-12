@@ -3,7 +3,6 @@ package server
 
 import (
 	"database/sql"
-	"log"
 	"net/http"
 
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
@@ -23,13 +22,15 @@ import (
 //   - GET, POST /api/reviews : get or post reviews for ways
 //   - POST /api/signup     : user signup
 //   - POST /api/login      : user login
-func RegisterRoutes(mux *http.ServeMux, network *model.Graph, db *sql.DB) {
+func RegisterRoutes(mux *http.ServeMux, network *model.Graph, db *sql.DB, handlerFuncs handlers.APIHandlers) {
 	mux.Handle("/api/route", corsMiddleware("GET", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		handlers.HandleRouteByCoordinates(w, r, network)
+		handler := handlerFuncs.HandleRouteByCoordinates()
+		handler(w, r)
 	})))
 
 	mux.Handle("/api/all-ways", corsMiddleware("GET", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		handlers.HandleAllWays(w, r, db)
+		handler := handlerFuncs.HandleAllWays()
+		handler(w, r)
 	})))
 
 	mux.Handle("/api/reviews", corsMiddleware("GET", "POST", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -37,9 +38,11 @@ func RegisterRoutes(mux *http.ServeMux, network *model.Graph, db *sql.DB) {
 		case http.MethodOptions:
 			w.WriteHeader(http.StatusNoContent)
 		case http.MethodGet:
-			handlers.HandleGetReviews(w, r, db)
+			handler := handlerFuncs.HandleGetReviews()
+			handler(w, r)
 		case http.MethodPost:
-			handlers.HandlePostReview(w, r, db)
+			handler := handlerFuncs.HandlePostReview()
+			handler(w, r)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
@@ -50,8 +53,8 @@ func RegisterRoutes(mux *http.ServeMux, network *model.Graph, db *sql.DB) {
 		case http.MethodOptions:
 			w.WriteHeader(http.StatusNoContent)
 		default:
-			log.Print("Signup endpoint hit")
-			handlers.HandleSignUp(w, r, db)
+			handler := handlerFuncs.HandleSignup()
+			handler(w, r)
 		}
 	})))
 
@@ -60,7 +63,8 @@ func RegisterRoutes(mux *http.ServeMux, network *model.Graph, db *sql.DB) {
 		case http.MethodOptions:
 			w.WriteHeader(http.StatusNoContent)
 		default:
-			handlers.HandleLogin(w, r, db)
+			handler := handlerFuncs.HandleLogin()
+			handler(w, r)
 		}
 	})))
 }
