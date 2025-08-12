@@ -68,5 +68,9 @@ func (s *DBReviewStore) GetReviews(wayID int64) ([]Review, error) {
 		return nil, err
 	}
 
+	if reviews == nil {
+		reviews = []Review{}
+	}
+
 	return reviews, nil
 }
