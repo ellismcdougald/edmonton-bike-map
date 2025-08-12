@@ -26,8 +26,11 @@ func (s *DBNodeStore) GetNode(id int64) (*DBNode, error) {
 	n := &DBNode{}
 	err := s.DB.QueryRow("SELECT id, latitude, longitude FROM nodes WHERE id = $1", id).
 		Scan(&n.ID, &n.Latitude, &n.Longitude)
-	if err == sql.ErrNoRows {
-		return nil, errors.New("node not found")
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("node not found")
+		}
+		return nil, err
 	}
 	return n, err
 }
