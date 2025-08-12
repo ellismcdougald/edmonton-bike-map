@@ -8,6 +8,8 @@ import (
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/routing"
 )
 
+// APIHandlers defines the set of HTTP handler functions for the API endpoints,
+// including user authentication, routing, ways, and reviews.
 type APIHandlers interface {
 	HandleLogin() http.HandlerFunc
 	HandleSignup() http.HandlerFunc
@@ -17,6 +19,8 @@ type APIHandlers interface {
 	HandlePostReview() http.HandlerFunc
 }
 
+// RealHandlers implements the APIHandlers interface, providing concrete
+// HTTP handlers wired to the underlying services and data sources.
 type RealHandlers struct {
 	UserService   model.UserService
 	NodeService   model.NodeService
