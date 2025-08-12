@@ -43,6 +43,7 @@ func TestDBNodeStore_Insert(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
 			defer func() {
+				mock.ExpectClose()
 				if err := db.Close(); err != nil {
 					t.Errorf("failed to close db: %v", err)
 				}
@@ -116,6 +117,7 @@ func TestDBNodeStore_GetNode(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
 			defer func() {
+				mock.ExpectClose()
 				if err := db.Close(); err != nil {
 					t.Errorf("failed to close db: %v", err)
 				}
@@ -203,6 +205,7 @@ func TestDBNodeStore_GetAllNodes(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
 			defer func() {
+				mock.ExpectClose()
 				if err := db.Close(); err != nil {
 					t.Errorf("failed to close db: %v", err)
 				}

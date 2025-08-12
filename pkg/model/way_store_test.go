@@ -31,6 +31,7 @@ func TestDBWayStore_Insert(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.NoError(t, err)
 			defer func() {
+				mock.ExpectClose()
 				if err := db.Close(); err != nil {
 					t.Errorf("failed to close db: %v", err)
 				}
@@ -63,6 +64,7 @@ func TestDBWayStore_Insert(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.NoError(t, err)
 			defer func() {
+				mock.ExpectClose()
 				if err := db.Close(); err != nil {
 					t.Errorf("failed to close db: %v", err)
 				}
@@ -92,6 +94,7 @@ func TestDBWayStore_Insert(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.NoError(t, err)
 			defer func() {
+				mock.ExpectClose()
 				if err := db.Close(); err != nil {
 					t.Errorf("failed to close db: %v", err)
 				}
@@ -130,6 +133,7 @@ func TestDBWayStore_Insert(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.NoError(t, err)
 			defer func() {
+				mock.ExpectClose()
 				if err := db.Close(); err != nil {
 					t.Errorf("failed to close db: %v", err)
 				}
@@ -148,6 +152,7 @@ func TestDBWayStore_Insert(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.NoError(t, err)
 			defer func() {
+				mock.ExpectClose()
 				if err := db.Close(); err != nil {
 					t.Errorf("failed to close db: %v", err)
 				}
@@ -182,6 +187,7 @@ func TestDBWayStore_GetAllWays(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	assert.NoError(t, err)
 	defer func() {
+		mock.ExpectClose()
 		if err := db.Close(); err != nil {
 			t.Errorf("failed to close db: %v", err)
 		}
