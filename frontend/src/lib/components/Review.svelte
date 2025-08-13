@@ -5,9 +5,6 @@ Displays a review.
 
 Props:
   - review: type Review (the review to display)
-
-Issues:
-  - User functionality is not implemented yet, so the user is currently displayed as "TBD". This must be updated once users are added.
 -->
 
 <script lang="ts">
