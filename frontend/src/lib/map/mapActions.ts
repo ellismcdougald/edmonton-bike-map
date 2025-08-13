@@ -1,4 +1,5 @@
 import type { LeafletMap } from './LeafletMap';
+import type { FeatureCollection } from 'geojson';
 
 type FetchFn = typeof fetch;
 
@@ -23,9 +24,14 @@ export async function findRoute({ mapInstance, fetchFn = fetch }: FindRouteOptio
 	try {
 		const geojson = await fetchRoute(params, fetchFn);
 		applyRouteToMap(mapInstance, geojson);
-	} catch (err: any) {
-		alert('Error fetching or displaying route: ' + err.message);
-		console.error(err);
+	} catch (err: unknown) {
+		if (err instanceof Error) {
+			alert('Error fetching or displaying route: ' + err.message);
+			console.error(err);
+		} else {
+			alert('Error fetching or displaying route: ' + String(err));
+			console.error(err);
+		}
 	}
 }
 
@@ -47,7 +53,7 @@ async function fetchRoute(params: URLSearchParams, fetchFn: FetchFn) {
 	return res.json();
 }
 
-function applyRouteToMap(mapInstance: LeafletMap, geojson: any) {
+function applyRouteToMap(mapInstance: LeafletMap, geojson: FeatureCollection) {
 	mapInstance.removeRouteLayer();
 	mapInstance.loadRouteLayer(geojson);
 }

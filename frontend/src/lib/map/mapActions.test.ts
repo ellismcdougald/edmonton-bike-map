@@ -10,8 +10,8 @@ describe('findRoute', () => {
 	beforeEach(() => {
 		// Mock mapInstance
 		mapInstance = {
-			getStartLatLng: vi.fn().mockReturnValue([1, 2]),
-			getEndLatLng: vi.fn().mockReturnValue([3, 4]),
+			getStartLatLng: vi.fn().mockReturnValue([1, 2] as [number, number]),
+			getEndLatLng: vi.fn().mockReturnValue([3, 4] as [number, number]),
 			removeRouteLayer: vi.fn(),
 			loadRouteLayer: vi.fn()
 		} as unknown as LeafletMap;
@@ -43,7 +43,7 @@ describe('findRoute', () => {
 	});
 
 	it('alerts if start or end is missing', async () => {
-		(mapInstance.getStartLatLng as any) = vi.fn().mockReturnValue(null);
+		mapInstance.getStartLatLng = vi.fn().mockReturnValue(null);
 
 		await findRoute({ mapInstance });
 

@@ -9,7 +9,6 @@
 		const token = localStorage.getItem('token');
 		if (!token) {
 			goto('/login');
-		} else {
 		}
 	});
 </script>

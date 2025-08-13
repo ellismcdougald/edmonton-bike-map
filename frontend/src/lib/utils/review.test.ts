@@ -1,13 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { submitReview } from './review';
-import type { Mock } from 'vitest';
 
 describe('submitReview', () => {
-	let fetchMock: Mock;
+	let fetchMock: ReturnType<typeof vi.fn>;
 
 	beforeEach(() => {
-		fetchMock = vi.fn() as Mock;
-		// @ts-ignore
+		fetchMock = vi.fn();
 		globalThis.fetch = fetchMock;
 	});
 
@@ -16,14 +14,16 @@ describe('submitReview', () => {
 	});
 
 	it('calls fetch with correct URL and payload', async () => {
-		fetchMock.mockResolvedValueOnce({
+		const mockResponse = {
 			ok: true,
 			json: async () => ({ success: true })
-		});
+		} as Response;
+
+		fetchMock.mockResolvedValueOnce(mockResponse);
 
 		const reviewData = { wayId: 1, userId: 42, rating: 8, comment: 'Great route' };
 
-		await submitReview(reviewData, fetchMock);
+		await submitReview(reviewData, fetchMock as typeof fetch);
 
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 		expect(fetchMock).toHaveBeenCalledWith('http://localhost:8080/api/reviews', {
@@ -34,11 +34,13 @@ describe('submitReview', () => {
 	});
 
 	it('throws an error if fetch response is not ok', async () => {
-		fetchMock.mockResolvedValueOnce({ ok: false, statusText: 'Bad Request' });
+		const mockResponse = { ok: false, statusText: 'Bad Request' } as Response;
+
+		fetchMock.mockResolvedValueOnce(mockResponse);
 
 		const reviewData = { wayId: 1, userId: 42, rating: 8, comment: 'Great route' };
 
-		await expect(submitReview(reviewData, fetchMock)).rejects.toThrow(
+		await expect(submitReview(reviewData, fetchMock as typeof fetch)).rejects.toThrow(
 			'Failed to submit review: Bad Request'
 		);
 	});
