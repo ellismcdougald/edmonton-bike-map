@@ -11,18 +11,20 @@ export async function fetchReviews(wayId: number): Promise<ReviewObj[]> {
 	}
 }
 
-export interface ReviewInput {
+export interface ReviewData {
 	wayId: number;
 	userId: number;
 	rating: number;
 	comment?: string | null;
 }
 
-export async function submitReview({ wayId, userId, rating, comment }: ReviewInput) {
-	const res = await fetch('http://localhost:8080/api/reviews', {
+type FetchFn = typeof fetch;
+
+export async function submitReview(reviewData: ReviewData, fetchFn: FetchFn = fetch) {
+	const res = await fetchFn('http://localhost:8080/api/reviews', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ wayId, userId, rating, comment })
+		body: JSON.stringify(reviewData)
 	});
 
 	if (!res.ok) {
