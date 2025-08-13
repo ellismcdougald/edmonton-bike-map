@@ -20,6 +20,7 @@
 
 <script lang="ts">
 	import { getUserIdFromToken } from '$lib/utils/auth';
+	import { submitReview } from '$lib/utils/review';
 
 	let { closePopup, wayId } = $props();
 
@@ -31,37 +32,28 @@
 
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
+
 		if (rating == null) {
 			errorMsg = 'Please provide a rating!';
 			return;
 		}
 
-		var userId: number | null = getUserIdFromToken();
+		const userId = getUserIdFromToken();
 		if (!userId) {
 			errorMsg = 'User is not logged in!';
-			isSubmitting = false;
 			return;
 		}
 
 		isSubmitting = true;
+		errorMsg = '';
+
 		try {
-			const res = await fetch('http://localhost:8080/api/reviews', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ wayId, userId, rating, comment })
-			});
-			if (!res.ok) {
-				throw new Error(`Failed to submit review: ${res.statusText}`);
-			}
+			await submitReview({ wayId, userId, rating, comment });
 			rating = null;
 			comment = null;
 			closePopup();
 		} catch (err: unknown) {
-			if (err instanceof Error) {
-				errorMsg = err.message;
-			} else {
-				errorMsg = String(err);
-			}
+			errorMsg = err instanceof Error ? err.message : String(err);
 		} finally {
 			isSubmitting = false;
 		}
@@ -85,13 +77,12 @@
 			bind:value={rating}
 		/>
 
-		<label class="block mb-2 font-semibold" for="reviewText">Review</label>
+		<label class="block mb-2 font-semibold" for="comment">Review</label>
 		<textarea
 			id="comment"
 			rows="4"
 			placeholder="Write your review here..."
 			class="w-full border border-gray-300 rounded px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-			required
 			bind:value={comment}
 		></textarea>
 

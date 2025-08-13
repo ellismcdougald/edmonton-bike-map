@@ -2,7 +2,7 @@
 	import Review from './Review.svelte';
 	import AddReviewPopup from './AddReviewPopup.svelte';
 	import type { Review as ReviewObj } from '$lib/types';
-	import { fetchReviews } from '$lib/review/reviewActions';
+	import { fetchReviews } from '$lib/utils/review';
 
 	let { wayId }: { wayId: number } = $props();
 	let addReviewActive: boolean = $state(false);
