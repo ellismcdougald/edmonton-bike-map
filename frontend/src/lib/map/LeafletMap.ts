@@ -8,7 +8,7 @@ import type {
 	LatLngBoundsLiteral
 } from 'leaflet';
 
-import type { WayFeature } from './types';
+import type { WayFeature } from '../types';
 
 export class LeafletMap {
 	static readonly EDMONTON_BOUNDS: LatLngBoundsLiteral = [
