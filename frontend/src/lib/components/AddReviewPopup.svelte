@@ -33,7 +33,7 @@
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
 
-		if (rating == null) {
+		if (rating == null || rating == undefined) {
 			errorMsg = 'Please provide a rating!';
 			return;
 		}
@@ -91,9 +91,12 @@
 		{/if}
 
 		<div class="flex justify-end gap-2">
-			<button type="button" class="px-4 py-2 rounded border" onclick={closePopup}>Cancel</button>
+			<button type="button" id="cancelButton" class="px-4 py-2 rounded border" onclick={closePopup}
+				>Cancel</button
+			>
 			<button
 				type="submit"
+				id="submitButton"
 				class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
 				disabled={isSubmitting}
 			>
