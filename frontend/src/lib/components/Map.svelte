@@ -1,5 +1,5 @@
 <!--
-  MapComponent.svelte
+  Map.svelte
 
   State:
   - mapInstance: LeafletMap | null — reference to the map instance
@@ -16,7 +16,7 @@
 
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import type { LeafletMap } from '$lib/map/LeafletMap';
+	import { LeafletMap } from '$lib/map/LeafletMap';
 	import type { WayFeature } from '$lib/types';
 	import type { MapModeState } from '$lib/map/mapModes';
 	import { toggleSelectStart, toggleSelectEnd } from '$lib/map/mapModes';
@@ -56,7 +56,6 @@
 	}
 
 	onMount(async () => {
-		const { LeafletMap } = await import('$lib/map/LeafletMap');
 		mapInstance = new LeafletMap();
 		mapInstance.addTileLayer(
 			'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',

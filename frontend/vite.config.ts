@@ -1,8 +1,8 @@
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import { defineConfig as defineVitestConfig } from 'vitest/config';
 import tailwindcss from '@tailwindcss/vite';
 
-export default defineConfig({
+export default defineVitestConfig({
 	plugins: [sveltekit(), tailwindcss()],
 	test: {
 		projects: [
@@ -11,6 +11,7 @@ export default defineConfig({
 				test: {
 					name: 'client',
 					environment: 'browser',
+					globals: true,
 					browser: {
 						enabled: true,
 						provider: 'playwright',

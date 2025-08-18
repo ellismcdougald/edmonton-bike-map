@@ -10,7 +10,14 @@
 		"sourceMap": true,
 		"strict": true,
 		"moduleResolution": "bundler",
-		"types": ["svelte", "vite/client", "@sveltejs/kit"]
+		"types": [
+			"svelte",
+			"vite/client",
+			"@sveltejs/kit",
+			"vitest",
+			"vitest/globals",
+			"@testing-library/jest-dom"
+		]
 	},
 	"include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"]
 }
