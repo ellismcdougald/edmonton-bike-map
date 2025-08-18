@@ -66,8 +66,14 @@ func main() {
 
 	mux := http.NewServeMux()
 	userStore := &model.DBUserStore{DB: db}
+	nodeStore := &model.DBNodeStore{DB: db}
+	wayStore := &model.DBWayStore{DB: db}
+	reviewStore := &model.DBReviewStore{DB: db}
 	handlerFuncs := handlers.RealHandlers{
 		UserService: userStore,
+		NodeService: nodeStore,
+		WayService: wayStore,
+		ReviewService: reviewStore,
 		DB:          db,
 		Network:     network,
 	}
