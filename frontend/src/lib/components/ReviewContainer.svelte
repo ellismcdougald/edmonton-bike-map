@@ -21,6 +21,7 @@
 	<div class="flex justify-between items-center mt-1 mb-2">
 		<h1 class="text-2xl font-bold mb-2 mt-1">Reviews:</h1>
 		<button
+      id="addReviewButton"
 			class="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
 			onclick={() => {
 				addReviewActive = true;
