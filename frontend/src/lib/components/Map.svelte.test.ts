@@ -2,10 +2,6 @@ import { render, fireEvent, waitFor } from '@testing-library/svelte';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Map from './Map.svelte';
 
-vi.mock('$lib/map/mapActions', () => ({
-	findRoute: vi.fn()
-}));
-
 vi.stubGlobal(
 	'fetch',
 	vi.fn().mockResolvedValue({
@@ -13,6 +9,10 @@ vi.stubGlobal(
 		json: vi.fn().mockResolvedValue({ type: 'FeatureCollection', features: [] })
 	})
 );
+
+vi.mock('$lib/map/mapActions', () => ({
+	findRoute: vi.fn()
+}));
 
 vi.mock('$lib/map/LeafletMap', () => {
 	const instance: any = {

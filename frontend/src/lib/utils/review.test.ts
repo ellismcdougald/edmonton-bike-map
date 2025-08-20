@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { submitReview } from './review';
+import { submitReview } from '$lib/utils/review';
 
 describe('submitReview', () => {
-	let fetchMock: ReturnType<typeof vi.fn>;
+	let fetchMock: typeof globalThis.fetch;
 
 	beforeEach(() => {
 		fetchMock = vi.fn();
@@ -19,11 +19,12 @@ describe('submitReview', () => {
 			json: async () => ({ success: true })
 		} as Response;
 
-		fetchMock.mockResolvedValueOnce(mockResponse);
+		fetchMock = vi.fn().mockResolvedValueOnce(mockResponse);
+		globalThis.fetch = fetchMock;
 
 		const reviewData = { wayId: 1, userId: 42, rating: 8, comment: 'Great route' };
 
-		await submitReview(reviewData, fetchMock as typeof fetch);
+		await submitReview(reviewData); // just call normally
 
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 		expect(fetchMock).toHaveBeenCalledWith('http://localhost:8080/api/reviews', {
@@ -36,12 +37,11 @@ describe('submitReview', () => {
 	it('throws an error if fetch response is not ok', async () => {
 		const mockResponse = { ok: false, statusText: 'Bad Request' } as Response;
 
-		fetchMock.mockResolvedValueOnce(mockResponse);
+		fetchMock = vi.fn().mockResolvedValueOnce(mockResponse);
+		globalThis.fetch = fetchMock;
 
 		const reviewData = { wayId: 1, userId: 42, rating: 8, comment: 'Great route' };
 
-		await expect(submitReview(reviewData, fetchMock as typeof fetch)).rejects.toThrow(
-			'Failed to submit review: Bad Request'
-		);
+		await expect(submitReview(reviewData)).rejects.toThrow('Failed to submit review: Bad Request');
 	});
 });
