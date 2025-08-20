@@ -10,6 +10,7 @@ import (
 
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/data"
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
+	"github.com/ellismcdougald/edmonton-bike-map/pkg/routing"
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/server"
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/server/handlers"
 	"github.com/joho/godotenv"
@@ -69,6 +70,7 @@ func main() {
 	nodeStore := &model.DBNodeStore{DB: db}
 	wayStore := &model.DBWayStore{DB: db}
 	reviewStore := &model.DBReviewStore{DB: db}
+	router := &routing.RealRouter{}
 	handlerFuncs := handlers.RealHandlers{
 		UserService: userStore,
 		NodeService: nodeStore,
@@ -76,6 +78,7 @@ func main() {
 		ReviewService: reviewStore,
 		DB:          db,
 		Network:     network,
+		Router: router,
 	}
 	server.RegisterRoutes(mux, network, db, &handlerFuncs)
 
