@@ -36,6 +36,7 @@
 	<form on:submit={handleLogin} class="bg-white p-8 rounded-lg shadow-md w-full max-w-sm">
 		<input
 			type="text"
+			name="username"
 			bind:value={username}
 			placeholder="Username"
 			required
@@ -44,6 +45,7 @@
 
 		<input
 			type="password"
+			name="password"
 			bind:value={password}
 			placeholder="Password"
 			required
@@ -51,6 +53,7 @@
 		/>
 
 		<button
+			id="submitButton"
 			type="submit"
 			class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
 			disabled={isSubmitting}
