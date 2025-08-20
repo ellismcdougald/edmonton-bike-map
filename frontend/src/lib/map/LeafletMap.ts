@@ -166,3 +166,7 @@ export class LeafletMap {
 		});
 	}
 }
+
+export async function loadLeaflet() {
+	return import('./LeafletMap');
+}
