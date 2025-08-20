@@ -1,4 +1,4 @@
-import L, { Map as LeafletMapType, Marker, GeoJSON, TileLayer } from 'leaflet';
+import type { Map as LeafletMapType, Marker, GeoJSON, TileLayer } from 'leaflet';
 
 import type {
 	GeoJSONOptions,
@@ -11,6 +11,8 @@ import type {
 import type { WayFeature } from '../types';
 
 export class LeafletMap {
+	private L: typeof import('leaflet');
+
 	static readonly EDMONTON_BOUNDS: LatLngBoundsLiteral = [
 		[53.3951, -113.7167],
 		[53.7169, -113.2437]
@@ -26,7 +28,8 @@ export class LeafletMap {
 	private routeLayer: GeoJSON | null = null;
 	private infoLayer: GeoJSON | null = null;
 
-	constructor() {
+	constructor(L: typeof import('leaflet')) {
+		this.L = L;
 		this.map = L.map('map', {
 			maxBounds: LeafletMap.EDMONTON_BOUNDS,
 			maxBoundsViscosity: LeafletMap.MAX_BOUNDS_VISCOSITY,
@@ -40,7 +43,7 @@ export class LeafletMap {
 	}
 
 	addTileLayer(tileUrl: string, maxZoom: number, minZoom: number, attribution: string): TileLayer {
-		return L.tileLayer(tileUrl, {
+		return this.L.tileLayer(tileUrl, {
 			maxZoom,
 			minZoom,
 			attribution
@@ -75,7 +78,7 @@ export class LeafletMap {
 				}
 			}
 		};
-		this.infoLayer = L.geoJSON(geojson, options).addTo(this.map);
+		this.infoLayer = this.L.geoJSON(geojson, options).addTo(this.map);
 	}
 
 	showInfoLayer(): void {
@@ -92,7 +95,7 @@ export class LeafletMap {
 
 	addStartMarker(latlng: LatLngExpression, popupText = 'Start'): void {
 		if (this.startMarker) this.map.removeLayer(this.startMarker);
-		this.startMarker = L.marker(latlng, { draggable: true })
+		this.startMarker = this.L.marker(latlng, { draggable: true })
 			.addTo(this.map)
 			.bindPopup(popupText)
 			.openPopup();
@@ -100,7 +103,7 @@ export class LeafletMap {
 
 	addEndMarker(latlng: LatLngExpression, popupText = 'End'): void {
 		if (this.endMarker) this.map.removeLayer(this.endMarker);
-		this.endMarker = L.marker(latlng, { draggable: true })
+		this.endMarker = this.L.marker(latlng, { draggable: true })
 			.addTo(this.map)
 			.bindPopup(popupText)
 			.openPopup();
@@ -137,7 +140,7 @@ export class LeafletMap {
 			this.map.removeLayer(this.routeLayer);
 			this.routeLayer = null;
 		}
-		this.routeLayer = L.geoJSON(geojson, {
+		this.routeLayer = this.L.geoJSON(geojson, {
 			pane: 'routePane',
 			style: { color: 'blue', weight: 5 },
 			interactive: true,
@@ -165,8 +168,4 @@ export class LeafletMap {
 			handler([e.latlng.lat, e.latlng.lng]);
 		});
 	}
-}
-
-export async function loadLeaflet() {
-	return import('./LeafletMap');
 }

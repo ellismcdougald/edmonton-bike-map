@@ -4,7 +4,7 @@
 	import type { MapModeState } from '$lib/map/mapModes';
 	import { toggleSelectStart, toggleSelectEnd } from '$lib/map/mapModes';
 	import { wayState } from '$lib/state.svelte';
-	import { loadLeaflet } from '$lib/map/LeafletMap';
+	import { loadLeaflet } from '$lib/map/loadLeaflet';
 	import { findRoute } from '$lib/map/mapActions';
 
 	let mapInstance: InstanceType<typeof import('$lib/map/LeafletMap').LeafletMap> | null = null;
@@ -83,7 +83,8 @@
 			id="selectStartButton"
 			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow"
 			class:active={mode.selectStartActive}
-			onclick={handleSelectStartClick}>
+			onclick={handleSelectStartClick}
+		>
 			Select Start Location
 		</button>
 
@@ -92,7 +93,8 @@
 			id="selectEndButton"
 			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow"
 			class:active={mode.selectEndActive}
-			onclick={handleSelectEndClick}>
+			onclick={handleSelectEndClick}
+		>
 			Select End Location
 		</button>
 
@@ -100,14 +102,16 @@
 			type="button"
 			id="findRouteButton"
 			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow"
-			onclick={() => findRoute({ mapInstance })}>
+			onclick={() => findRoute({ mapInstance })}
+		>
 			Find Route
 		</button>
 
 		<button
 			type="button"
 			id="resetButton"
-			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow">
+			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow"
+		>
 			Reset
 		</button>
 	</div>
