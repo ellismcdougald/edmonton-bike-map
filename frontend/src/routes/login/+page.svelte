@@ -67,6 +67,6 @@
 	</form>
 	<p class="mt-4 text-sm text-center">
 		Don't have an account?
-		<a href="/signup" class="text-blue-600 hover:underline">Sign up</a>
+		<a id="signupLink" href="/signup" class="text-blue-600 hover:underline">Sign up</a>
 	</p>
 </div>

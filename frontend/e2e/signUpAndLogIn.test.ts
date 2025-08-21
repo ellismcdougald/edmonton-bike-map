@@ -1,11 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { Client } from 'pg';
 import * as dotenv from 'dotenv';
-import bcrypt from 'bcrypt';
 
 dotenv.config({ path: '../.env' });
-
-console.log(process.env.POSTGRES_TEST_USER);
 
 const dbConfig = {
 	user: process.env.POSTGRES_TEST_USER,
@@ -15,7 +12,7 @@ const dbConfig = {
 	port: parseInt(process.env.POSTGRES_TEST_PORT || '5434')
 };
 
-test.describe('route finding with a test user', () => {
+test.describe('sign up', () => {
 	const testUsername = 'test-user';
 	const testPassword = 'test-password';
 
@@ -30,13 +27,8 @@ test.describe('route finding with a test user', () => {
 	});
 
 	test.beforeEach(async () => {
-		// Clear users table and insert test user
+		// Clear users table
 		await client.query('TRUNCATE TABLE users RESTART IDENTITY CASCADE');
-		const hashedPassword = await bcrypt.hash(testPassword, bcrypt.genSaltSync());
-		await client.query('INSERT INTO users (username, password) VALUES ($1, $2)', [
-			testUsername,
-			hashedPassword
-		]);
 	});
 
 	test.afterEach(async () => {
@@ -44,10 +36,19 @@ test.describe('route finding with a test user', () => {
 		await client.query('TRUNCATE TABLE users RESTART IDENTITY CASCADE');
 	});
 
-	test('user can log in, then select a start and end point and find a route between those two points', async ({
-		page
-	}) => {
+	test('user can sign up, log in, and then look up a route', async ({ page }) => {
 		await page.goto('./');
+
+		await expect(page).toHaveURL('/login');
+
+		const signupLink = page.locator('#signupLink');
+		await signupLink.click();
+
+		await expect(page).toHaveURL('/signup');
+
+		await page.fill('input[name="username"]', testUsername);
+		await page.fill('input[name="password"]', testPassword);
+		await page.locator('#submitButton').click();
 
 		await expect(page).toHaveURL('/login');
 
@@ -55,8 +56,10 @@ test.describe('route finding with a test user', () => {
 		await page.fill('input[name="password"]', testPassword);
 		await page.locator('#submitButton').click();
 
+		await expect(page).toHaveURL('/');
+
 		const map = page.locator('#map');
-		await expect(map).toBeVisible({ timeout: 10000 });
+		await expect(map).toBeVisible();
 		const mapBox = await map.boundingBox();
 		if (!mapBox) throw new Error('Map element not found');
 
