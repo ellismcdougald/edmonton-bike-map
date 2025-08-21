@@ -17,37 +17,12 @@ import (
 )
 
 func main() {
-	/*
-		var query string = `
-		[out:json][timeout:30];
-
-		// Find Canada area by ISO3166 code (country)
-		area["ISO3166-1"="CA"][admin_level=2]->.canada;
-
-		// Find Edmonton area inside Canada (admin_level=6)
-		area["name"="Edmonton"][admin_level=6](area.canada)->.edmonton_area;
-
-		// Query ways inside Edmonton area
-		(
-			way["highway"]["area"!~"yes"]["highway"!~"motorway|motorway_link|raceway|construction|service"]["bicycle"!~"no"](area.edmonton_area);
-			way["highway"="cycleway"]["bicycle"!~"no"](area.edmonton_area);
-		);
-		out body;
-		>;
-		out skel qt;
-		`
-		data.GetOSMData(query)
-	*/
-
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}
 
-	user := os.Getenv("POSTGRES_USER")
-	password := os.Getenv("POSTGRES_PASSWORD")
-	dbname := os.Getenv("POSTGRES_DB")
-	port := os.Getenv("POSTGRES_PORT")
+	user, password, dbname, port := getDBEnv()
 
 	connectionStr := fmt.Sprintf("postgres://%s:%s@localhost:%s/%s?sslmode=disable", user, password, port, dbname)
 
@@ -95,4 +70,19 @@ func main() {
 	if err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
+}
+
+func getDBEnv() (user, password, dbname, port string) {
+    if os.Getenv("TESTING") == "true" {
+        user = os.Getenv("POSTGRES_TEST_USER")
+        password = os.Getenv("POSTGRES_TEST_PASSWORD")
+        dbname = os.Getenv("POSTGRES_TEST_DB")
+        port = os.Getenv("POSTGRES_TEST_PORT")
+    } else {
+        user = os.Getenv("POSTGRES_USER")
+        password = os.Getenv("POSTGRES_PASSWORD")
+        dbname = os.Getenv("POSTGRES_DB")
+        port = os.Getenv("POSTGRES_PORT")
+    }
+    return
 }
