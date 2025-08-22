@@ -119,10 +119,8 @@ jobs:
       - name: Install golang-migrate CLI
         run: |
           version=v4.18.3
-          os=linux
-          arch=amd64
-          curl -L https://github.com/golang-migrate/migrate/releases/download/$version/migrate.$os-$arch.tar.gz | tar xvz
-          sudo mv migrate.$os-$arch /usr/local/bin/migrate
+          curl -L https://github.com/golang-migrate/migrate/releases/download/$version/migrate.linux-amd64.tar.gz | tar xvz
+          sudo mv migrate /usr/local/bin/migrate
           sudo chmod +x /usr/local/bin/migrate
       - name: Run DB migrations
         run: |
