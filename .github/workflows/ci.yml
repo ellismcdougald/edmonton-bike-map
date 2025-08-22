@@ -125,6 +125,10 @@ jobs:
       - name: Run E2E tests
         run: npm run test:e2e -- --headed --timeout 30000
         working-directory: ./frontend
+        env:
+          POSTGRES_TEST_USER: testuser
+          POSTGRES_TEST_PASSWORD: testpass
+          POSTGRES_TEST_DB: bikemap_test
       - name: Stop backend server
         if: always()
         run: |
