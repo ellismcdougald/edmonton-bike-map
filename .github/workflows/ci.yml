@@ -124,6 +124,10 @@ jobs:
           sudo chmod +x /usr/local/bin/migrate
       - name: Run DB migrations
         run: |
+          echo "Resolving postgres..."
+          getent hosts postgres
+          echo "Testing pg_isready..."
+          pg_isready -h postgres -p 5432 -U testuser
           export DATABASE_URL="postgres://testuser:testpass@postgres:5432/bikemap_test?sslmode=disable"
           migrate -path ./migrations -database "$DATABASE_URL" up
       - name: Start backend server
