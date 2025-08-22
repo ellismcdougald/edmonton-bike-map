@@ -118,9 +118,12 @@ jobs:
           done
       - name: Install golang-migrate CLI
         run: |
-          curl -L -o migrate https://github.com/golang-migrate/migrate/releases/download/v4.21.2/migrate.linux-amd64
-          chmod +x migrate
-          sudo mv migrate /usr/local/bin/migrate
+          version=v4.18.3
+          os=linux
+          arch=amd64
+          curl -L https://github.com/golang-migrate/migrate/releases/download/$version/migrate.$os-$arch.tar.gz | tar xvz
+          sudo mv migrate.$os-$arch /usr/local/bin/migrate
+          sudo chmod +x /usr/local/bin/migrate
       - name: Run DB migrations
         run: |
           export DATABASE_URL="postgres://testuser:testpass@postgres:5432/bikemap_test?sslmode=disable"
