@@ -103,7 +103,9 @@ jobs:
         with:
           node-version: 20
       - name: Install frontend deps
-        run: npm ci
+        run: |
+          npm ci
+          npx playwright install
         working-directory: ./frontend
       - name: Wait for Postgres
         run: |
