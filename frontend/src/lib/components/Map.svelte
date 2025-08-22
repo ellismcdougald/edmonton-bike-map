@@ -1,3 +1,36 @@
+<!--
+  Map.svelte
+
+  Purpose:
+  Main interactive map component. Provides UI for selecting start/end points
+  and triggering route-finding via the backend.
+
+  Props:
+  - none (map is self-contained, but interacts with global state)
+
+  State:
+  - mode (MapModeState): tracks whether user is selecting start or end point
+  - mapInstance (LeafletMap | null): holds Leaflet map object once initialized
+
+  Behavior:
+  - Initializes Leaflet map on mount with OpenStreetMap tiles
+  - Loads all ways from backend (`/api/all-ways`) into an info layer
+  - On map click:
+    - If selectStartActive → places start marker, toggles mode, shows info layer
+    - If selectEndActive → places end marker, toggles mode, shows info layer
+  - Control buttons:
+    - "Select Start Location": toggles start selection mode
+    - "Select End Location": toggles end selection mode
+    - "Find Route": calls findRoute() with current mapInstance
+    - "Reset": (placeholder — reset behavior not yet implemented)
+
+  Notes:
+  - Depends on $lib/map/loadLeaflet (LeafletMap wrapper)
+  - Depends on $lib/map/mapModes for mode toggling
+  - Depends on $lib/map/mapActions for route finding
+  - Updates global wayState.selectedWay when a way is clicked
+-->
+
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import type { WayFeature } from '$lib/types';

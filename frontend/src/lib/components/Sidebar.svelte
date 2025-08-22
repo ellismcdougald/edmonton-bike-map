@@ -1,18 +1,26 @@
 <!--
   Sidebar.svelte
 
-  State:
-  - way: WayFeature | null (derived from wayState.selectedWay)
-  - isVisible: boolean (sidebar visibility)
+  Purpose:
+  Displays metadata and reviews for the currently selected way in a toggleable sidebar.
 
-  Behaviour:
-  - Toggles sidebar visibility on button click
-  - Displays metadata about the selected way
-  - Passes way.id to ReviewContainer
-  - Determines route type and bicycle route status using helper functions
+  State:
+  - way (WayFeature | null): derived from wayState.selectedWay
+  - isVisible (boolean): tracks whether the sidebar is visible
+
+  Behavior:
+  - Toggles sidebar visibility via the "Hide/Show" button
+  - Displays route metadata (name, type, bicycle route status, surface, rating)
+  - Passes way.id to ReviewContainer for displaying reviews
+  - Uses helper functions determineRouteType and determineBicycleRoute to process tags
+
+  Notes:
+  - Depends on $lib/state.svelte for global wayState
+  - Relies on $lib/utils/route for metadata helpers
+  - Current rating is hardcoded (placeholder for future dynamic rating)
 
   Issues:
-  - Clean up and improve the logic for determineRouteType and determineBicycleRoute
+  - Logic for determineRouteType and determineBicycleRoute could be refactored/cleaned up
 -->
 
 <script lang="ts">

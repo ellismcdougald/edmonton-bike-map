@@ -1,3 +1,27 @@
+/**
+ * mapActions.ts
+ *
+ * Purpose:
+ * Fetches a route between the start and end markers on a LeafletMap instance
+ * and displays it on the map.
+ *
+ * Types:
+ * - FindRouteOptions: object with `mapInstance` (LeafletMap | null) and optional `fetchFn`
+ * - FetchFn: type alias for a fetch-like function
+ *
+ * Behavior:
+ * - Validates that both start and end markers exist; alerts user if missing
+ * - Builds URLSearchParams for backend route API
+ * - Calls fetchRoute() to get GeoJSON from backend
+ * - Calls applyRouteToMap() to remove any existing route and render new route layer
+ * - Catches and alerts errors during fetch or display
+ *
+ * Notes:
+ * - Default fetch function is browser global `fetch`, but can be overridden (useful for testing)
+ * - Depends on LeafletMap class for marker retrieval and map updates
+ * - Alerts are used for user feedback in case of missing points or errors
+ */
+
 import type { LeafletMap } from './LeafletMap';
 import type { FeatureCollection } from 'geojson';
 

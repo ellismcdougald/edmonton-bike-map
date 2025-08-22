@@ -1,3 +1,29 @@
+<!--
+  src/routes/login/+page.svelte
+
+  Purpose:
+  Login page route for user authentication.
+
+  State:
+  - username (string): bound to username input
+  - password (string): bound to password input
+  - errorMsg (string): displays backend error messages
+  - isSubmitting (boolean): disables form and shows submission state
+
+  Behavior:
+  - On form submit:
+      - Sends POST request to /api/login with username and password
+      - If successful, stores JWT token in localStorage and navigates to home page ('/')
+      - If failed, shows error message below the submit button
+  - Submit button is disabled while login request is in progress
+  - Provides a link to the signup page if user does not have an account
+
+  Notes:
+  - Uses SvelteKit's `goto` for navigation
+  - Relies on backend endpoint /api/login
+  - Input fields use native HTML validation for required values
+-->
+
 <script lang="ts">
 	import { goto } from '$app/navigation';
 

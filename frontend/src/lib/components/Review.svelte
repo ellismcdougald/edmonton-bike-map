@@ -1,10 +1,21 @@
 <!--
-Review.svelte
+  Review.svelte
 
-Displays a review.
+  Purpose:
+  Displays a single user review with metadata (username, date, rating, and comment).
 
-Props:
-  - review: type Review (the review to display)
+  Props:
+  - review (Review): Review object containing username, createdAt, rating, and comment
+
+  State:
+  - none
+
+  Behavior:
+  - Formats createdAt to show only YYYY-MM-DD
+  - Displays rating as "x / 10"
+
+  Notes:
+  - Purely presentational; no external dependencies besides $lib/types
 -->
 
 <script lang="ts">

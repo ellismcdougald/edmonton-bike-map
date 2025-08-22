@@ -1,3 +1,31 @@
+/**
+ * utils/review.ts
+ *
+ * Purpose:
+ * Provides helper functions to fetch and submit user reviews for ways/routes.
+ *
+ * Types:
+ * - ReviewData: object with `wayId`, `userId`, `rating`, and optional `comment`
+ * - FetchFn: type alias for a fetch-like function (used for dependency injection/testing)
+ *
+ * Functions:
+ * - fetchReviews(wayId): retrieves all reviews for a given way from the backend
+ *     - Returns an array of Review objects
+ *     - Returns an empty array on fetch failure
+ * - submitReview(reviewData, fetchFn?): sends a new review to the backend
+ *     - Throws an error if submission fails
+ *     - Returns the created review as JSON
+ *
+ * Behavior:
+ * - fetchReviews uses the browser's fetch API to GET /api/reviews
+ * - submitReview uses fetch to POST /api/reviews with JSON payload
+ * - Errors are handled gracefully and logged in fetchReviews; submitReview throws errors for the caller to handle
+ *
+ * Notes:
+ * - Default fetch function is browser fetch, but can be overridden (useful for testing)
+ * - Depends on backend endpoints: /api/reviews
+ */
+
 import type { Review as ReviewObj } from '$lib/types';
 
 export async function fetchReviews(wayId: number): Promise<ReviewObj[]> {

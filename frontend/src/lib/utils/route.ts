@@ -1,3 +1,28 @@
+/**
+ * utils/route.ts
+ *
+ * Purpose:
+ * Provides helper functions to interpret route metadata from OpenStreetMap tags
+ * for display in the sidebar or map UI.
+ *
+ * Functions:
+ * - determineRouteType(tags: Record<string, string>): string
+ *     - Determines the road type based on `highway`, `cycleway`, and `foot` tags
+ *     - Examples: 'Residential Street', 'Collector Road with Bike Lane', 'Shared Use Path', etc.
+ *     - Returns 'Unknown' if no known classification matches
+ * - determineBicycleRoute(tags: Record<string, string>): 'Yes' | 'No'
+ *     - Determines if the route is part of the local bicycle network
+ *     - Checks for `bicycle: designated` or `lcn: yes` tags
+ *
+ * Behavior:
+ * - Pure functions; do not modify input
+ * - Used by Sidebar and other components to display human-readable route info
+ *
+ * Notes:
+ * - Logic in determineRouteType is specific to Edmonton and may need updates for other areas
+ * - TODO: simplify and improve classification logic for common and edge cases
+ */
+
 // determineRouteType uses the tags for a route to determine its road type (arterial, collector, local, etc) and bike infastructure (if possible)
 // TODO: simplify and improve logic, continue to ensure that all common types are classified
 export function determineRouteType(tags: Record<string, string>): string {

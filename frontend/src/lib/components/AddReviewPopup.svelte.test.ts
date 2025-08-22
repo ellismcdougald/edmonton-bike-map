@@ -3,7 +3,6 @@ import AddReviewPopup from '$lib/components/AddReviewPopup.svelte';
 import { submitReview } from '$lib/utils/review';
 import { getUserIdFromToken } from '$lib/utils/auth';
 import { vi } from 'vitest';
-import { tick } from 'svelte';
 
 vi.mock('$lib/utils/auth', () => ({
 	getUserIdFromToken: vi.fn(() => 'mock-user-id')

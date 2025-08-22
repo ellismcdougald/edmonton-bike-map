@@ -1,21 +1,29 @@
 <!--
-  AddReviewPopup component
+  AddReviewPopup.svelte
+
+  Purpose:
+  Modal popup for submitting a new review on a given way.
 
   Props:
-  - closePopup: function to close the popup/modal
-  - wayId: ID of the currently selected way to associate the review with
+  - closePopup (function): Closes the popup/modal
+  - wayId (string | number): ID of the currently selected way to associate the review with
 
   State:
-  - rating: number or null, user rating input
-  - reviewText: string or null, user review text input
-  - errorMsg: string, error message shown on validation or submission failure
-  - isSubmitting: boolean, disables form inputs and shows submission state
+  - rating (number | null): User rating input (required)
+  - comment (string | null): User review text input
+  - errorMsg (string): Error message shown on validation or submission failure
+  - isSubmitting (boolean): Tracks form submission state (disables form while submitting)
 
   Behavior:
-  - Validates rating presence before submitting
-  - Sends POST request to submit review tied to wayId
+  - Validates that rating is present before submitting
+  - Uses `getUserIdFromToken` to check authentication
+  - Sends POST request via `submitReview({ wayId, userId, rating, comment })`
   - Resets inputs and closes popup on successful submission
-  - Shows error message if submission fails
+  - Displays error message if submission fails
+
+  Notes:
+  - Depends on `$lib/utils/auth` and `$lib/utils/review`
+  - Designed as an overlay modal with fixed positioning
 -->
 
 <script lang="ts">

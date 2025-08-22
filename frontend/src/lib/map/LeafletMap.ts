@@ -1,3 +1,37 @@
+/**
+ * LeafletMap.ts
+ *
+ * Purpose:
+ * Provides a wrapper around Leaflet for Edmonton Bike Map. Encapsulates map setup,
+ * marker management, route and info layers, and click handling.
+ *
+ * State:
+ * - map (Leaflet Map instance)
+ * - startMarker (Marker | null): draggable start location marker
+ * - endMarker (Marker | null): draggable end location marker
+ * - routeLayer (GeoJSON | null): current route layer
+ * - infoLayer (GeoJSON | null): layer showing all ways/streets
+ *
+ * Constants:
+ * - EDMONTON_BOUNDS: map bounding box
+ * - MAP_START: default map center
+ * - MAX_BOUNDS_VISCOSITY, MIN_ZOOM, INITIAL_ZOOM: map settings
+ *
+ * Behavior:
+ * - Initializes Leaflet map with custom panes for route and info layers
+ * - Adds tile layers with addTileLayer()
+ * - Loads info layer (streets) with loadInfoLayer(), with optional click callback
+ * - Shows/hides info layer
+ * - Adds/removes draggable start/end markers and retrieves their coordinates
+ * - Loads/removes route layer with fit-to-bounds
+ * - Provides onMapClick() for handling user clicks on the map
+ *
+ * Notes:
+ * - Depends on 'leaflet' types and Leaflet itself (passed in constructor)
+ * - Info layer popups show street/way names; route layer popups show route segment names
+ * - Designed for Edmonton-specific map bounds and initial view
+ */
+
 import type { Map as LeafletMapType, Marker, GeoJSON, TileLayer } from 'leaflet';
 
 import type {
