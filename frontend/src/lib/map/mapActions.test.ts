@@ -8,7 +8,6 @@ describe('findRoute', () => {
 	let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
 
 	beforeEach(() => {
-		// Mock mapInstance
 		mapInstance = {
 			getStartLatLng: vi.fn().mockReturnValue([1, 2] as [number, number]),
 			getEndLatLng: vi.fn().mockReturnValue([3, 4] as [number, number]),
@@ -16,11 +15,9 @@ describe('findRoute', () => {
 			loadRouteLayer: vi.fn()
 		} as unknown as LeafletMap;
 
-		// Mock global alert
 		alertSpy = vi.fn();
 		globalThis.alert = alertSpy;
 
-		// Mock console.error
 		consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 	});
 
