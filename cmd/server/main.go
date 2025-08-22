@@ -22,11 +22,13 @@ func main() {
 		log.Fatalf("Error loading .env file")
 	}
 
-	user, password, dbname, port := getDBEnv()
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		user, password, dbname, port := getDBEnv()
+		dbURL = fmt.Sprintf("postgres://%s:%s@localhost:%s/%s?sslmode=disable", user, password, port, dbname)
+	}
 
-	connectionStr := fmt.Sprintf("postgres://%s:%s@localhost:%s/%s?sslmode=disable", user, password, port, dbname)
-
-	db, err := sql.Open("postgres", connectionStr)
+	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("Could not connect to db: %v", err)
 	}
@@ -35,6 +37,10 @@ func main() {
 			log.Printf("Error closing db: %v", err)
 		}
 	}()
+
+	if err := db.Ping(); err != nil {
+		log.Fatalf("Could not ping db: %v", err)
+	}
 
 	fileName := filepath.Join("osm_bike_data.json")
 	network, _ := data.BuildGraph(fileName)

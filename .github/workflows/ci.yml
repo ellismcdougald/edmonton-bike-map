@@ -118,7 +118,7 @@ jobs:
           done
       - name: Start backend server
         run: |
-          export DATABASE_URL="postgres://testuser:testpass@localhost:5434/bikemap_test?sslmode=disable"
+          export DATABASE_URL="postgres://testuser:testpass@postgres:5432/bikemap_test?sslmode=disable"
           go run cmd/server/main.go &
           echo $! > backend.pid
           sleep 2
