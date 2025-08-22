@@ -116,9 +116,13 @@ jobs:
             echo "Still waiting..."
             sleep 2
           done
+      - name: Install golang-migrate CLI
+        run: |
+          curl -L https://github.com/golang-migrate/migrate/releases/download/v4.21.2/migrate.linux-amd64.tar.gz | tar xvz
+          sudo mv migrate.linux-amd64 /usr/local/bin/migrate
       - name: Run DB migrations
         run: |
-          export DATABASE_URL="postgres://testuser:testpass@postgres:5432/bikemap_test?sslmode=disable"
+          export DATABASE_URL="postgres://testuser:testpass@localhost:5434/bikemap_test?sslmode=disable"
           migrate -path db/migrations -database "$DATABASE_URL" up
       - name: Start backend server
         run: |
