@@ -135,7 +135,7 @@ jobs:
           echo $! > backend.pid
           sleep 2
       - name: Run E2E tests
-        run: npm run test:e2e -- --headed --timeout 30000
+        run: npm run test:e2e -- --headless --timeout 30000
         working-directory: ./frontend
         env:
           POSTGRES_TEST_USER: testuser
