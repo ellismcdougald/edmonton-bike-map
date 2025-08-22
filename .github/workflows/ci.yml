@@ -116,6 +116,10 @@ jobs:
             echo "Still waiting..."
             sleep 2
           done
+      - name: Run DB migrations
+        run: |
+          export DATABASE_URL="postgres://testuser:testpass@postgres:5432/bikemap_test?sslmode=disable"
+          migrate -path db/migrations -database "$DATABASE_URL" up
       - name: Start backend server
         run: |
           export DATABASE_URL="postgres://testuser:testpass@postgres:5432/bikemap_test?sslmode=disable"
