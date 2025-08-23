@@ -36,6 +36,7 @@ func TestCorsMiddleware(t *testing.T) {
 	// Test GET request — should call next and set CORS headers
 	called = false
 	reqGet := httptest.NewRequest(http.MethodGet, "/", nil)
+	reqGet.Header.Set("Origin", "http://localhost:5173")
 	wGet := httptest.NewRecorder()
 	handler.ServeHTTP(wGet, reqGet)
 
