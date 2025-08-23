@@ -130,7 +130,7 @@ jobs:
           migrate -path ./migrations -database "$DATABASE_URL" up
       - name: Start backend server
         run: |
-          export DATABASE_URL="postgres://testuser:testpass@postgres:5432/bikemap_test?sslmode=disable"
+          export DATABASE_URL="postgres://testuser:testpass@localhost:5434/bikemap_test?sslmode=disable"
           go run cmd/server/main.go &
           echo $! > backend.pid
           sleep 2
@@ -141,6 +141,7 @@ jobs:
           POSTGRES_TEST_USER: testuser
           POSTGRES_TEST_PASSWORD: testpass
           POSTGRES_TEST_DB: bikemap_test
+          POSTGRES_TEST_PORT: 5434
       - name: Stop backend server
         if: always()
         run: |
