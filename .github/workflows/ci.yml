@@ -135,13 +135,16 @@ jobs:
           echo $! > backend.pid
           sleep 2
       - name: Run E2E tests
-        run: npm run test:e2e -- --timeout 30000
+        run: |
+          echo "DATABASE_URL=$DATABASE_URL"
+          psql "$DATABASE_URL" -c '\l'
+          npm run test:e2e -- --timeout 30000
         working-directory: ./frontend
         env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: bikemap_test
-          POSTGRES_PORT: 5434
+          POSTGRES_TEST_USER: testuser
+          POSTGRES_TEST_PASSWORD: testpass
+          POSTGRES_TEST_DB: bikemap_test
+          POSTGRES_TEST_PORT: 5434
       - name: Stop backend server
         if: always()
         run: |
