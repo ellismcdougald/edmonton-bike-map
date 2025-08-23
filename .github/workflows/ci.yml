@@ -131,11 +131,10 @@ jobs:
       - name: Start backend server
         run: |
           export DATABASE_URL="postgres://testuser:testpass@localhost:5434/bikemap_test?sslmode=disable"
-          echo "DATABASE_URL=$DATABASE_URL"
-          psql "$DATABASE_URL" -c '\l'
-          go run cmd/server/main.go &
+          go run cmd/server/main.go > backend.log 2>&1 &
           echo $! > backend.pid
           sleep 2
+          cat backend.log
       - name: Run E2E tests
         run: |
           npm run test:e2e -- --timeout 30000
