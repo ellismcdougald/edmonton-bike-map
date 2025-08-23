@@ -1,47 +1,39 @@
 <!--
-  ReviewContainer.svelte
-  ----------------------
-  Displays a list of reviews for the given wayId.
-  Fetches reviews from the backend whenever wayId changes.
-  Allows users to open a popup to add a new review.
+  Reviews.svelte
+
+  Purpose:
+  Container for displaying and managing reviews for a specific wayId.
 
   Props:
-    - wayId (number): The ID of the selected way to fetch reviews for.
+  - wayId (number): The ID of the way/route to fetch and display reviews for
 
   State:
-    - addReviewActive (boolean): Controls visibility of the AddReviewPopup.
-    - reviews (ReviewObj[]): List of reviews fetched from the backend.
+  - addReviewActive (boolean): Tracks whether the AddReviewPopup is open
+  - reviews (Review[]): Array of reviews for the given wayId
 
   Behavior:
-    - Automatically fetches reviews when wayId changes.
-    - Opens AddReviewPopup on button click.
-    - Passes wayId and closePopup callback to AddReviewPopup.
-    - Renders each review using the Review component.
+  - On mount and whenever wayId changes, fetches reviews from backend
+  - Displays "Add Review" button that toggles AddReviewPopup
+  - After a new review is added, reloads reviews list
+  - Renders each review using Review.svelte
 
-  Improvements:
-    - Could implement a loading screen while reviews are being fetched.$$render
-    - Could add a message when no reviews are present
+  Notes:
+  - Relies on fetchReviews from $lib/utils/review
+  - Uses review.createdAt + review.rating as key in {#each} loop
 -->
 
 <script lang="ts">
 	import Review from './Review.svelte';
 	import AddReviewPopup from './AddReviewPopup.svelte';
 	import type { Review as ReviewObj } from '$lib/types';
+	import { fetchReviews } from '$lib/utils/review';
 
 	let { wayId }: { wayId: number } = $props();
-
 	let addReviewActive: boolean = $state(false);
 	let reviews: ReviewObj[] = $state([]);
 
 	async function loadReviews(wayId: number) {
-		try {
-			const res = await fetch(`http://localhost:8080/api/reviews?wayID=${wayId}`);
-			if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-			reviews = await res.json();
-		} catch (e) {
-			console.error('Failed to fetch reviews: ', e);
-			return [];
-		}
+		reviews = await fetchReviews(wayId);
 	}
 
 	$effect(() => {
@@ -53,6 +45,7 @@
 	<div class="flex justify-between items-center mt-1 mb-2">
 		<h1 class="text-2xl font-bold mb-2 mt-1">Reviews:</h1>
 		<button
+			id="addReviewButton"
 			class="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
 			onclick={() => {
 				addReviewActive = true;
@@ -78,5 +71,3 @@
 		</div>
 	{/if}
 </div>
-
-<style></style>

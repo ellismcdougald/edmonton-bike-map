@@ -11,7 +11,7 @@ on:
       - master
 
 jobs:
-  test:
+  go-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -36,7 +36,7 @@ jobs:
         with:
           version: v2.1
 
-  format:
+  go-format:
     name: format
     runs-on: ubuntu-latest
     steps:
@@ -52,3 +52,97 @@ jobs:
             echo "Some files need formatting. Run 'gofmt -w .' to fix."
             exit 1
           fi
+
+  node:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./frontend
+      - name: Check formatting
+        run: npm run format -- --check
+        working-directory: ./frontend
+      - name: Run ESLint
+        run: npm run lint
+        working-directory: ./frontend
+      - name: Run Vitest unit tests
+        run: npm run test:unit -- --run
+        working-directory: ./frontend
+
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: bikemap_test
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U testuser"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.24"
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - name: Install frontend deps
+        run: |
+          npm ci
+          npx playwright install
+        working-directory: ./frontend
+      - name: Wait for Postgres
+        run: |
+          echo "Waiting for Postgres to be ready..."
+          for i in {1..50}; do
+            if pg_isready -h localhost -p 5434 -U testuser; then
+              echo "Postgres is ready!"
+              break
+            fi
+            echo "Still waiting..."
+            sleep 2
+          done
+      - name: Install golang-migrate CLI
+        run: |
+          version=v4.18.3
+          curl -L https://github.com/golang-migrate/migrate/releases/download/$version/migrate.linux-amd64.tar.gz | tar xvz
+          sudo mv migrate /usr/local/bin/migrate
+          sudo chmod +x /usr/local/bin/migrate
+      - name: Run DB migrations
+        run: |
+          export DATABASE_URL="postgres://testuser:testpass@localhost:5434/bikemap_test?sslmode=disable"
+          migrate -path ./migrations -database "$DATABASE_URL" up
+      - name: Start backend server
+        run: |
+          export DATABASE_URL="postgres://testuser:testpass@localhost:5434/bikemap_test?sslmode=disable"
+          go run cmd/server/main.go &
+          echo $! > backend.pid
+      - name: Run E2E tests
+        run: |
+          npm run test:e2e -- --timeout 30000
+        working-directory: ./frontend
+        env:
+          POSTGRES_TEST_USER: testuser
+          POSTGRES_TEST_PASSWORD: testpass
+          POSTGRES_TEST_DB: bikemap_test
+          POSTGRES_TEST_PORT: 5434
+      - name: Stop backend server
+        if: always()
+        run: |
+          kill $(cat backend.pid) || true

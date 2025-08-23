@@ -1,4 +1,38 @@
-import L, { Map as LeafletMapType, Marker, GeoJSON, TileLayer } from 'leaflet';
+/**
+ * LeafletMap.ts
+ *
+ * Purpose:
+ * Provides a wrapper around Leaflet for Edmonton Bike Map. Encapsulates map setup,
+ * marker management, route and info layers, and click handling.
+ *
+ * State:
+ * - map (Leaflet Map instance)
+ * - startMarker (Marker | null): draggable start location marker
+ * - endMarker (Marker | null): draggable end location marker
+ * - routeLayer (GeoJSON | null): current route layer
+ * - infoLayer (GeoJSON | null): layer showing all ways/streets
+ *
+ * Constants:
+ * - EDMONTON_BOUNDS: map bounding box
+ * - MAP_START: default map center
+ * - MAX_BOUNDS_VISCOSITY, MIN_ZOOM, INITIAL_ZOOM: map settings
+ *
+ * Behavior:
+ * - Initializes Leaflet map with custom panes for route and info layers
+ * - Adds tile layers with addTileLayer()
+ * - Loads info layer (streets) with loadInfoLayer(), with optional click callback
+ * - Shows/hides info layer
+ * - Adds/removes draggable start/end markers and retrieves their coordinates
+ * - Loads/removes route layer with fit-to-bounds
+ * - Provides onMapClick() for handling user clicks on the map
+ *
+ * Notes:
+ * - Depends on 'leaflet' types and Leaflet itself (passed in constructor)
+ * - Info layer popups show street/way names; route layer popups show route segment names
+ * - Designed for Edmonton-specific map bounds and initial view
+ */
+
+import type { Map as LeafletMapType, Marker, GeoJSON, TileLayer } from 'leaflet';
 
 import type {
 	GeoJSONOptions,
@@ -8,9 +42,11 @@ import type {
 	LatLngBoundsLiteral
 } from 'leaflet';
 
-import type { WayFeature } from './types';
+import type { WayFeature } from '../types';
 
 export class LeafletMap {
+	private L: typeof import('leaflet');
+
 	static readonly EDMONTON_BOUNDS: LatLngBoundsLiteral = [
 		[53.3951, -113.7167],
 		[53.7169, -113.2437]
@@ -26,7 +62,8 @@ export class LeafletMap {
 	private routeLayer: GeoJSON | null = null;
 	private infoLayer: GeoJSON | null = null;
 
-	constructor() {
+	constructor(L: typeof import('leaflet')) {
+		this.L = L;
 		this.map = L.map('map', {
 			maxBounds: LeafletMap.EDMONTON_BOUNDS,
 			maxBoundsViscosity: LeafletMap.MAX_BOUNDS_VISCOSITY,
@@ -40,7 +77,7 @@ export class LeafletMap {
 	}
 
 	addTileLayer(tileUrl: string, maxZoom: number, minZoom: number, attribution: string): TileLayer {
-		return L.tileLayer(tileUrl, {
+		return this.L.tileLayer(tileUrl, {
 			maxZoom,
 			minZoom,
 			attribution
@@ -75,7 +112,7 @@ export class LeafletMap {
 				}
 			}
 		};
-		this.infoLayer = L.geoJSON(geojson, options).addTo(this.map);
+		this.infoLayer = this.L.geoJSON(geojson, options).addTo(this.map);
 	}
 
 	showInfoLayer(): void {
@@ -92,7 +129,7 @@ export class LeafletMap {
 
 	addStartMarker(latlng: LatLngExpression, popupText = 'Start'): void {
 		if (this.startMarker) this.map.removeLayer(this.startMarker);
-		this.startMarker = L.marker(latlng, { draggable: true })
+		this.startMarker = this.L.marker(latlng, { draggable: true })
 			.addTo(this.map)
 			.bindPopup(popupText)
 			.openPopup();
@@ -100,7 +137,7 @@ export class LeafletMap {
 
 	addEndMarker(latlng: LatLngExpression, popupText = 'End'): void {
 		if (this.endMarker) this.map.removeLayer(this.endMarker);
-		this.endMarker = L.marker(latlng, { draggable: true })
+		this.endMarker = this.L.marker(latlng, { draggable: true })
 			.addTo(this.map)
 			.bindPopup(popupText)
 			.openPopup();
@@ -137,7 +174,7 @@ export class LeafletMap {
 			this.map.removeLayer(this.routeLayer);
 			this.routeLayer = null;
 		}
-		this.routeLayer = L.geoJSON(geojson, {
+		this.routeLayer = this.L.geoJSON(geojson, {
 			pane: 'routePane',
 			style: { color: 'blue', weight: 5 },
 			interactive: true,

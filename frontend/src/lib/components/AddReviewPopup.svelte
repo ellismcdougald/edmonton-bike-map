@@ -1,25 +1,34 @@
 <!--
-  AddReviewPopup component
+  AddReviewPopup.svelte
+
+  Purpose:
+  Modal popup for submitting a new review on a given way.
 
   Props:
-  - closePopup: function to close the popup/modal
-  - wayId: ID of the currently selected way to associate the review with
+  - closePopup (function): Closes the popup/modal
+  - wayId (string | number): ID of the currently selected way to associate the review with
 
   State:
-  - rating: number or null, user rating input
-  - reviewText: string or null, user review text input
-  - errorMsg: string, error message shown on validation or submission failure
-  - isSubmitting: boolean, disables form inputs and shows submission state
+  - rating (number | null): User rating input (required)
+  - comment (string | null): User review text input
+  - errorMsg (string): Error message shown on validation or submission failure
+  - isSubmitting (boolean): Tracks form submission state (disables form while submitting)
 
   Behavior:
-  - Validates rating presence before submitting
-  - Sends POST request to submit review tied to wayId
+  - Validates that rating is present before submitting
+  - Uses `getUserIdFromToken` to check authentication
+  - Sends POST request via `submitReview({ wayId, userId, rating, comment })`
   - Resets inputs and closes popup on successful submission
-  - Shows error message if submission fails
+  - Displays error message if submission fails
+
+  Notes:
+  - Depends on `$lib/utils/auth` and `$lib/utils/review`
+  - Designed as an overlay modal with fixed positioning
 -->
 
 <script lang="ts">
 	import { getUserIdFromToken } from '$lib/utils/auth';
+	import { submitReview } from '$lib/utils/review';
 
 	let { closePopup, wayId } = $props();
 
@@ -31,44 +40,35 @@
 
 	async function handleSubmit(event: Event) {
 		event.preventDefault();
-		if (rating == null) {
+
+		if (rating == null || rating == undefined) {
 			errorMsg = 'Please provide a rating!';
 			return;
 		}
 
-		var userId: number | null = getUserIdFromToken();
+		const userId = getUserIdFromToken();
 		if (!userId) {
 			errorMsg = 'User is not logged in!';
-			isSubmitting = false;
 			return;
 		}
 
 		isSubmitting = true;
+		errorMsg = '';
+
 		try {
-			const res = await fetch('http://localhost:8080/api/reviews', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ wayId, userId, rating, comment })
-			});
-			if (!res.ok) {
-				throw new Error(`Failed to submit review: ${res.statusText}`);
-			}
+			await submitReview({ wayId, userId, rating, comment });
 			rating = null;
 			comment = null;
 			closePopup();
 		} catch (err: unknown) {
-			if (err instanceof Error) {
-				errorMsg = err.message;
-			} else {
-				errorMsg = String(err);
-			}
+			errorMsg = err instanceof Error ? err.message : String(err);
 		} finally {
 			isSubmitting = false;
 		}
 	}
 </script>
 
-<div class="fixed inset-0 bg-black/25 flex items-center justify-center z-50">
+<div class="fixed inset-0 bg-black/25 flex items-center justify-center z-50" id="addReviewPopup">
 	<form
 		onsubmit={handleSubmit}
 		class="bg-white rounded p-6 shadow max-w-lg w-full max-h-[80vh] overflow-auto"
@@ -85,13 +85,12 @@
 			bind:value={rating}
 		/>
 
-		<label class="block mb-2 font-semibold" for="reviewText">Review</label>
+		<label class="block mb-2 font-semibold" for="comment">Review</label>
 		<textarea
 			id="comment"
 			rows="4"
 			placeholder="Write your review here..."
 			class="w-full border border-gray-300 rounded px-3 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
-			required
 			bind:value={comment}
 		></textarea>
 
@@ -100,9 +99,12 @@
 		{/if}
 
 		<div class="flex justify-end gap-2">
-			<button type="button" class="px-4 py-2 rounded border" onclick={closePopup}>Cancel</button>
+			<button type="button" id="cancelButton" class="px-4 py-2 rounded border" onclick={closePopup}
+				>Cancel</button
+			>
 			<button
 				type="submit"
+				id="submitButton"
 				class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
 				disabled={isSubmitting}
 			>

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -67,11 +68,15 @@ func (h *RealHandlers) HandleAllWays() http.HandlerFunc {
 			Features: allFeatures,
 		}
 
-		writer.Header().Set("Content-Type", "application/json")
-		err = json.NewEncoder(writer).Encode(featureCollection)
-		if err != nil {
-			log.Printf("Error encoding json")
+		buf := new(bytes.Buffer)
+		if err := json.NewEncoder(buf).Encode(featureCollection); err != nil {
+			log.Printf("Error encoding json: %v", err)
 			http.Error(writer, "Could not encode json", http.StatusInternalServerError)
+			return
 		}
+
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusOK)
+		_, _ = writer.Write(buf.Bytes())
 	}
 }

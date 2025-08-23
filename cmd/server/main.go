@@ -10,47 +10,26 @@ import (
 
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/data"
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
+	"github.com/ellismcdougald/edmonton-bike-map/pkg/routing"
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/server"
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/server/handlers"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	/*
-		var query string = `
-		[out:json][timeout:30];
-
-		// Find Canada area by ISO3166 code (country)
-		area["ISO3166-1"="CA"][admin_level=2]->.canada;
-
-		// Find Edmonton area inside Canada (admin_level=6)
-		area["name"="Edmonton"][admin_level=6](area.canada)->.edmonton_area;
-
-		// Query ways inside Edmonton area
-		(
-			way["highway"]["area"!~"yes"]["highway"!~"motorway|motorway_link|raceway|construction|service"]["bicycle"!~"no"](area.edmonton_area);
-			way["highway"="cycleway"]["bicycle"!~"no"](area.edmonton_area);
-		);
-		out body;
-		>;
-		out skel qt;
-		`
-		data.GetOSMData(query)
-	*/
-
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Error loading .env file")
+		log.Print("Error loading .env file")
 	}
 
-	user := os.Getenv("POSTGRES_USER")
-	password := os.Getenv("POSTGRES_PASSWORD")
-	dbname := os.Getenv("POSTGRES_DB")
-	port := os.Getenv("POSTGRES_PORT")
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		user, password, dbname, port := getDBEnv()
+		dbURL = fmt.Sprintf("postgres://%s:%s@localhost:%s/%s?sslmode=disable", user, password, port, dbname)
+	}
 
-	connectionStr := fmt.Sprintf("postgres://%s:%s@localhost:%s/%s?sslmode=disable", user, password, port, dbname)
-
-	db, err := sql.Open("postgres", connectionStr)
+	log.Printf("connecting to db: %s", dbURL)
+	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("Could not connect to db: %v", err)
 	}
@@ -60,16 +39,35 @@ func main() {
 		}
 	}()
 
+	if err := db.Ping(); err != nil {
+		log.Fatalf("Could not ping db: %v", err)
+	}
+
+	var current_db, current_user string
+	err = db.QueryRow("SELECT current_database(), current_user").Scan(&current_db, &current_user)
+	if err != nil {
+		log.Fatalf("DB check failed: %v", err)
+	}
+	log.Printf("Backend DB: %s, User: %s", current_db, current_user)
+
 	fileName := filepath.Join("osm_bike_data.json")
 	network, _ := data.BuildGraph(fileName)
 	//allData, _ := data.GetAllGeoJsonData(fileName)
 
 	mux := http.NewServeMux()
 	userStore := &model.DBUserStore{DB: db}
+	nodeStore := &model.DBNodeStore{DB: db}
+	wayStore := &model.DBWayStore{DB: db}
+	reviewStore := &model.DBReviewStore{DB: db}
+	router := &routing.RealRouter{}
 	handlerFuncs := handlers.RealHandlers{
-		UserService: userStore,
-		DB:          db,
-		Network:     network,
+		UserService:   userStore,
+		NodeService:   nodeStore,
+		WayService:    wayStore,
+		ReviewService: reviewStore,
+		DB:            db,
+		Network:       network,
+		Router:        router,
 	}
 	server.RegisterRoutes(mux, network, db, &handlerFuncs)
 
@@ -86,4 +84,19 @@ func main() {
 	if err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
+}
+
+func getDBEnv() (user, password, dbname, port string) {
+	if os.Getenv("TESTING") == "true" {
+		user = os.Getenv("POSTGRES_TEST_USER")
+		password = os.Getenv("POSTGRES_TEST_PASSWORD")
+		dbname = os.Getenv("POSTGRES_TEST_DB")
+		port = os.Getenv("POSTGRES_TEST_PORT")
+	} else {
+		user = os.Getenv("POSTGRES_USER")
+		password = os.Getenv("POSTGRES_PASSWORD")
+		dbname = os.Getenv("POSTGRES_DB")
+		port = os.Getenv("POSTGRES_PORT")
+	}
+	return
 }

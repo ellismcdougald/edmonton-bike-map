@@ -1,119 +1,87 @@
 <!--
-  MapComponent.svelte
+  Map.svelte
+
+  Purpose:
+  Main interactive map component. Provides UI for selecting start/end points
+  and triggering route-finding via the backend.
+
+  Props:
+  - none (map is self-contained, but interacts with global state)
 
   State:
-  - mapInstance: LeafletMap | null — reference to the map instance
-  - selectStartActive: boolean — whether "select start" mode is active
-  - selectEndActive: boolean — whether "select end" mode is active
+  - mode (MapModeState): tracks whether user is selecting start or end point
+  - mapInstance (LeafletMap | null): holds Leaflet map object once initialized
 
-  Behaviour:
-  - Initializes LeafletMap on mount, loads tile and info layers
-  - Listens for map clicks to set start/end markers depending on mode
-  - Toggles select start/end modes with buttons, ensuring only one active at a time
-  - Fetches route from backend API with start/end coordinates on "Find Route"
-  - Cleans up map instance on destroy
+  Behavior:
+  - Initializes Leaflet map on mount with OpenStreetMap tiles
+  - Loads all ways from backend (`/api/all-ways`) into an info layer
+  - On map click:
+    - If selectStartActive → places start marker, toggles mode, shows info layer
+    - If selectEndActive → places end marker, toggles mode, shows info layer
+  - Control buttons:
+    - "Select Start Location": toggles start selection mode
+    - "Select End Location": toggles end selection mode
+    - "Find Route": calls findRoute() with current mapInstance
+    - "Reset": (placeholder — reset behavior not yet implemented)
+
+  Notes:
+  - Depends on $lib/map/loadLeaflet (LeafletMap wrapper)
+  - Depends on $lib/map/mapModes for mode toggling
+  - Depends on $lib/map/mapActions for route finding
+  - Updates global wayState.selectedWay when a way is clicked
 -->
 
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import type { LeafletMap } from '$lib/Map';
 	import type { WayFeature } from '$lib/types';
+	import type { MapModeState } from '$lib/map/mapModes';
+	import { toggleSelectStart, toggleSelectEnd } from '$lib/map/mapModes';
 	import { wayState } from '$lib/state.svelte';
+	import { loadLeaflet } from '$lib/map/loadLeaflet';
+	import { findRoute } from '$lib/map/mapActions';
 
-	let mapInstance: LeafletMap | null;
-
+	let mapInstance: InstanceType<typeof import('$lib/map/LeafletMap').LeafletMap> | null = null;
 	const allWaysEndpoint = 'http://localhost:8080/api/all-ways';
-
-	let selectStartActive: boolean = false;
-	let selectEndActive: boolean = false;
+	let mode: MapModeState = { selectStartActive: false, selectEndActive: false };
 
 	function onMapClick(latlng: [number, number]): void {
 		const [lat, lng] = latlng;
-
 		if (!mapInstance) return;
 
-		if (selectStartActive) {
+		if (mode.selectStartActive) {
 			mapInstance.removeStartMarker();
 			mapInstance.addStartMarker([lat, lng]);
-			toggleSelectStartActive();
+			mode = toggleSelectStart(mode);
 			mapInstance.showInfoLayer();
-		} else if (selectEndActive) {
+		} else if (mode.selectEndActive) {
 			mapInstance.removeEndMarker();
 			mapInstance.addEndMarker([lat, lng]);
-			toggleSelectEndActive();
+			mode = toggleSelectEnd(mode);
 			mapInstance.showInfoLayer();
 		}
 	}
 
-	function toggleSelectStartActive() {
-		if (selectStartActive) {
-			selectStartActive = false;
-			mapInstance?.showInfoLayer();
-		} else {
-			selectStartActive = true;
-			selectEndActive = false;
-			mapInstance?.hideInfoLayer();
-		}
+	function handleSelectStartClick() {
+		mode = toggleSelectStart(mode);
+		mapInstance?.[mode.selectStartActive ? 'hideInfoLayer' : 'showInfoLayer']();
 	}
 
-	function toggleSelectEndActive() {
-		if (selectEndActive) {
-			selectEndActive = false;
-			mapInstance?.showInfoLayer();
-		} else {
-			selectEndActive = true;
-			selectStartActive = false;
-			mapInstance?.hideInfoLayer();
-		}
-	}
-
-	function findRoute(): void {
-		if (!mapInstance) return;
-
-		const startLatLng: [number, number] | null = mapInstance.getStartLatLng();
-		const endLatLng: [number, number] | null = mapInstance.getEndLatLng();
-
-		if (!startLatLng || !endLatLng) {
-			alert('Make sure you have selected both a start and an end point!');
-			return;
-		}
-
-		const params = new URLSearchParams({
-			startLatitude: startLatLng[0].toString(),
-			startLongitude: startLatLng[1].toString(),
-			endLatitude: endLatLng[0].toString(),
-			endLongitude: endLatLng[1].toString()
-		});
-
-		console.log(params.toString());
-
-		fetch(`http://localhost:8080/api/route?${params.toString()}`)
-			.then((res) => {
-				if (!res.ok) throw new Error('Failed to get route data');
-				return res.json();
-			})
-			.then((geojson) => {
-				if (!mapInstance) return;
-
-				mapInstance.removeRouteLayer();
-				mapInstance.loadRouteLayer(geojson);
-			})
-			.catch((err) => {
-				alert('Error fetching or displaying route: ' + err.message);
-				console.error(err);
-			});
+	function handleSelectEndClick() {
+		mode = toggleSelectEnd(mode);
+		mapInstance?.[mode.selectEndActive ? 'hideInfoLayer' : 'showInfoLayer']();
 	}
 
 	onMount(async () => {
-		const { LeafletMap } = await import('$lib/Map');
-
+		const { LeafletMap } = await loadLeaflet();
 		mapInstance = new LeafletMap();
+
 		mapInstance.addTileLayer(
 			'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
 			19,
 			10,
 			'© OpenStreetMap contributors'
 		);
+
 		mapInstance.onMapClick(onMapClick);
 
 		try {
@@ -128,24 +96,9 @@
 					wayState.selectedWay = way;
 				}
 			);
-		} catch {
-			console.error('Error loading info layer.');
+		} catch (err) {
+			console.error('Error loading info layer:', err);
 		}
-
-		let selectStartButton = document.getElementById('selectStartButton');
-		selectStartButton?.addEventListener('click', () => {
-			toggleSelectStartActive();
-			selectStartButton.classList.toggle('active', selectStartActive);
-		});
-
-		let selectEndButton = document.getElementById('selectEndButton');
-		selectEndButton?.addEventListener('click', () => {
-			toggleSelectEndActive();
-			selectEndButton.classList.toggle('active', selectEndActive);
-		});
-
-		let findRouteButton = document.getElementById('findRouteButton');
-		findRouteButton?.addEventListener('click', findRoute);
 	});
 
 	onDestroy(() => {
@@ -162,25 +115,37 @@
 			type="button"
 			id="selectStartButton"
 			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow"
-			>Select Start Location</button
+			class:active={mode.selectStartActive}
+			onclick={handleSelectStartClick}
 		>
+			Select Start Location
+		</button>
+
 		<button
 			type="button"
 			id="selectEndButton"
 			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow"
-			>Select End Location</button
+			class:active={mode.selectEndActive}
+			onclick={handleSelectEndClick}
 		>
+			Select End Location
+		</button>
+
 		<button
 			type="button"
 			id="findRouteButton"
 			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow"
-			>Find Route</button
+			onclick={() => findRoute({ mapInstance })}
 		>
+			Find Route
+		</button>
+
 		<button
 			type="button"
 			id="resetButton"
 			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow"
-			>Reset</button
 		>
+			Reset
+		</button>
 	</div>
 </div>

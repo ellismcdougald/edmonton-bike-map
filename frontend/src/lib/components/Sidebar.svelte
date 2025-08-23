@@ -1,24 +1,33 @@
 <!--
   Sidebar.svelte
 
-  State:
-  - way: WayFeature | null (derived from wayState.selectedWay)
-  - isVisible: boolean (sidebar visibility)
+  Purpose:
+  Displays metadata and reviews for the currently selected way in a toggleable sidebar.
 
-  Behaviour:
-  - Toggles sidebar visibility on button click
-  - Displays metadata about the selected way
-  - Passes way.id to ReviewContainer
-  - Determines route type and bicycle route status using helper functions
+  State:
+  - way (WayFeature | null): derived from wayState.selectedWay
+  - isVisible (boolean): tracks whether the sidebar is visible
+
+  Behavior:
+  - Toggles sidebar visibility via the "Hide/Show" button
+  - Displays route metadata (name, type, bicycle route status, surface, rating)
+  - Passes way.id to ReviewContainer for displaying reviews
+  - Uses helper functions determineRouteType and determineBicycleRoute to process tags
+
+  Notes:
+  - Depends on $lib/state.svelte for global wayState
+  - Relies on $lib/utils/route for metadata helpers
+  - Current rating is hardcoded (placeholder for future dynamic rating)
 
   Issues:
-  - Clean up and improve the logic for determineRouteType and determineBicycleRoute
+  - Logic for determineRouteType and determineBicycleRoute could be refactored/cleaned up
 -->
 
 <script lang="ts">
 	import ReviewContainer from './ReviewContainer.svelte';
 	import { wayState } from '$lib/state.svelte';
 	import type { WayFeature } from '$lib/types';
+	import { determineRouteType, determineBicycleRoute } from '$lib/utils/route';
 
 	let way: WayFeature | null = $derived(wayState.selectedWay);
 
@@ -26,70 +35,6 @@
 
 	function toggleSidebar(): void {
 		isVisible = !isVisible;
-	}
-
-	// determineRouteType uses the tags for a route to determine its road type (arterial, collector, local, etc) and bike infastructure (if possible)
-	// TODO: simplify and improve logic, continue to ensure that all common types are classified
-	function determineRouteType(tags: Record<string, string>): string {
-		if (tags.highway == 'residential') {
-			return 'Residential Street';
-		} else if (tags.highway == 'tertiary') {
-			if (tags.cycleway == 'lane') {
-				return 'Collector Road with Bike Lane';
-			} else {
-				return 'Collector Road';
-			}
-		} else if (tags.highway == 'path') {
-			if (tags.bicycle == 'designated' && tags.foot == 'designated') {
-				return 'Shared Use Path';
-			} else if (tags.bicycle == 'designated') {
-				return 'Bike Path';
-			} else if (tags.foot == 'designated') {
-				return 'Footpath';
-			}
-		} else if (tags.highway == 'footway') {
-			if (tags.bicycle == 'yes' || tags.bicycle == 'designated') {
-				return 'Shared Use Path';
-			} else {
-				return 'Footpath';
-			}
-		} else if (tags.highway == 'cycleway') {
-			if (tags.foot == 'designated' || tags.foot == 'yes') {
-				return 'Shared Use Path';
-			} else {
-				return 'Cycleway';
-			}
-		} else if (tags.highway == 'secondary') {
-			if (
-				tags.cycleway == 'share_busway' ||
-				tags['cycleway:left'] == 'share_busway' ||
-				tags['cycleway:right'] == 'share_busway'
-			) {
-				return 'Arterial Road With Bus-Bike Lane';
-			}
-			return 'Arterial Road';
-		} else if (tags.highway == 'primary') {
-			return 'Major Arterial Road';
-		} else if (tags.highway == 'unclassified') {
-			if (
-				tags.cycleway == 'separate' ||
-				tags['cycleway:left'] == 'separate' ||
-				tags['cycleway:right'] == 'separate'
-			) {
-				return 'Local Road with Separated Bike Lane';
-			}
-			return 'Local Road';
-		}
-		return 'Unknown';
-	}
-
-	// determineBicycleRoute uses the tags to determine if a route is part of the local bicycle network
-	function determineBicycleRoute(tags: Record<string, string>): string {
-		if (tags.bicycle == 'designated' || tags.lcn == 'yes') {
-			return 'Yes';
-		} else {
-			return 'No';
-		}
 	}
 </script>
 

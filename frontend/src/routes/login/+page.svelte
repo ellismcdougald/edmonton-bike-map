@@ -1,3 +1,29 @@
+<!--
+  src/routes/login/+page.svelte
+
+  Purpose:
+  Login page route for user authentication.
+
+  State:
+  - username (string): bound to username input
+  - password (string): bound to password input
+  - errorMsg (string): displays backend error messages
+  - isSubmitting (boolean): disables form and shows submission state
+
+  Behavior:
+  - On form submit:
+      - Sends POST request to /api/login with username and password
+      - If successful, stores JWT token in localStorage and navigates to home page ('/')
+      - If failed, shows error message below the submit button
+  - Submit button is disabled while login request is in progress
+  - Provides a link to the signup page if user does not have an account
+
+  Notes:
+  - Uses SvelteKit's `goto` for navigation
+  - Relies on backend endpoint /api/login
+  - Input fields use native HTML validation for required values
+-->
+
 <script lang="ts">
 	import { goto } from '$app/navigation';
 
@@ -36,6 +62,7 @@
 	<form on:submit={handleLogin} class="bg-white p-8 rounded-lg shadow-md w-full max-w-sm">
 		<input
 			type="text"
+			name="username"
 			bind:value={username}
 			placeholder="Username"
 			required
@@ -44,6 +71,7 @@
 
 		<input
 			type="password"
+			name="password"
 			bind:value={password}
 			placeholder="Password"
 			required
@@ -51,6 +79,7 @@
 		/>
 
 		<button
+			id="submitButton"
 			type="submit"
 			class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
 			disabled={isSubmitting}
@@ -64,6 +93,6 @@
 	</form>
 	<p class="mt-4 text-sm text-center">
 		Don't have an account?
-		<a href="/signup" class="text-blue-600 hover:underline">Sign up</a>
+		<a id="signupLink" href="/signup" class="text-blue-600 hover:underline">Sign up</a>
 	</p>
 </div>

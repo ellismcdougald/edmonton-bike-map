@@ -1,3 +1,29 @@
+<!--
+  src/routes/signup/+page.svelte
+
+  Purpose:
+  Signup page route for creating a new user account.
+
+  State:
+  - username (string): bound to username input
+  - password (string): bound to password input
+  - errorMsg (string): displays backend error messages
+  - isSubmitting (boolean): disables form and shows submission state
+
+  Behavior:
+  - On form submit:
+      - Sends POST request to /api/signup with username and password
+      - If successful, navigates to the login page ('/login')
+      - If failed, displays error message below the submit button
+  - Submit button is disabled while signup request is in progress
+  - Provides a link to the login page for existing users
+
+  Notes:
+  - Uses SvelteKit's `goto` for navigation
+  - Relies on backend endpoint /api/signup
+  - Input fields use native HTML validation for required values
+-->
+
 <script lang="ts">
 	import { goto } from '$app/navigation';
 
@@ -34,6 +60,7 @@
 	<form on:submit={handleSignup} class="bg-white p-8 rounded-lg shadow-md w-full max-w-sm">
 		<input
 			type="text"
+			name="username"
 			bind:value={username}
 			placeholder="Username"
 			required
@@ -42,6 +69,7 @@
 
 		<input
 			type="password"
+			name="password"
 			bind:value={password}
 			placeholder="Password"
 			required
@@ -49,6 +77,7 @@
 		/>
 
 		<button
+			id="submitButton"
 			type="submit"
 			class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
 			disabled={isSubmitting}

@@ -105,8 +105,11 @@ func TestRegisterRoutes(t *testing.T) {
 
 	for _, tt := range tests {
 		req := httptest.NewRequest(tt.method, tt.path, nil)
-		rec := httptest.NewRecorder()
+		if tt.allowedOrigin != "" {
+			req.Header.Set("Origin", tt.allowedOrigin)
+		}
 
+		rec := httptest.NewRecorder()
 		mux.ServeHTTP(rec, req)
 
 		if rec.Code != tt.wantStatus {
@@ -115,7 +118,6 @@ func TestRegisterRoutes(t *testing.T) {
 		if got := rec.Header().Get("Access-Control-Allow-Origin"); got != tt.allowedOrigin {
 			t.Errorf("%s %s: missing or wrong CORS header: expected %q, got %q", tt.method, tt.path, tt.allowedOrigin, got)
 		}
-		// Only check allowedMethods header if non-empty expected value (skip for 404)
 		if tt.allowedMethods != "" {
 			if got := rec.Header().Get("Access-Control-Allow-Methods"); got != tt.allowedMethods {
 				t.Errorf("%s %s: wrong Access-Control-Allow-Methods header: expected %q, got %q", tt.method, tt.path, tt.allowedMethods, got)
