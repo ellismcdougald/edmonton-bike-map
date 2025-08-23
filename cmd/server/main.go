@@ -28,7 +28,7 @@ func main() {
 		dbURL = fmt.Sprintf("postgres://%s:%s@localhost:%s/%s?sslmode=disable", user, password, port, dbname)
 	}
 
-	log.Printf("connectin gto db: %s", dbURL)
+	log.Printf("connecting to db: %s", dbURL)
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("Could not connect to db: %v", err)
