@@ -46,7 +46,7 @@ func main() {
 	var current_db, current_user string
 	err = db.QueryRow("SELECT current_database(), current_user").Scan(&current_db, &current_user)
 	if err != nil {
-    log.Fatalf("DB check failed: %v", err)
+		log.Fatalf("DB check failed: %v", err)
 	}
 	log.Printf("Backend DB: %s, User: %s", current_db, current_user)
 
@@ -61,13 +61,13 @@ func main() {
 	reviewStore := &model.DBReviewStore{DB: db}
 	router := &routing.RealRouter{}
 	handlerFuncs := handlers.RealHandlers{
-		UserService: userStore,
-		NodeService: nodeStore,
-		WayService: wayStore,
+		UserService:   userStore,
+		NodeService:   nodeStore,
+		WayService:    wayStore,
 		ReviewService: reviewStore,
-		DB:          db,
-		Network:     network,
-		Router: router,
+		DB:            db,
+		Network:       network,
+		Router:        router,
 	}
 	server.RegisterRoutes(mux, network, db, &handlerFuncs)
 
@@ -87,16 +87,16 @@ func main() {
 }
 
 func getDBEnv() (user, password, dbname, port string) {
-    if os.Getenv("TESTING") == "true" {
-        user = os.Getenv("POSTGRES_TEST_USER")
-        password = os.Getenv("POSTGRES_TEST_PASSWORD")
-        dbname = os.Getenv("POSTGRES_TEST_DB")
-        port = os.Getenv("POSTGRES_TEST_PORT")
-    } else {
-        user = os.Getenv("POSTGRES_USER")
-        password = os.Getenv("POSTGRES_PASSWORD")
-        dbname = os.Getenv("POSTGRES_DB")
-        port = os.Getenv("POSTGRES_PORT")
-    }
-    return
+	if os.Getenv("TESTING") == "true" {
+		user = os.Getenv("POSTGRES_TEST_USER")
+		password = os.Getenv("POSTGRES_TEST_PASSWORD")
+		dbname = os.Getenv("POSTGRES_TEST_DB")
+		port = os.Getenv("POSTGRES_TEST_PORT")
+	} else {
+		user = os.Getenv("POSTGRES_USER")
+		password = os.Getenv("POSTGRES_PASSWORD")
+		dbname = os.Getenv("POSTGRES_DB")
+		port = os.Getenv("POSTGRES_PORT")
+	}
+	return
 }

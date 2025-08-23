@@ -15,7 +15,7 @@ func corsMiddleware(allowedMethods ...string) func(http.Handler) http.Handler {
 	methods := strings.Join(allowedMethods, ", ")
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			origin := r.Header.Get("Origin");
+			origin := r.Header.Get("Origin")
 			for _, o := range allowedOrigins {
 				if o == origin {
 					w.Header().Set("Access-Control-Allow-Origin", o)
