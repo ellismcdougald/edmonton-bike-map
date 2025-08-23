@@ -1,7 +1,6 @@
 import { render, fireEvent, waitFor } from '@testing-library/svelte';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Map from './Map.svelte';
-import { loadLeaflet } from '$lib/map/loadLeaflet';
 
 vi.stubGlobal(
 	'fetch',
@@ -15,6 +14,7 @@ vi.mock('$lib/map/mapActions', () => ({
 	findRoute: vi.fn()
 }));
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockMapInstance: any = {
 	addTileLayer: vi.fn(),
 	onMapClick: vi.fn(),

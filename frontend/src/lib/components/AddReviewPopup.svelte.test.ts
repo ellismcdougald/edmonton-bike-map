@@ -1,7 +1,6 @@
 import { render, fireEvent, waitFor } from '@testing-library/svelte';
 import AddReviewPopup from '$lib/components/AddReviewPopup.svelte';
 import { submitReview } from '$lib/utils/review';
-import { getUserIdFromToken } from '$lib/utils/auth';
 import { vi } from 'vitest';
 
 vi.mock('$lib/utils/auth', () => ({
@@ -44,7 +43,7 @@ describe('AddReviewPopup', () => {
 	});
 
 	it('shows error message if submitReview throws', async () => {
-		(submitReview as any).mockRejectedValueOnce(new Error('Network error'));
+		vi.mocked(submitReview).mockRejectedValueOnce(new Error('Network error'));
 
 		const { container, getByText } = render(AddReviewPopup, { wayId, closePopup });
 

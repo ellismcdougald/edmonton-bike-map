@@ -1,7 +1,6 @@
 import { render, fireEvent, waitFor } from '@testing-library/svelte';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ReviewContainer from './ReviewContainer.svelte';
-import { submitReview } from '$lib/utils/review';
 
 vi.mock('$lib/utils/review', () => ({
 	fetchReviews: vi.fn().mockResolvedValue([
@@ -17,7 +16,7 @@ vi.mock('$lib/utils/review', () => ({
 }));
 
 describe('ReviewContainer.svelte', () => {
-	let wayId = 1;
+	const wayId = 1;
 
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -34,7 +33,7 @@ describe('ReviewContainer.svelte', () => {
 	});
 
 	it('opens AddReviewPopup when Add Review button is clicked', async () => {
-		const { container, queryByText } = render(ReviewContainer, { wayId });
+		const { container } = render(ReviewContainer, { wayId });
 
 		const addButton = container.querySelector<HTMLButtonElement>('#addReviewButton')!;
 		expect(addButton).toBeInTheDocument();
