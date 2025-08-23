@@ -43,12 +43,12 @@ func main() {
 		log.Fatalf("Could not ping db: %v", err)
 	}
 
-	var version string
-	err = db.QueryRow("SELECT current_database(), current_user").Scan(&version, &version)
+	var current_db, current_user string
+	err = db.QueryRow("SELECT current_database(), current_user").Scan(&current_db, &current_user)
 	if err != nil {
     log.Fatalf("DB check failed: %v", err)
 	}
-	log.Printf("Backend DB: %s, User: %s", version, version)
+	log.Printf("Backend DB: %s, User: %s", current_db, current_user)
 
 	fileName := filepath.Join("osm_bike_data.json")
 	network, _ := data.BuildGraph(fileName)
