@@ -36,7 +36,7 @@ test.describe('sign up', () => {
 		await client.query('TRUNCATE TABLE users RESTART IDENTITY CASCADE');
 	});
 
-	test('user can sign up, log in, and then look up a route', async ({ page }) => {
+	test('user can sign up, log in, look up a route, then log out', async ({ page }) => {
 		await page.goto('./');
 
 		await expect(page).toHaveURL('/login');
@@ -58,6 +58,9 @@ test.describe('sign up', () => {
 
 		await expect(page).toHaveURL('/');
 
+		let token = await page.evaluate(() => localStorage.getItem('token'));
+		expect(token).toBeDefined();
+
 		const map = page.locator('#map');
 		await expect(map).toBeVisible();
 		const mapBox = await map.boundingBox();
@@ -77,5 +80,13 @@ test.describe('sign up', () => {
 		await expect(routePaths.first()).toBeVisible({ timeout: 5000 });
 		const count = await routePaths.count();
 		expect(count).toBeGreaterThan(0);
+
+		await page.locator('#usernameButton').hover();
+		await page.locator('#logoutButton').click();
+
+		await expect(page).toHaveURL('/login');
+
+		token = await page.evaluate(() => localStorage.getItem('token'));
+		expect(token).toBeNull();
 	});
 });
