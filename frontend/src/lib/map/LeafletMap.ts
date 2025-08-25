@@ -202,4 +202,11 @@ export class LeafletMap {
 			handler([e.latlng.lat, e.latlng.lng]);
 		});
 	}
+
+	reset(): void {
+		this.removeStartMarker();
+		this.removeEndMarker();
+		this.removeRouteLayer();
+		this.showInfoLayer();
+	}
 }

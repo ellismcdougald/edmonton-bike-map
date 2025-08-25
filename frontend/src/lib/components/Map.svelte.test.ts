@@ -25,7 +25,8 @@ const mockMapInstance: any = {
 	addStartMarker: vi.fn(),
 	removeStartMarker: vi.fn(),
 	addEndMarker: vi.fn(),
-	removeEndMarker: vi.fn()
+	removeEndMarker: vi.fn(),
+	reset: vi.fn()
 };
 const MockLeafletMap = vi.fn(() => mockMapInstance);
 vi.mock('$lib/map/loadLeaflet', () => ({
@@ -112,5 +113,16 @@ describe('Map.svelte', () => {
 
 		await fireEvent.click(endButton);
 		expect(mockMapInstance.showInfoLayer).toHaveBeenCalled();
+	});
+
+	it('resets the map when Reset button is clicked', async () => {
+		const { container } = render(Map);
+
+		await waitFor(() => expect(mockMapInstance.addTileLayer).toHaveBeenCalled());
+
+		const resetButton = container.querySelector('#resetButton') as HTMLButtonElement;
+		await fireEvent.click(resetButton);
+
+		expect(mockMapInstance.reset).toHaveBeenCalled();
 	});
 });

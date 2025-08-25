@@ -31,6 +31,11 @@
 
 	let way: WayFeature | null = $derived(wayState.selectedWay);
 
+	let sidebarLoaded: boolean = $state(false);
+	$effect(() => {
+		if (way) sidebarLoaded = true;
+	});
+
 	let isVisible: boolean = $state(true);
 
 	function toggleSidebar(): void {
@@ -38,13 +43,15 @@
 	}
 </script>
 
-<div id="hide-sidebar-button-container" class="flex ml-auto">
-	<button
-		id="hide-sidebar-button"
-		class="absolute bottom-2 right-2 bg-gray-300 hover:bg-gray-400 text-gray-800 px-3 py-1 rounded z-20"
-		onclick={toggleSidebar}>{isVisible ? 'Hide' : 'Show'}</button
-	>
-</div>
+{#if sidebarLoaded}
+	<div id="hide-sidebar-button-container" class="flex ml-auto">
+		<button
+			id="hide-sidebar-button"
+			class="absolute bottom-2 right-2 bg-gray-300 hover:bg-gray-400 text-gray-800 px-3 py-1 rounded z-20"
+			onclick={toggleSidebar}>{isVisible ? 'Hide' : 'Show'}</button
+		>
+	</div>
+{/if}
 
 {#if isVisible && way}
 	<div id="sidebar-content" class="w-full p-2 h-full bg-white shadow-2xl pb-12">

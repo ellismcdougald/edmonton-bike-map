@@ -81,4 +81,49 @@ test.describe('route finding with a test user', () => {
 		const count = await routePaths.count();
 		expect(count).toBeGreaterThan(0);
 	});
+
+	test('user can log in, then select a start and end point, find a route between those two points, then reset the map', async ({
+		page
+	}) => {
+		await page.goto('./');
+
+		await expect(page).toHaveURL('/login');
+
+		await page.fill('input[name="username"]', testUsername);
+		await page.fill('input[name="password"]', testPassword);
+		await page.locator('#submitButton').click();
+
+		const map = page.locator('#map');
+		await expect(map).toBeVisible({ timeout: 10000 });
+		const mapBox = await map.boundingBox();
+		if (!mapBox) throw new Error('Map element not found');
+
+		const startButton = page.locator('#selectStartButton');
+		await startButton.click();
+
+		await page.mouse.click(mapBox.x + mapBox.width / 2, mapBox.y + mapBox.height / 2);
+
+		const markers = page.locator('.leaflet-marker-icon');
+		expect(await markers.count()).toBe(1);
+
+		const endButton = page.locator('#selectEndButton');
+		await endButton.click();
+		await page.mouse.click(mapBox.x + mapBox.width / 3, mapBox.y + mapBox.height / 3);
+
+		expect(await markers.count()).toBe(2);
+
+		await page.locator('#findRouteButton').click();
+
+		const routePaths = page.locator('path.leaflet-interactive');
+		await expect(routePaths.first()).toBeVisible({ timeout: 5000 });
+		const count = await routePaths.count();
+		expect(count).toBeGreaterThan(0);
+
+		await page.locator('#resetButton').click();
+
+		const countAfterReset = await routePaths.count();
+		expect(countAfterReset).toBe(0);
+
+		expect(await markers.count()).toBe(0);
+	});
 });
