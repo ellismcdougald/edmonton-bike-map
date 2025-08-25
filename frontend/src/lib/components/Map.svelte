@@ -71,6 +71,13 @@
 		mapInstance?.[mode.selectEndActive ? 'hideInfoLayer' : 'showInfoLayer']();
 	}
 
+	function resetMap() {
+		if (mapInstance) {
+			mapInstance.reset();
+			mode = { selectStartActive: false, selectEndActive: false };
+		}
+	}
+
 	onMount(async () => {
 		const { LeafletMap } = await loadLeaflet();
 		mapInstance = new LeafletMap();
@@ -144,6 +151,7 @@
 			type="button"
 			id="resetButton"
 			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow"
+			onclick={() => resetMap()}
 		>
 			Reset
 		</button>
