@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/lib/pq"
@@ -55,6 +56,96 @@ func (s *DBWayStore) Insert(w DBWay) error {
 	err = tx.Commit()
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// InsertBatch inserts multiple DBWays in a single transaction.
+// Inserts both the ways and their associated way_nodes.
+// Uses ON CONFLICT DO NOTHING to skip existing entries.
+func (s *DBWayStore) InsertBatch(ways []DBWay) error {
+	if len(ways) == 0 {
+		return nil
+	}
+
+	tx, err := s.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			log.Printf("tx rollback error: %v", err)
+		}
+	}()
+
+	// --- Insert ways ---
+	wayQuery := "INSERT INTO ways (id, tags) VALUES "
+	wayArgs := []interface{}{}
+	argIndex := 1
+	for i, w := range ways {
+		if i > 0 {
+			wayQuery += ", "
+		}
+		tagsJSON, err := json.Marshal(w.Tags)
+		if err != nil {
+			return fmt.Errorf("marshal tags for way %d: %w", w.ID, err)
+		}
+
+		wayQuery += fmt.Sprintf("($%d, $%d)", argIndex, argIndex+1)
+		wayArgs = append(wayArgs, w.ID, tagsJSON)
+		argIndex += 2
+	}
+	wayQuery += " ON CONFLICT (id) DO NOTHING"
+
+	if _, err := tx.Exec(wayQuery, wayArgs...); err != nil {
+		return fmt.Errorf("insert batch ways: %w", err)
+	}
+
+	// --- Insert way_nodes ---
+	nodeQuery := "INSERT INTO way_nodes (way_id, node_id, sequence_id) VALUES "
+	nodeArgs := []interface{}{}
+	argIndex = 1
+	first := true
+	for _, w := range ways {
+		for seq, nodeID := range w.NodeIDs {
+			if !first {
+				nodeQuery += ", "
+			}
+			first = false
+			nodeQuery += fmt.Sprintf("($%d, $%d, $%d)", argIndex, argIndex+1, argIndex+2)
+			nodeArgs = append(nodeArgs, w.ID, nodeID, seq)
+			argIndex += 3
+		}
+	}
+	nodeQuery += " ON CONFLICT DO NOTHING"
+
+	if _, err := tx.Exec(nodeQuery, nodeArgs...); err != nil {
+		return fmt.Errorf("insert batch way_nodes: %w", err)
+	}
+
+	return tx.Commit()
+}
+
+// InsertBatchChunks inserts DBWays in smaller batches to avoid huge SQL statements.
+// Each batch is inserted using the existing InsertBatch logic.
+func (s *DBWayStore) InsertBatchChunks(ways []DBWay, batchSize int) error {
+	if len(ways) == 0 {
+		return nil
+	}
+	if batchSize <= 0 {
+		batchSize = 500 // default batch size for ways
+	}
+
+	for i := 0; i < len(ways); i += batchSize {
+		end := i + batchSize
+		if end > len(ways) {
+			end = len(ways)
+		}
+		batch := ways[i:end]
+		if err := s.InsertBatch(batch); err != nil {
+			return fmt.Errorf("failed to insert way batch %d-%d: %w", i, end, err)
+		}
 	}
 
 	return nil
