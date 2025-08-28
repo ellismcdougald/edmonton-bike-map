@@ -272,7 +272,12 @@ func TestDBNodeStore_InsertBatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				mock.ExpectClose()
+				if err := db.Close(); err != nil {
+					t.Errorf("failed to close db: %v", err)
+				}
+			}()
 
 			tt.mockSetup(mock)
 
@@ -343,7 +348,12 @@ func TestDBNodeStore_InsertBatchChunks(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			require.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				mock.ExpectClose()
+				if err := db.Close(); err != nil {
+					t.Errorf("failed to close db: %v", err)
+				}
+			}()
 
 			tt.mockSetup(mock)
 

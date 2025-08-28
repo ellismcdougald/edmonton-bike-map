@@ -300,7 +300,12 @@ func TestDBWayStore_InsertBatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db, mock, err := sqlmock.New()
 			assert.NoError(t, err)
-			defer db.Close()
+			defer func() {
+				mock.ExpectClose()
+				if err := db.Close(); err != nil {
+					t.Errorf("failed to close db: %v", err)
+				}
+			}()
 			tt.mockSetup(mock)
 
 			store := &model.DBWayStore{DB: db}
@@ -319,7 +324,12 @@ func TestDBWayStore_InsertBatchChunks(t *testing.T) {
 	t.Run("chunking works", func(t *testing.T) {
 		db, mock, err := sqlmock.New()
 		assert.NoError(t, err)
-		defer db.Close()
+		defer func() {
+			mock.ExpectClose()
+			if err := db.Close(); err != nil {
+				t.Errorf("failed to close db: %v", err)
+			}
+		}()
 
 		store := &model.DBWayStore{DB: db}
 
