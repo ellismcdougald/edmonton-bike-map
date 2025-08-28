@@ -49,12 +49,14 @@ func main() {
 	}
 	log.Printf("Backend DB: %s, User: %s", current_db, current_user)
 
-	network, _ := network.BuildNetwork(db)
+	nodeStore := &model.DBNodeStore{DB: db}
+	wayStore := &model.DBWayStore{DB: db}
+
+	network, _ := network.BuildNetwork(nodeStore, wayStore)
 
 	mux := http.NewServeMux()
 	userStore := &model.DBUserStore{DB: db}
-	nodeStore := &model.DBNodeStore{DB: db}
-	wayStore := &model.DBWayStore{DB: db}
+	
 	reviewStore := &model.DBReviewStore{DB: db}
 	router := &routing.RealRouter{}
 	handlerFuncs := handlers.RealHandlers{

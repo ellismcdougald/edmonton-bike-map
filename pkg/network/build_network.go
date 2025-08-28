@@ -1,7 +1,6 @@
 package network
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"math"
@@ -9,10 +8,7 @@ import (
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
 )
 
-func BuildNetwork(db *sql.DB) (*model.Graph, error) {
-	nodeService := &model.DBNodeStore{DB: db}
-	wayService := &model.DBWayStore{DB: db}
-
+func BuildNetwork(nodeService model.NodeService, wayService model.WayService) (*model.Graph, error) {
 	allDBNodes, err := nodeService.GetAllNodes()
 	if err != nil {
 		return nil, fmt.Errorf("error getting all nodes: %w", err)
