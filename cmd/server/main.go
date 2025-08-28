@@ -56,7 +56,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	userStore := &model.DBUserStore{DB: db}
-	
+
 	reviewStore := &model.DBReviewStore{DB: db}
 	router := &routing.RealRouter{}
 	handlerFuncs := handlers.RealHandlers{
