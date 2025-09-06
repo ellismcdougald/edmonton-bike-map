@@ -21,6 +21,16 @@ type mockWayService struct {
 	getAllWays func() ([]model.DBWay, error)
 }
 
+type mockReviewService struct {
+	getAllReviews func() (map[int][]model.Review, error)
+}
+
+func (m *mockReviewService) CreateReview(*model.Review) error               { return nil }
+func (m *mockReviewService) GetReviews(wayID int64) ([]model.Review, error) { return nil, nil }
+func (m *mockReviewService) GetAllReviews() (map[int][]model.Review, error) {
+	return m.getAllReviews()
+}
+
 func (m *mockWayService) Insert(w model.DBWay) error { return nil }
 func (m *mockWayService) GetAllWays() ([]model.DBWay, error) {
 	return m.getAllWays()
@@ -48,7 +58,13 @@ func TestBuildNetwork_Normal(t *testing.T) {
 		},
 	}
 
-	graph, err := BuildNetwork(mockNodes, mockWays)
+	mockReviews := &mockReviewService{
+		getAllReviews: func() (map[int][]model.Review, error) {
+			return map[int][]model.Review{}, nil // no reviews for these tests
+		},
+	}
+
+	graph, err := BuildNetwork(mockNodes, mockWays, mockReviews)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -94,7 +110,13 @@ func TestBuildNetwork_EdgeCases(t *testing.T) {
 			},
 		}
 
-		graph, err := BuildNetwork(mockNodes, mockWays)
+		mockReviews := &mockReviewService{
+			getAllReviews: func() (map[int][]model.Review, error) {
+				return map[int][]model.Review{}, nil // no reviews for these tests
+			},
+		}
+
+		graph, err := BuildNetwork(mockNodes, mockWays, mockReviews)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -126,7 +148,13 @@ func TestBuildNetwork_EdgeCases(t *testing.T) {
 			},
 		}
 
-		graph, err := BuildNetwork(mockNodes, mockWays)
+		mockReviews := &mockReviewService{
+			getAllReviews: func() (map[int][]model.Review, error) {
+				return map[int][]model.Review{}, nil // no reviews for these tests
+			},
+		}
+
+		graph, err := BuildNetwork(mockNodes, mockWays, mockReviews)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -161,7 +189,13 @@ func TestBuildNetwork_EdgeCases(t *testing.T) {
 			},
 		}
 
-		graph, err := BuildNetwork(mockNodes, mockWays)
+		mockReviews := &mockReviewService{
+			getAllReviews: func() (map[int][]model.Review, error) {
+				return map[int][]model.Review{}, nil // no reviews for these tests
+			},
+		}
+
+		graph, err := BuildNetwork(mockNodes, mockWays, mockReviews)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -179,6 +213,12 @@ func TestBuildNetwork_BikeFriendlyMultipliers(t *testing.T) {
 				1: {ID: 1, Latitude: 53.5461, Longitude: -113.4938},
 				2: {ID: 2, Latitude: 53.5462, Longitude: -113.4939},
 			}, nil
+		},
+	}
+
+	mockReviews := &mockReviewService{
+		getAllReviews: func() (map[int][]model.Review, error) {
+			return map[int][]model.Review{}, nil // no reviews for these tests
 		},
 	}
 
@@ -204,7 +244,7 @@ func TestBuildNetwork_BikeFriendlyMultipliers(t *testing.T) {
 				},
 			}
 
-			graph, err := BuildNetwork(mockNodes, mockWays)
+			graph, err := BuildNetwork(mockNodes, mockWays, mockReviews)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -226,6 +266,85 @@ func TestBuildNetwork_BikeFriendlyMultipliers(t *testing.T) {
 			gotMultiplier := edge.Weight / baseDistance
 			if math.Abs(gotMultiplier-tc.expected) > 0.01 {
 				t.Errorf("expected multiplier ~%f, got %f", tc.expected, gotMultiplier)
+			}
+		})
+	}
+}
+
+func TestBuildNetwork_ReviewMultipliers(t *testing.T) {
+	mockNodes := &mockNodeService{
+		getAllNodes: func() (map[int64]model.DBNode, error) {
+			return map[int64]model.DBNode{
+				1: {ID: 1, Latitude: 53.5461, Longitude: -113.4938},
+				2: {ID: 2, Latitude: 53.5462, Longitude: -113.4939},
+			}, nil
+		},
+	}
+
+	cases := []struct {
+		name    string
+		reviews []model.Review
+	}{
+		{"no reviews", []model.Review{}},
+		{"high ratings", []model.Review{{Rating: 5}, {Rating: 5}}},
+		{"mixed ratings", []model.Review{{Rating: 3}, {Rating: 4}}},
+		{"low ratings", []model.Review{{Rating: 1}, {Rating: 2}}},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			mockWays := &mockWayService{
+				getAllWays: func() ([]model.DBWay, error) {
+					return []model.DBWay{
+						{ID: 300, NodeIDs: []int64{1, 2}, Tags: map[string]string{"highway": "residential"}},
+					}, nil
+				},
+			}
+
+			mockReviews := &mockReviewService{
+				getAllReviews: func() (map[int][]model.Review, error) {
+					return map[int][]model.Review{
+						300: tc.reviews,
+					}, nil
+				},
+			}
+
+			graph, err := BuildNetwork(mockNodes, mockWays, mockReviews)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			edge := graph.Edges[1][0]
+
+			nodes, err := mockNodes.GetAllNodes()
+			if err != nil {
+				t.Fatalf("unexpected error getting nodes: %v", err)
+			}
+
+			baseDistance := haversineDistance(
+				nodes[1].Latitude,
+				nodes[1].Longitude,
+				nodes[2].Latitude,
+				nodes[2].Longitude,
+			)
+
+			gotMultiplier := edge.Weight / baseDistance
+
+			// Compute expected multiplier according to current formula
+			expected := 1.0
+			if len(tc.reviews) > 0 {
+				total := 0
+				for _, r := range tc.reviews {
+					total += r.Rating
+				}
+				average := float64(total) / float64(len(tc.reviews))
+				multiplier := 1.2 - 0.1*average
+				confidence := math.Min(1.0, float64(len(tc.reviews))/10.0)
+				expected = 1.0 + (multiplier-1.0)*confidence
+			}
+
+			if math.Abs(gotMultiplier-expected) > 0.001 {
+				t.Errorf("expected review multiplier ~%f, got %f", expected, gotMultiplier)
 			}
 		})
 	}

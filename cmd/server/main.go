@@ -51,13 +51,13 @@ func main() {
 
 	nodeStore := &model.DBNodeStore{DB: db}
 	wayStore := &model.DBWayStore{DB: db}
+	reviewStore := &model.DBReviewStore{DB: db}
 
-	network, _ := network.BuildNetwork(nodeStore, wayStore)
+	network, _ := network.BuildNetwork(nodeStore, wayStore, reviewStore)
 
 	mux := http.NewServeMux()
 	userStore := &model.DBUserStore{DB: db}
 
-	reviewStore := &model.DBReviewStore{DB: db}
 	router := &routing.RealRouter{}
 	handlerFuncs := handlers.RealHandlers{
 		UserService:   userStore,

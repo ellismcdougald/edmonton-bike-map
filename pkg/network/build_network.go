@@ -8,7 +8,7 @@ import (
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
 )
 
-func BuildNetwork(nodeService model.NodeService, wayService model.WayService) (*model.Graph, error) {
+func BuildNetwork(nodeService model.NodeService, wayService model.WayService, reviewService model.ReviewService) (*model.Graph, error) {
 	allDBNodes, err := nodeService.GetAllNodes()
 	if err != nil {
 		return nil, fmt.Errorf("error getting all nodes: %w", err)
@@ -23,8 +23,20 @@ func BuildNetwork(nodeService model.NodeService, wayService model.WayService) (*
 		return nil, fmt.Errorf("error getting all ways: %w", err)
 	}
 
+	allReviews, err := reviewService.GetAllReviews()
+	if err != nil {
+		return nil, fmt.Errorf("error getting all reviews: %w", err)
+	}
+
 	edgesByNodeId := make(map[int64][]model.Edge, len(allNodes))
 	for _, way := range allWays {
+		tagsMultiplier := computeTagsMultiplier(way.Tags)
+		reviewMultiplier := 1.0
+		wayReviews, ok := allReviews[int(way.ID)]
+		if ok {
+			reviewMultiplier = computeReviewMultiplier(wayReviews)
+		}
+
 		for i := 0; i < len(way.NodeIDs)-1; i++ {
 			fromID := way.NodeIDs[i]
 			fromCoord, fromExists := allNodes[fromID]
@@ -36,7 +48,7 @@ func BuildNetwork(nodeService model.NodeService, wayService model.WayService) (*
 			}
 
 			dist := haversineDistance(fromCoord.Latitude, fromCoord.Longitude, toCoord.Latitude, toCoord.Longitude)
-			weight := computeWayWeight(dist, way.Tags)
+			weight := dist * tagsMultiplier * reviewMultiplier
 
 			edgesByNodeId[fromID] = append(edgesByNodeId[fromID], model.Edge{
 				To:     toID,
@@ -58,6 +70,25 @@ func BuildNetwork(nodeService model.NodeService, wayService model.WayService) (*
 	return &network, nil
 }
 
+func computeReviewMultiplier(reviews []model.Review) float64 {
+	if len(reviews) == 0 {
+		return 1.0
+	}
+
+	total := 0
+	for _, review := range reviews {
+		total += review.Rating
+	}
+	average := float64(total) / float64(len(reviews))
+
+	multiplier := 1.2 - 0.1*average
+
+	// Consider number of reviews in strength of multiplier
+	confidence := math.Min(1.0, float64(len(reviews))/10.0)
+
+	return 1.0 + (multiplier-1.0)*confidence
+}
+
 const (
 	tagBicycle      = "bicycle"
 	tagBike         = "bike"
@@ -68,8 +99,19 @@ const (
 	tagOneway       = "one_way"
 )
 
-// computeWayWeight computes a weight for an edge by modifying the distance using the tags
-func computeWayWeight(distance float64, tags map[string]string) float64 {
+func computeTagsMultiplier(tags map[string]string) float64 {
+	highwayMultiplier := computeHighwayMultiplier(tags["highway"])
+	bikeFriendlyMultiplier := computeBikeFriendlyMultiplier(tags)
+
+	// Do not punish non-cycleways if they are cycle designated
+	if bikeFriendlyMultiplier < 1 && highwayMultiplier > 1 {
+		highwayMultiplier = 1
+	}
+
+	return highwayMultiplier * bikeFriendlyMultiplier
+}
+
+func computeHighwayMultiplier(highwayTag string) float64 {
 	highwayPenalty := map[string]float64{
 		"cycleway":    0.9,
 		"residential": 1,
@@ -79,36 +121,13 @@ func computeWayWeight(distance float64, tags map[string]string) float64 {
 		"motorway":    math.Inf(1),
 		"trunk":       math.Inf(1),
 	}
-	/*
-		TODO: decide whether to proceed with surface penalties. Not all data is marked with surface
-		// Would need to infer "asphalt" for good bike connections where they are not labeled
 
-		surfacePenalty := map[string]float64{
-			"concrete": 1.0,
-			"asphalt":  1.0,
-			"gravel":   1.5,
-			"dirt":     1.75,
-		}
-
-		surfaceMultiplier, found := surfacePenalty[tags["surface"]]
-		if !found {
-			surfaceMultiplier = 1.75
-		}
-	*/
-
-	highwayMultiplier, found := highwayPenalty[tags[tagHighway]]
+	highwayMultiplier, found := highwayPenalty[highwayTag]
 	if !found {
 		highwayMultiplier = 1.5
 	}
 
-	bikeFriendlyMultiplier := computeBikeFriendlyMultiplier(tags)
-
-	// Do not punish non-cycleways if they are cycle designated
-	if bikeFriendlyMultiplier < 1 && highwayMultiplier > 1 {
-		highwayMultiplier = 1
-	}
-
-	return distance * highwayMultiplier * bikeFriendlyMultiplier
+	return highwayMultiplier
 }
 
 // computeBikeFriendlyMultiplier computes a multiplier for a way's weight based on the bike characteristics in its tags
@@ -144,3 +163,23 @@ func haversineDistance(lat1, lon1, lat2, lon2 float64) float64 {
 
 	return earthRadius * c
 }
+
+// TODO: decide whether to proceed with surface penalties. Not all data is marked with surface
+// Would need to infer "asphalt" for good bike connections where they are not labeled
+// func computeSurfaceMultiplier(surfaceTag string) float64 {
+//
+
+// 	surfacePenalty := map[string]float64{
+// 		"concrete": 1.0,
+// 		"asphalt":  1.0,
+// 		"gravel":   1.5,
+// 		"dirt":     1.75,
+// 	}
+
+// 	surfaceMultiplier, found := surfacePenalty[surfaceTag]
+// 	if !found {
+// 		surfaceMultiplier = 1.75
+// 	}
+
+// 	return surfaceMultiplier
+// }

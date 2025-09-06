@@ -14,8 +14,9 @@ import (
 )
 
 type mockReviewService struct {
-	GetReviewsFunc   func(wayID int64) ([]model.Review, error)
-	CreateReviewFunc func(review *model.Review) error
+	GetReviewsFunc    func(wayID int64) ([]model.Review, error)
+	CreateReviewFunc  func(review *model.Review) error
+	GetAllReviewsFunc func() (map[int][]model.Review, error)
 }
 
 func (m *mockReviewService) GetReviews(wayID int64) ([]model.Review, error) {
@@ -24,6 +25,10 @@ func (m *mockReviewService) GetReviews(wayID int64) ([]model.Review, error) {
 
 func (m *mockReviewService) CreateReview(review *model.Review) error {
 	return m.CreateReviewFunc(review)
+}
+
+func (m *mockReviewService) GetAllReviews() (map[int][]model.Review, error) {
+	return m.GetAllReviewsFunc()
 }
 
 func TestHandleGetReviews(t *testing.T) {
