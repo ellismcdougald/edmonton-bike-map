@@ -6,10 +6,9 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 
-	"github.com/ellismcdougald/edmonton-bike-map/pkg/data"
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
+	"github.com/ellismcdougald/edmonton-bike-map/pkg/network"
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/routing"
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/server"
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/server/handlers"
@@ -50,15 +49,15 @@ func main() {
 	}
 	log.Printf("Backend DB: %s, User: %s", current_db, current_user)
 
-	fileName := filepath.Join("osm_bike_data.json")
-	network, _ := data.BuildGraph(fileName)
-	//allData, _ := data.GetAllGeoJsonData(fileName)
-
-	mux := http.NewServeMux()
-	userStore := &model.DBUserStore{DB: db}
 	nodeStore := &model.DBNodeStore{DB: db}
 	wayStore := &model.DBWayStore{DB: db}
 	reviewStore := &model.DBReviewStore{DB: db}
+
+	network, _ := network.BuildNetwork(nodeStore, wayStore, reviewStore)
+
+	mux := http.NewServeMux()
+	userStore := &model.DBUserStore{DB: db}
+
 	router := &routing.RealRouter{}
 	handlerFuncs := handlers.RealHandlers{
 		UserService:   userStore,

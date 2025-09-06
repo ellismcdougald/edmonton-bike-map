@@ -44,6 +44,10 @@ echo "Postgres is ready!"
 export DATABASE_URL="postgres://$DB_USER:$DB_PASS@localhost:$DB_PORT/$DB_NAME?sslmode=disable"
 migrate -path ./migrations -database "$DATABASE_URL" up
 
+# Populate db
+echo "Populating test database..."
+go run cmd/populate_test_db/main.go
+
 # Build go binary and start the server
 go build -o $BACKEND_BINARY cmd/server/main.go
 $BACKEND_BINARY &

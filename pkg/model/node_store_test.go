@@ -228,3 +228,144 @@ func TestDBNodeStore_GetAllNodes(t *testing.T) {
 		})
 	}
 }
+
+func TestDBNodeStore_InsertBatch(t *testing.T) {
+	tests := []struct {
+		name      string
+		nodes     []DBNode
+		mockSetup func(mock sqlmock.Sqlmock)
+		wantErr   bool
+	}{
+		{
+			name:  "normal batch insert",
+			nodes: []DBNode{{ID: 1, Latitude: 1, Longitude: 1}, {ID: 2, Latitude: 2, Longitude: 2}},
+			mockSetup: func(mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`INSERT INTO nodes \(id, latitude, longitude\) VALUES \(\$1, \$2, \$3\), \(\$4, \$5, \$6\) ON CONFLICT \(id\) DO NOTHING`).
+					WithArgs(int64(1), 1.0, 1.0, int64(2), 2.0, 2.0).
+					WillReturnResult(sqlmock.NewResult(2, 2))
+				mock.ExpectCommit()
+			},
+			wantErr: false,
+		},
+		{
+			name:  "insert exec error",
+			nodes: []DBNode{{ID: 1, Latitude: 1, Longitude: 1}},
+			mockSetup: func(mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`INSERT INTO nodes \(id, latitude, longitude\) VALUES \(\$1, \$2, \$3\) ON CONFLICT \(id\) DO NOTHING`).
+					WithArgs(int64(1), 1.0, 1.0).
+					WillReturnError(errors.New("insert failed"))
+				mock.ExpectRollback()
+			},
+			wantErr: true,
+		},
+		{
+			name:      "empty slice does nothing",
+			nodes:     []DBNode{},
+			mockSetup: func(mock sqlmock.Sqlmock) {},
+			wantErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer func() {
+				mock.ExpectClose()
+				if err := db.Close(); err != nil {
+					t.Errorf("failed to close db: %v", err)
+				}
+			}()
+
+			tt.mockSetup(mock)
+
+			store := &DBNodeStore{DB: db}
+			err = store.InsertBatch(tt.nodes)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}
+
+func TestDBNodeStore_InsertBatchChunks(t *testing.T) {
+	tests := []struct {
+		name      string
+		nodes     []DBNode
+		batchSize int
+		mockSetup func(mock sqlmock.Sqlmock)
+		wantErr   bool
+	}{
+		{
+			name:      "normal chunking with multiple batches",
+			nodes:     []DBNode{{ID: 1, Latitude: 1, Longitude: 1}, {ID: 2, Latitude: 2, Longitude: 2}, {ID: 3, Latitude: 3, Longitude: 3}},
+			batchSize: 2,
+			mockSetup: func(mock sqlmock.Sqlmock) {
+				// First batch
+				mock.ExpectBegin()
+				mock.ExpectExec(`INSERT INTO nodes \(id, latitude, longitude\) VALUES \(\$1, \$2, \$3\), \(\$4, \$5, \$6\) ON CONFLICT \(id\) DO NOTHING`).
+					WithArgs(int64(1), 1.0, 1.0, int64(2), 2.0, 2.0).
+					WillReturnResult(sqlmock.NewResult(2, 2))
+				mock.ExpectCommit()
+				// Second batch
+				mock.ExpectBegin()
+				mock.ExpectExec(`INSERT INTO nodes \(id, latitude, longitude\) VALUES \(\$1, \$2, \$3\) ON CONFLICT \(id\) DO NOTHING`).
+					WithArgs(int64(3), 3.0, 3.0).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectCommit()
+			},
+			wantErr: false,
+		},
+		{
+			name:      "empty slice does nothing",
+			nodes:     []DBNode{},
+			batchSize: 2,
+			mockSetup: func(mock sqlmock.Sqlmock) {},
+			wantErr:   false,
+		},
+		{
+			name:      "insert batch error propagates",
+			nodes:     []DBNode{{ID: 1, Latitude: 1, Longitude: 1}},
+			batchSize: 2,
+			mockSetup: func(mock sqlmock.Sqlmock) {
+				mock.ExpectBegin()
+				mock.ExpectExec(`INSERT INTO nodes \(id, latitude, longitude\) VALUES \(\$1, \$2, \$3\) ON CONFLICT \(id\) DO NOTHING`).
+					WithArgs(int64(1), 1.0, 1.0).
+					WillReturnError(errors.New("insert failed"))
+				mock.ExpectRollback()
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			require.NoError(t, err)
+			defer func() {
+				mock.ExpectClose()
+				if err := db.Close(); err != nil {
+					t.Errorf("failed to close db: %v", err)
+				}
+			}()
+
+			tt.mockSetup(mock)
+
+			store := &DBNodeStore{DB: db}
+			err = store.InsertBatchChunks(tt.nodes, tt.batchSize)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			require.NoError(t, mock.ExpectationsWereMet())
+		})
+	}
+}

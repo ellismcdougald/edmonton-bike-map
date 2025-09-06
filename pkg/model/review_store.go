@@ -75,3 +75,48 @@ func (s *DBReviewStore) GetReviews(wayID int64) ([]Review, error) {
 
 	return reviews, nil
 }
+
+// GetAllReviews retrieves all reviews for all ways from the database
+// Returns a slice of Review and any error encountered
+func (s *DBReviewStore) GetAllReviews() (map[int][]Review, error) {
+	query := `
+		SELECT
+  		r.way_id,
+  		r.rating,
+  		r.comment,
+  		r.created_at,
+  		u.username
+		FROM reviews r
+		LEFT JOIN users u ON r.user_id = u.id
+	`
+
+	rows, err := s.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("Error closing rows: %v", err)
+		}
+	}()
+
+	reviews := make(map[int][]Review)
+	for rows.Next() {
+		var review Review
+		err = rows.Scan(&review.WayID, &review.Rating, &review.Comment, &review.CreatedAt, &review.Username)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, ok := reviews[int(review.WayID)]; !ok {
+			reviews[int(review.WayID)] = []Review{}
+		}
+		reviews[int(review.WayID)] = append(reviews[int(review.WayID)], review)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return reviews, nil
+}
