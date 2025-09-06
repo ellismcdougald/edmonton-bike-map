@@ -22,6 +22,7 @@ jobs:
           go-version: "1.24"
       - name: Run tests
         run: go test -v ./...
+        working-directory: backend
 
   golangci:
     name: lint
@@ -32,9 +33,8 @@ jobs:
         with:
           go-version: 1.24
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v8
-        with:
-          version: v2.1
+        run: golangci-lint run ./...
+        working-directory: backend
 
   go-format:
     name: format
@@ -52,6 +52,7 @@ jobs:
             echo "Some files need formatting. Run 'gofmt -w .' to fix."
             exit 1
           fi
+        working-directory: backend
 
   node:
     name: Frontend CI
@@ -128,15 +129,18 @@ jobs:
         run: |
           export DATABASE_URL="postgres://testuser:testpass@localhost:5434/bikemap_test?sslmode=disable"
           migrate -path ./migrations -database "$DATABASE_URL" up
+        working-directory: backend
       - name: Populate test database
         run: |
           export DATABASE_URL="postgres://testuser:testpass@localhost:5434/bikemap_test?sslmode=disable"
           go run cmd/populate_test_db/main.go
+        working-directory: backend
       - name: Start backend server
         run: |
           export DATABASE_URL="postgres://testuser:testpass@localhost:5434/bikemap_test?sslmode=disable"
           go run cmd/server/main.go &
           echo $! > backend.pid
+        working-directory: backend
       - name: Run E2E tests
         run: |
           npm run test:e2e -- --timeout 30000
