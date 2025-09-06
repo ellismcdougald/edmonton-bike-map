@@ -1,1 +1,0 @@
-ALTER TABLE reviews DROP CONSTRAINT fk_user;

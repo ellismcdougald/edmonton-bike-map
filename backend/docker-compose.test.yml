@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:15
+    container_name: edmonton_bike_map_test_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_TEST_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_TEST_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_TEST_DB}
+    ports:
+      - "${POSTGRES_TEST_PORT}:5432"
+    volumes:
+      - db-test-data:/var/lib/postgresql/data
+
+volumes:
+  db-test-data:
