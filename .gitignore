@@ -28,11 +28,24 @@ Thumbs.db
 *.bak
 
 # Other
-testing.go
 notes.txt
-web/test-results/
-web/node_modules/
 .env
+
+# Terraform
+*.tfvars
+*.tfvars~
+*.tfplan
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
+*.tf~
+*.tfstate
+*.tfstate.backup
+*.tfstate~
+.terraform
 
 frontend/e2e/run.sh
 tmp/
