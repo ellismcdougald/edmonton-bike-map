@@ -30,6 +30,7 @@ Thumbs.db
 # Other
 notes.txt
 .env
+vars.yml
 
 # Terraform
 *.tfvars
