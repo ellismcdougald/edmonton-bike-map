@@ -1,0 +1,59 @@
+---
+- name: Deploy Go backend on droplet
+  hosts: general
+  vars_files:
+    - vars.yml
+  become: yes
+  collections:
+    - community.docker
+  tasks:
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+    - name: Create Docker CLI plugins directory
+      file:
+        path: /usr/local/lib/docker/cli-plugins
+        state: directory
+        mode: "0755"
+
+    - name: Download Docker Compose v2 binary
+      get_url:
+        url: https://github.com/docker/compose/releases/download/v2.39.2/docker-compose-linux-x86_64
+        dest: /usr/local/lib/docker/cli-plugins/docker-compose
+        mode: "0755"
+        force: no
+
+    - name: Ensure app directory exists
+      file:
+        path: /root/app
+        state: directory
+
+    - name: Copy .env file to server
+      copy:
+        src: .env
+        dest: /root/app/.env
+        mode: "0644"
+
+    - name: Copy backend-compose.yml to server
+      copy:
+        src: backend-compose.yml
+        dest: /root/app/backend-compose.yml
+        mode: "0644"
+
+    - name: Log in to GitHub Container Registry
+      docker_login:
+        registry_url: ghcr.io
+        username: "{{ gh_username }}"
+        password: "{{ ghcr_pat }}"
+
+    - name: Deploy app with Compose
+      community.docker.docker_compose_v2:
+        project_src: /root/app
+        state: present
+        pull: always
+        recreate: auto
+        files:
+          - backend-compose.yml
