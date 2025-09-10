@@ -29,6 +29,7 @@ jobs:
 
       - name: Run tests
         run: go test ./...
+        working-directory: backend
 
       - name: Build Docker image
         run: docker build -t $IMAGE_NAME:$IMAGE_TAG .
