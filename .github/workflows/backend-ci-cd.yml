@@ -39,7 +39,7 @@ jobs:
         run: docker push $IMAGE_NAME:$IMAGE_TAG
 
       - name: Run Ansible backend deploy
-        uses: appleboy/ansible-action@v0.0.3
+        uses: appleboy/ansible@master
         with:
           playbook: backend.yml
           inventory: inventory.ini
