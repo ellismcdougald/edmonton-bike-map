@@ -28,3 +28,33 @@ resource "digitalocean_droplet" "vps" {
 output "droplet_ip" {
   value = digitalocean_droplet.vps.ipv4_address
 }
+
+resource "digitalocean_firewall" "api_firewall" {
+  name = "edmonton-bike-api"
+
+  droplet_ids = [digitalocean_droplet.vps.id]
+
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "22"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "8080"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "80"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+
+  inbound_rule {
+    protocol         = "tcp"
+    port_range       = "443"
+    source_addresses = ["0.0.0.0/0", "::/0"]
+  }
+}

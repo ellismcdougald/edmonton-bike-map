@@ -11,5 +11,5 @@ FROM alpine:latest
 WORKDIR /app
 COPY --from=builder /app/ebm-backend .
 RUN chmod +x ./ebm-backend
-EXPOSE 8000
+EXPOSE 8080
 CMD ["./ebm-backend"]
