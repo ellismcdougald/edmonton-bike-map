@@ -44,8 +44,15 @@ jobs:
       - name: Push Docker image
         run: docker push $IMAGE_NAME:$IMAGE_TAG
 
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VPS_IP }} >> ~/.ssh/known_hosts
+
       - name: Run backend playbook
-        run: ansible-playbook backend.yml -i inventory.ini
+        run: ansible-playbook backend.yml -i inventory.ini --private-key ~/.ssh/id_rsa
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
-          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+        working-directory: deployment/ansible
