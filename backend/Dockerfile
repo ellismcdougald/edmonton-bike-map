@@ -9,6 +9,7 @@ RUN go build -o ebm-backend ./cmd/backend
 # Final
 FROM alpine:latest
 WORKDIR /app
+COPY --from=builder /app/ebm-backend .
 COPY ebm-backend .
 RUN chmod +x ./ebm-backend
 EXPOSE 8000
