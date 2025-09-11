@@ -52,7 +52,7 @@ jobs:
           ssh-keyscan -H ${{ secrets.VPS_IP }} >> ~/.ssh/known_hosts
 
       - name: Run backend playbook
-        run: ansible-playbook backend.yml -i inventory.ini --private-key ~/.ssh/id_rsa
+        run: ansible-playbook backend.yml -i inventory.ini --private-key ~/.ssh/id_rsa -e "ghcr_pat=${{ secrets.GHCR_PAT }}"
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
         working-directory: deployment/ansible
