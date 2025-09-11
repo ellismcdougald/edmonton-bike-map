@@ -31,12 +31,6 @@
         path: /root/app
         state: directory
 
-    - name: Copy .env file to server
-      copy:
-        src: .env
-        dest: /root/app/.env
-        mode: "0644"
-
     - name: Copy backend-compose.yml to server
       copy:
         src: backend-compose.yml
