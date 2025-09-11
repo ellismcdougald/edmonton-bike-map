@@ -40,7 +40,7 @@
     - name: Log in to GitHub Container Registry
       docker_login:
         registry_url: ghcr.io
-        username: "{{ gh_username }}"
+        username: "{{ lookup('env','GITHUB_ACTOR') }}"
         password: "{{ ghcr_pat }}"
 
     - name: Deploy app with Compose
