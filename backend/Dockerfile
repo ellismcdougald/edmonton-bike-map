@@ -1,14 +1,15 @@
-# Minimal image for your prebuilt binary
-FROM alpine:latest
-
+# Build
+FROM golang:1.24-alpine AS builder
 WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN go build -o ebm-backend ./cmd/backend
 
-# Copy the Linux/amd64 binary you built locally
+# Final
+FROM alpine:latest
+WORKDIR /app
 COPY ebm-backend .
-
 RUN chmod +x ./ebm-backend
-
 EXPOSE 8000
-
-# Run the binary
 CMD ["./ebm-backend"]
