@@ -4,7 +4,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN go build -o ebm-backend ./cmd/backend
+RUN go build -o ebm-backend ./cmd/server
 
 # Final
 FROM alpine:latest
