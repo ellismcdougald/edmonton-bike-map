@@ -8,24 +8,21 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    container:
+      image: williamyeh/ansible:alpine3
 
     env:
       IMAGE_NAME: ghcr.io/ellismcdougald/edmonton-bike-backend
       IMAGE_TAG: latest
 
     steps:
-      - name: Install Ansible
-        run: |
-          sudo apt update
-          sudo apt install -y ansible
-
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
+          go-version: "1.24"
 
       - name: Run tests
         run: go test ./...
