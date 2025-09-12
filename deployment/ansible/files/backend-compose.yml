@@ -11,6 +11,5 @@ services:
   migrate:
     image: ghcr.io/ellismcdougald/edmonton-bike-backend:latest
     env_file: .env
-    entrypoint:
-      ["migrate", "-path=/app/migrations", "-database=${DATABASE_URL}", "up"]
+    entrypoint: ["sh", "-c", "echo $DATABASE_URL"]
     restart: "no"
