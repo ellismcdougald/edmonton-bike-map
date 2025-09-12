@@ -28,9 +28,11 @@
 
 import type { Review as ReviewObj } from '$lib/types';
 
+const apiUrl = import.meta.env.VITE_API_URL;
+
 export async function fetchReviews(wayId: number): Promise<ReviewObj[]> {
 	try {
-		const res = await fetch(`http://localhost:8080/api/reviews?wayID=${wayId}`);
+		const res = await fetch(`${apiUrl}/api/reviews?wayID=${wayId}`);
 		if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
 		return await res.json();
 	} catch (e) {
@@ -49,7 +51,7 @@ export interface ReviewData {
 type FetchFn = typeof fetch;
 
 export async function submitReview(reviewData: ReviewData, fetchFn: FetchFn = fetch) {
-	const res = await fetchFn('http://localhost:8080/api/reviews', {
+	const res = await fetchFn(`${apiUrl}/api/reviews`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify(reviewData)

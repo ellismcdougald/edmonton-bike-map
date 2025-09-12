@@ -27,6 +27,8 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 
+  const apiUrl = import.meta.env.VITE_API_URL;
+
 	let username = '';
 	let password = '';
 	let errorMsg = '';
@@ -37,7 +39,7 @@
 		isSubmitting = true;
 		errorMsg = '';
 
-		const res = await fetch('http://localhost:8080/api/signup', {
+		const res = await fetch(`${apiUrl}/api/signup`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ username, password })

@@ -25,6 +25,8 @@
 import type { LeafletMap } from './LeafletMap';
 import type { FeatureCollection } from 'geojson';
 
+const apiUrl = import.meta.env.VITE_API_URL;
+
 type FetchFn = typeof fetch;
 
 interface FindRouteOptions {
@@ -72,7 +74,7 @@ function buildRouteParams(
 }
 
 async function fetchRoute(params: URLSearchParams, fetchFn: FetchFn) {
-	const res = await fetchFn(`http://localhost:8080/api/route?${params.toString()}`);
+	const res = await fetchFn(`${apiUrl}/api/route?${params.toString()}`);
 	if (!res.ok) throw new Error('Failed to get route data');
 	return res.json();
 }

@@ -40,8 +40,10 @@
 	import { loadLeaflet } from '$lib/map/loadLeaflet';
 	import { findRoute } from '$lib/map/mapActions';
 
+  const apiUrl = import.meta.env.VITE_API_URL;
+
 	let mapInstance: InstanceType<typeof import('$lib/map/LeafletMap').LeafletMap> | null = null;
-	const allWaysEndpoint = 'http://localhost:8080/api/all-ways';
+	const allWaysEndpoint = `${apiUrl}/api/all-ways`;
 	let mode: MapModeState = { selectStartActive: false, selectEndActive: false };
 
 	function onMapClick(latlng: [number, number]): void {

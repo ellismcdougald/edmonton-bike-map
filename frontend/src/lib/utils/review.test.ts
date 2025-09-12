@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { submitReview } from '$lib/utils/review';
 
+const apiUrl = import.meta.env.VITE_API_URL;
+
 describe('submitReview', () => {
 	let fetchMock: typeof globalThis.fetch;
 
@@ -27,7 +29,7 @@ describe('submitReview', () => {
 		await submitReview(reviewData); // just call normally
 
 		expect(fetchMock).toHaveBeenCalledTimes(1);
-		expect(fetchMock).toHaveBeenCalledWith('http://localhost:8080/api/reviews', {
+		expect(fetchMock).toHaveBeenCalledWith(`${apiUrl}/api/reviews`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(reviewData)
