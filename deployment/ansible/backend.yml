@@ -53,12 +53,9 @@
           - backend-compose.yml
 
     - name: Debug DATABASE_URL in migrate container
-      community.docker.docker_compose_v2:
-        project_src: /root/app
-        files:
-          - backend-compose.yml
-        services:
-          - migrate
-        state: present
-        detached: false # wait for container to finish and capture logs
-        entrypoint: ["sh", "-c", "echo $DATABASE_URL"]
+      shell: docker compose -f /root/app/backend-compose.yml run --rm migrate sh -c 'echo $DATABASE_URL'
+      register: db_url_output
+
+    - name: Show DATABASE_URL captured
+      debug:
+        var: db_url_output.stdout
