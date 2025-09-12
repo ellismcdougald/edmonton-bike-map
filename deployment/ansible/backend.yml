@@ -51,3 +51,14 @@
         recreate: auto
         files:
           - backend-compose.yml
+
+    - name: Debug DATABASE_URL in migrate container
+      community.docker.docker_compose_v2:
+        project_src: /root/app
+        files:
+          - backend-compose.yml
+        services:
+          - migrate
+        state: present
+        detached: false # wait for container to finish and capture logs
+        entrypoint: ["sh", "-c", "echo $DATABASE_URL"]
