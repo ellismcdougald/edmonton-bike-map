@@ -53,7 +53,10 @@ func main() {
 	wayStore := &model.DBWayStore{DB: db}
 	reviewStore := &model.DBReviewStore{DB: db}
 
-	network, _ := network.BuildNetwork(nodeStore, wayStore, reviewStore)
+	network, err := network.BuildNetwork(nodeStore, wayStore, reviewStore)
+	if err != nil {
+		log.Fatalf("Error building network: %v", err)
+	}
 
 	mux := http.NewServeMux()
 	userStore := &model.DBUserStore{DB: db}
