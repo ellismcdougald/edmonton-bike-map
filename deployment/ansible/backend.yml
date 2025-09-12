@@ -51,6 +51,8 @@
         recreate: auto
         files:
           - backend-compose.yml
+        services:
+          - backend
 
     - name: Run database migrations
       shell: docker compose -f /root/app/backend-compose.yml run --rm migrate
