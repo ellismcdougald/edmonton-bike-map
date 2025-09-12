@@ -55,7 +55,7 @@
           - backend
 
     - name: Run database migrations
-      shell: docker compose -f /root/app/backend-compose.yml run --rm migrate ls /app/migrations 2>&1
+      shell: docker compose -f /root/app/backend-compose.yml run --rm migrate
       register: migrate_output
 
     - name: Show DATABASE_URL captured
