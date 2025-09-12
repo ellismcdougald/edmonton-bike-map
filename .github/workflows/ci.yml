@@ -149,6 +149,7 @@ jobs:
           npm run test:e2e -- --timeout 30000
         working-directory: ./frontend
         env:
+          VITE_API_URL: http://localhost:8080
           POSTGRES_TEST_USER: testuser
           POSTGRES_TEST_PASSWORD: testpass
           POSTGRES_TEST_DB: bikemap_test
