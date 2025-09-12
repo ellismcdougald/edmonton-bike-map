@@ -12,5 +12,10 @@ services:
     image: ghcr.io/ellismcdougald/edmonton-bike-backend:latest
     env_file: .env
     entrypoint:
-      ["migrate", "-path=/app/migrations", "-database=${DATABASE_URL}", "up"]
+      [
+        "app/migrate",
+        "-path=/app/migrations",
+        "-database=${DATABASE_URL}",
+        "up",
+      ]
     restart: "no"
