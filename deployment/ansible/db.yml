@@ -1,8 +1,6 @@
 ---
 - name: Deploy Postgres DB on droplet
   hosts: general
-  vars_files:
-    - vars.yml
   become: yes
   collections:
     - community.docker
@@ -48,6 +46,6 @@
         project_src: /root/app
         state: present
         pull: always
-        recreate: false
+        recreate: never
         files:
           - db-compose.yml
