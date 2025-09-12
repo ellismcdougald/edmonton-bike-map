@@ -52,9 +52,9 @@
         files:
           - backend-compose.yml
 
-    - name: Debug DATABASE_URL in migrate container
-      shell: docker compose -f /root/app/backend-compose.yml run --rm migrate sh -c 'echo $DATABASE_URL'
-      register: db_url_output
+    - name: Run database migrations
+  shell: docker compose -f /root/app/backend-compose.yml run --rm migrate
+  register: migrate_output
 
     - name: Show DATABASE_URL captured
       debug:
