@@ -43,6 +43,18 @@
         username: "{{ lookup('env','GITHUB_ACTOR') }}"
         password: "{{ ghcr_pat }}"
 
+    - name: Ensure letsencrypt directory exists
+      file:
+        path: /root/app/letsencrypt
+        state: directory
+        mode: "0700"
+
+    - name: Ensure acme.json exists
+      file:
+        path: /root/app/letsencrypt/acme.json
+        state: touch
+        mode: "0600"
+
     - name: Deploy app with Compose
       community.docker.docker_compose_v2:
         project_src: /root/app
@@ -53,6 +65,7 @@
           - backend-compose.yml
         services:
           - backend
+          - traefik
 
     - name: Run database migrations
       shell: docker compose -f /root/app/backend-compose.yml run --rm migrate
