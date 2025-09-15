@@ -60,6 +60,4 @@ export async function submitReview(reviewData: ReviewData, fetchFn: FetchFn = fe
 	if (!res.ok) {
 		throw new Error(`Failed to submit review: ${res.statusText}`);
 	}
-
-	return res.json();
 }
