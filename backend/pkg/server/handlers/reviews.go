@@ -44,7 +44,6 @@ func (h *RealHandlers) HandleGetReviews() http.HandlerFunc {
 // and HTTP 500 Internal Server Error if saving the review fails.
 func (h *RealHandlers) HandlePostReview() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 
