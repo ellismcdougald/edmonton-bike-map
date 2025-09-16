@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { submitReview } from '$lib/utils/review';
+import { submitReview, computeAverageRating } from '$lib/utils/review';
+import type { Review } from '$lib/types';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 

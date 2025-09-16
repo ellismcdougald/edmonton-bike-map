@@ -44,7 +44,6 @@
 		if (way) {
 			loadReviews(way.id);
 			sidebarLoaded = true;
-			console.log(reviews);
 		}
 	});
 
@@ -83,7 +82,7 @@
 			</h2>
 			<h2 class="font-semibold">
 				Average Rating: <span class="font-normal"
-					>{reviews.length > 0 ? computeAverageRating(reviews) : 'TBD'}</span
+					>{reviews.length > 0 ? `${computeAverageRating(reviews)} / 10` : 'TBD'}</span
 				>
 			</h2>
 		</section>
