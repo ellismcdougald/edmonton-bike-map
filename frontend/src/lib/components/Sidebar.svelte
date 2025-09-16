@@ -28,12 +28,23 @@
 	import { wayState } from '$lib/state.svelte';
 	import type { WayFeature } from '$lib/types';
 	import { determineRouteType, determineBicycleRoute } from '$lib/utils/route';
+	import type { Review as ReviewObj } from '$lib/types';
+	import { fetchReviews, computeAverageRating } from '$lib/utils/review';
+	import { capitalizeFirstLetter } from '$lib/utils/helpers';
 
 	let way: WayFeature | null = $derived(wayState.selectedWay);
+	let reviews: ReviewObj[] = $state([]);
+
+	async function loadReviews(wayId: number) {
+		reviews = await fetchReviews(wayId);
+	}
 
 	let sidebarLoaded: boolean = $state(false);
 	$effect(() => {
-		if (way) sidebarLoaded = true;
+		if (way) {
+			loadReviews(way.id);
+			sidebarLoaded = true;
+		}
 	});
 
 	let isVisible: boolean = $state(true);
@@ -65,12 +76,18 @@
 				Bicycle Route: <span class="font-normal">{determineBicycleRoute(way.tags)}</span>
 			</h2>
 			<h2 class="font-semibold">
-				Surface: <span class="font-normal">{way.tags.surface ? way.tags.surface : 'Unknown'}</span>
+				Surface: <span class="font-normal"
+					>{way.tags.surface ? capitalizeFirstLetter(way.tags.surface) : 'Unknown'}</span
+				>
 			</h2>
-			<h2 class="font-semibold">Rating: <span class="font-normal">8 / 10</span></h2>
+			<h2 class="font-semibold">
+				Average Rating: <span class="font-normal"
+					>{reviews.length > 0 ? `${computeAverageRating(reviews)} / 10` : 'TBD'}</span
+				>
+			</h2>
 		</section>
 
-		<ReviewContainer wayId={way.id} />
+		<ReviewContainer wayId={way.id} {reviews} />
 	</div>
 {/if}
 
