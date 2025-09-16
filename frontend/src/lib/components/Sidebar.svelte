@@ -87,7 +87,7 @@
 			</h2>
 		</section>
 
-		<ReviewContainer wayId={way.id} />
+		<ReviewContainer wayId={way.id} {reviews} />
 	</div>
 {/if}
 

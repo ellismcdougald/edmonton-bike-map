@@ -48,3 +48,34 @@ describe('submitReview', () => {
 		await expect(submitReview(reviewData)).rejects.toThrow('Failed to submit review: Bad Request');
 	});
 });
+
+describe('computeAverageRating', () => {
+	it('returns NaN for empty array', () => {
+		const reviews: Review[] = [];
+		expect(computeAverageRating(reviews)).toBeNaN();
+	});
+
+	it('returns the rating itself for single review', () => {
+		const reviews: Review[] = [
+			{ wayID: 1, username: 'alice', rating: 4, comment: 'Nice', createdAt: '2025-09-15' }
+		];
+		expect(computeAverageRating(reviews)).toBe(4);
+	});
+
+	it('calculates average rating rounded to 1 decimal', () => {
+		const reviews: Review[] = [
+			{ wayID: 1, username: 'alice', rating: 3, comment: '', createdAt: '2025-09-15' },
+			{ wayID: 1, username: 'bob', rating: 4, comment: '', createdAt: '2025-09-15' },
+			{ wayID: 1, username: 'carol', rating: 5, comment: '', createdAt: '2025-09-15' }
+		];
+		expect(computeAverageRating(reviews)).toBe(4); // (3+4+5)/3 = 4
+	});
+
+	it('rounds average to 1 decimal for non-integer result', () => {
+		const reviews: Review[] = [
+			{ wayID: 1, username: 'alice', rating: 3, comment: '', createdAt: '2025-09-15' },
+			{ wayID: 1, username: 'bob', rating: 4, comment: '', createdAt: '2025-09-15' }
+		];
+		expect(computeAverageRating(reviews)).toBe(3.5); // (3+4)/2 = 3.5
+	});
+});

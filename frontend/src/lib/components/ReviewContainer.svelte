@@ -26,19 +26,9 @@
 	import Review from './Review.svelte';
 	import AddReviewPopup from './AddReviewPopup.svelte';
 	import type { Review as ReviewObj } from '$lib/types';
-	import { fetchReviews } from '$lib/utils/review';
 
-	let { wayId }: { wayId: number } = $props();
+	let { wayId, reviews }: { wayId: number; reviews: ReviewObj[] } = $props();
 	let addReviewActive: boolean = $state(false);
-	let reviews: ReviewObj[] = $state([]);
-
-	async function loadReviews(wayId: number) {
-		reviews = await fetchReviews(wayId);
-	}
-
-	$effect(() => {
-		loadReviews(wayId);
-	});
 </script>
 
 <div id="review-container" class="border-t">
@@ -57,7 +47,6 @@
 		<AddReviewPopup
 			closePopup={() => {
 				addReviewActive = false;
-				loadReviews(wayId);
 			}}
 			{wayId}
 		/>
