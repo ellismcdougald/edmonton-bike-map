@@ -195,7 +195,7 @@ export class LeafletMap {
 		const distance = feature.properties?.['distance_km'];
 		// Add distance control
 		this.distanceControl = new (this.L.Control.extend({
-			onAdd: (map: LeafletMapType) => {
+			onAdd: () => {
 				const div = this.L.DomUtil.create('div', 'distance-control') as HTMLDivElement;
 				div.innerHTML = `Distance: ${distance.toFixed(2)} km`;
 				return div;
@@ -207,7 +207,7 @@ export class LeafletMap {
 		const timeH = distance / avgSpeedKmh;
 		const timeMin = Math.round(timeH * 60);
 		this.timeControl = new (this.L.Control.extend({
-			onAdd: (map: LeafletMapType) => {
+			onAdd: () => {
 				const div = this.L.DomUtil.create('div', 'time-control') as HTMLDivElement;
 				div.innerHTML = `Estimated time: ${timeMin} min`;
 				return div;
