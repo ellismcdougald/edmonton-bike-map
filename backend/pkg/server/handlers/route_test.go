@@ -41,6 +41,7 @@ func TestHandleRouteByCoordinates(t *testing.T) {
 		url             string
 		wantStatus      int
 		wantCoordinates [][2]float64
+		wantDistance    float64
 	}{
 		{
 			name:       "Valid request 1",
@@ -51,6 +52,7 @@ func TestHandleRouteByCoordinates(t *testing.T) {
 				{-113.6, 53.6},
 				{-113.7, 53.7},
 			},
+			wantDistance: 10.5,
 		},
 		{
 			name:       "Valid request 2",
@@ -61,6 +63,7 @@ func TestHandleRouteByCoordinates(t *testing.T) {
 				{-113.6, 53.6},
 				{-113.7, 53.7},
 			},
+			wantDistance: 10.5,
 		},
 		{
 			name:       "Missing parameter",
@@ -84,7 +87,6 @@ func TestHandleRouteByCoordinates(t *testing.T) {
 			resp := w.Result()
 			defer func() {
 				if err := resp.Body.Close(); err != nil {
-					// Log or handle error
 					log.Printf("failed to close response body: %v", err)
 				}
 			}()
@@ -128,6 +130,12 @@ func TestHandleRouteByCoordinates(t *testing.T) {
 					if coord[0] != wantCoord[0] || coord[1] != wantCoord[1] {
 						t.Errorf("coordinate %d = %v; want %v", i, coord, wantCoord)
 					}
+				}
+
+				if dist, ok := geojson.Properties["distance_km"]; !ok {
+					t.Errorf("expected distance_km property but not found")
+				} else if dist.(float64) != tt.wantDistance {
+					t.Errorf("unexpected distance_km: got %v, want %v", dist, tt.wantDistance)
 				}
 			}
 		})

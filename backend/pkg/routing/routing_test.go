@@ -7,6 +7,20 @@ import (
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
 )
 
+// pathPlanarDistance sums planarDistance over the path using the provided nodes.
+func pathPlanarDistance(path []int64, nodes map[int64]model.Node) float64 {
+    if len(path) < 2 {
+        return 0
+    }
+    total := 0.0
+    for i := 1; i < len(path); i++ {
+        n1 := nodes[path[i-1]]
+        n2 := nodes[path[i]]
+        total += planarDistance(n1.Latitude, n1.Longitude, n2.Latitude, n2.Longitude)
+    }
+    return total
+}
+
 func buildTestGraph() *model.Graph {
 	nodes := map[int64]model.Node{
 		1: {Latitude: 0, Longitude: 0},
@@ -83,13 +97,12 @@ func TestFindRoute(t *testing.T) {
 
 	tests := []struct {
 		start, end int64
-		wantDist   float64
 		wantPaths  [][]int64
 		wantFound  bool
 	}{
-		{1, 4, 4.0, [][]int64{{1, 4}, {1, 2, 3, 4}}, true},
-		{4, 1, math.Inf(1), nil, false},
-		{2, 2, 0, [][]int64{{2}}, true},
+		{1, 4, [][]int64{{1, 4}, {1, 2, 3, 4}}, true},
+		{4, 1, nil, false},
+		{2, 2, [][]int64{{2}}, true},
 	}
 
 	for _, tt := range tests {
@@ -107,8 +120,9 @@ func TestFindRoute(t *testing.T) {
 			continue
 		}
 
-		if math.Abs(dist-tt.wantDist) > 1e-9 {
-			t.Errorf("findRoute(%d, %d): dist = %f; want %f", tt.start, tt.end, dist, tt.wantDist)
+		expectedDist := pathPlanarDistance(path, graph.Nodes)
+		if math.Abs(dist-expectedDist) > 1e-9 {
+			t.Errorf("findRoute(%d, %d): dist = %f; want %f", tt.start, tt.end, dist, expectedDist)
 		}
 
 		matches := false
@@ -132,6 +146,7 @@ func TestFindRoute(t *testing.T) {
 		}
 	}
 }
+
 
 func TestDijkstra(t *testing.T) {
 	graph := buildTestGraph()
@@ -232,14 +247,12 @@ func TestFindRouteFromCoordinates(t *testing.T) {
 	tests := []struct {
 		startLat, startLon float64
 		endLat, endLon     float64
-		wantDist           float64
 		wantPaths          [][]int64
 		wantFound          bool
 	}{
 		{
 			startLat: 0, startLon: 0,
-			endLat: 1, endLon: 0,
-			wantDist: 4.0,
+			endLat:   1, endLon: 0,
 			wantPaths: [][]int64{
 				{1, 4},
 				{1, 2, 3, 4},
@@ -248,15 +261,13 @@ func TestFindRouteFromCoordinates(t *testing.T) {
 		},
 		{
 			startLat: 1, startLon: 0,
-			endLat: 0, endLon: 0,
-			wantDist:  math.Inf(1),
+			endLat:   0, endLon: 0,
 			wantPaths: nil,
 			wantFound: false,
 		},
 		{
 			startLat: 0, startLon: 1,
-			endLat: 0, endLon: 1,
-			wantDist: 0,
+			endLat:   0, endLon: 1,
 			wantPaths: [][]int64{
 				{2},
 			},
@@ -281,9 +292,10 @@ func TestFindRouteFromCoordinates(t *testing.T) {
 			continue
 		}
 
-		if math.Abs(dist-tt.wantDist) > 1e-9 {
+		expectedDist := pathPlanarDistance(path, graph.Nodes)
+		if math.Abs(dist-expectedDist) > 1e-9 {
 			t.Errorf("FindRouteFromCoordinates(%v,%v -> %v,%v): dist = %f; want %f",
-				tt.startLat, tt.startLon, tt.endLat, tt.endLon, dist, tt.wantDist)
+				tt.startLat, tt.startLon, tt.endLat, tt.endLon, dist, expectedDist)
 		}
 
 		matches := false
