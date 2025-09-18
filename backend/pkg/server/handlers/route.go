@@ -44,7 +44,7 @@ func (h *RealHandlers) HandleRouteByCoordinates() http.HandlerFunc {
 			return
 		}
 
-		_, pathIds := h.Router.FindRouteFromCoordinates(h.Network, startLatitude, startLongitude, endLatitude, endLongitude)
+		dist, pathIds := h.Router.FindRouteFromCoordinates(h.Network, startLatitude, startLongitude, endLatitude, endLongitude)
 
 		var coordinates = [][2]float64{}
 		for _, nodeID := range pathIds {
@@ -60,7 +60,9 @@ func (h *RealHandlers) HandleRouteByCoordinates() http.HandlerFunc {
 				"type":        "LineString",
 				"coordinates": coordinates,
 			},
-			"properties": map[string]any{},
+			"properties": map[string]any{
+				"distance_km": dist,
+			},
 		}
 
 		writer.Header().Set("Content-Type", "application/json")

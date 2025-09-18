@@ -40,7 +40,7 @@
 	import { loadLeaflet } from '$lib/map/loadLeaflet';
 	import { findRoute } from '$lib/map/mapActions';
 
-  const apiUrl = import.meta.env.VITE_API_URL;
+	const apiUrl = import.meta.env.VITE_API_URL;
 
 	let mapInstance: InstanceType<typeof import('$lib/map/LeafletMap').LeafletMap> | null = null;
 	const allWaysEndpoint = `${apiUrl}/api/all-ways`;
@@ -158,4 +158,17 @@
 			Reset
 		</button>
 	</div>
+
+	<style>
+		.distance-control,
+		.time-control {
+			background-color: rgba(255, 255, 255, 0.9);
+			padding: 0.5rem 1rem;
+			border-radius: 0.5rem;
+			box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+			font-size: 0.875rem;
+			font-weight: 500;
+			text-align: center;
+		}
+	</style>
 </div>

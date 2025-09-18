@@ -80,6 +80,15 @@ test.describe('route finding with a test user', () => {
 		await expect(routePaths.first()).toBeVisible({ timeout: 5000 });
 		const count = await routePaths.count();
 		expect(count).toBeGreaterThan(0);
+
+		const distanceControl = page.locator('.distance-control');
+		await expect(distanceControl).toBeVisible({ timeout: 5000 });
+		const distanceText = await distanceControl.textContent();
+		expect(distanceText).toMatch(/km$/); // ends with "km"
+		const timeControl = page.locator('.time-control');
+		await expect(timeControl).toBeVisible({ timeout: 5000 });
+		const timeText = await timeControl.textContent();
+		expect(timeText).toMatch(/min$/); // ends with "min"
 	});
 
 	test('user can log in, then select a start and end point, find a route between those two points, then reset the map', async ({
