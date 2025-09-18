@@ -61,6 +61,8 @@ export class LeafletMap {
 	private endMarker: Marker | null = null;
 	private routeLayer: GeoJSON | null = null;
 	private infoLayer: GeoJSON | null = null;
+	private distanceControl: L.Control | null = null;
+	private timeControl: L.Control | null = null;
 
 	constructor(L: typeof import('leaflet')) {
 		this.L = L;
@@ -188,12 +190,38 @@ export class LeafletMap {
 		if (bounds.isValid()) {
 			this.map.fitBounds(bounds);
 		}
+
+		const feature = geojson as GeoJSON.Feature;
+		const distance = feature.properties?.['distance_km'];
+		// Add distance control
+		this.distanceControl = new (this.L.Control.extend({
+			onAdd: (map: LeafletMapType) => {
+				const div = this.L.DomUtil.create('div', 'distance-control') as HTMLDivElement;
+				div.innerHTML = `Distance: ${distance.toFixed(2)} km`;
+				return div;
+			}
+		}))({ position: 'topright' });
+		this.distanceControl.addTo(this.map);
+		// Add time control
+		const avgSpeedKmh = 20; // commuter average speed
+		const timeH = distance / avgSpeedKmh;
+		const timeMin = Math.round(timeH * 60);
+		this.timeControl = new (this.L.Control.extend({
+			onAdd: (map: LeafletMapType) => {
+				const div = this.L.DomUtil.create('div', 'time-control') as HTMLDivElement;
+				div.innerHTML = `Estimated time: ${timeMin} min`;
+				return div;
+			}
+		}))({ position: 'topright' });
+		this.timeControl.addTo(this.map);
 	}
 
 	removeRouteLayer(): void {
 		if (this.routeLayer) {
 			this.map.removeLayer(this.routeLayer);
 			this.routeLayer = null;
+			this.distanceControl?.remove();
+			this.distanceControl = null;
 		}
 	}
 
