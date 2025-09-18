@@ -9,16 +9,16 @@ import (
 
 // pathPlanarDistance sums planarDistance over the path using the provided nodes.
 func pathPlanarDistance(path []int64, nodes map[int64]model.Node) float64 {
-    if len(path) < 2 {
-        return 0
-    }
-    total := 0.0
-    for i := 1; i < len(path); i++ {
-        n1 := nodes[path[i-1]]
-        n2 := nodes[path[i]]
-        total += planarDistance(n1.Latitude, n1.Longitude, n2.Latitude, n2.Longitude)
-    }
-    return total
+	if len(path) < 2 {
+		return 0
+	}
+	total := 0.0
+	for i := 1; i < len(path); i++ {
+		n1 := nodes[path[i-1]]
+		n2 := nodes[path[i]]
+		total += planarDistance(n1.Latitude, n1.Longitude, n2.Latitude, n2.Longitude)
+	}
+	return total
 }
 
 func buildTestGraph() *model.Graph {
@@ -147,7 +147,6 @@ func TestFindRoute(t *testing.T) {
 	}
 }
 
-
 func TestDijkstra(t *testing.T) {
 	graph := buildTestGraph()
 
@@ -252,7 +251,7 @@ func TestFindRouteFromCoordinates(t *testing.T) {
 	}{
 		{
 			startLat: 0, startLon: 0,
-			endLat:   1, endLon: 0,
+			endLat: 1, endLon: 0,
 			wantPaths: [][]int64{
 				{1, 4},
 				{1, 2, 3, 4},
@@ -261,13 +260,13 @@ func TestFindRouteFromCoordinates(t *testing.T) {
 		},
 		{
 			startLat: 1, startLon: 0,
-			endLat:   0, endLon: 0,
+			endLat: 0, endLon: 0,
 			wantPaths: nil,
 			wantFound: false,
 		},
 		{
 			startLat: 0, startLon: 1,
-			endLat:   0, endLon: 1,
+			endLat: 0, endLon: 1,
 			wantPaths: [][]int64{
 				{2},
 			},

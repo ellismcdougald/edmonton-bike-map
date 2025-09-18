@@ -53,7 +53,7 @@ func estimateDistance(path []int64, nodes map[int64]model.Node) float64 {
 	if len(path) < 2 {
 		return 0
 	}
-	
+
 	dist := 0.0
 	for i := 1; i < len(path); i++ {
 		node1, ok1 := nodes[path[i-1]]
@@ -138,11 +138,11 @@ func reconstructPath(prev map[int64]int64, target int64) []int64 {
 
 // planarDistance returns distance in km
 func planarDistance(lat1, lon1, lat2, lon2 float64) float64 {
-    const metersPerDeg = 111320.0 // approximate meters per degree
-    latAvg := (lat1 + lat2) / 2 * math.Pi / 180
+	const metersPerDeg = 111320.0 // approximate meters per degree
+	latAvg := (lat1 + lat2) / 2 * math.Pi / 180
 
-    dx := (lon2 - lon1) * math.Cos(latAvg) * metersPerDeg
-    dy := (lat2 - lat1) * metersPerDeg
+	dx := (lon2 - lon1) * math.Cos(latAvg) * metersPerDeg
+	dy := (lat2 - lat1) * metersPerDeg
 
-    return math.Sqrt(dx*dx + dy*dy) / 1000.0 // convert to km
+	return math.Sqrt(dx*dx+dy*dy) / 1000.0 // convert to km
 }
