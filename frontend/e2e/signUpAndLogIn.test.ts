@@ -13,7 +13,7 @@ const dbConfig = {
 };
 
 test.describe('sign up', () => {
-	const testUsername = 'test-user';
+	const testUsername = `test-user-${Date.now()}`;
 	const testPassword = 'test-password';
 
 	let client: Client;
