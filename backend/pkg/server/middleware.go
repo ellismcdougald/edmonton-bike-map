@@ -11,6 +11,7 @@ func corsMiddleware(allowedMethods ...string) func(http.Handler) http.Handler {
 		"http://localhost:4173",
 		"http://localhost:5173",
 		"https://edmonton-bike-map-frontend.vercel.app",
+		"https://www.edmontonbikemap.xyz",
 	}
 
 	methods := strings.Join(allowedMethods, ", ")
