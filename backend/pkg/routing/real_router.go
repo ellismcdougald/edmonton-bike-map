@@ -11,3 +11,9 @@ type RealRouter struct{}
 func (r RealRouter) FindRouteFromCoordinates(network *model.Graph, startLatitude, startLongitude, endLatitude, endLongitude float64) (float64, []int64) {
 	return FindRouteFromCoordinates(network, startLatitude, startLongitude, endLatitude, endLongitude)
 }
+
+// FindRoutesFromCoordinates finds up to k distinct routes between start and end coordinates.
+// Returns a slice of model.Path, each containing Nodes and Cost.
+func (r RealRouter) FindRoutesFromCoordinates(network *model.Graph, startLatitude, startLongitude, endLatitude, endLongitude float64, k int) []model.Path {
+	return FindRoutesFromCoordinates(network, startLatitude, startLongitude, endLatitude, endLongitude, k)
+}

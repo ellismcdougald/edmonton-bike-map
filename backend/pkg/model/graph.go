@@ -16,3 +16,9 @@ type Graph struct {
 	Nodes map[int64]Node   // map node ids to nodes
 	Edges map[int64][]Edge // map node ids to lists of edges
 }
+
+// Path represents a path from one node to another
+type Path struct {
+	Nodes []int64
+	Cost float64
+}

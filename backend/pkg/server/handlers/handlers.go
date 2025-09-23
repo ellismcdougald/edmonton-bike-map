@@ -14,6 +14,7 @@ type APIHandlers interface {
 	HandleLogin() http.HandlerFunc
 	HandleSignup() http.HandlerFunc
 	HandleRouteByCoordinates() http.HandlerFunc
+	HandleRoutesByCoordinates() http.HandlerFunc
 	HandleAllWays() http.HandlerFunc
 	HandleGetReviews() http.HandlerFunc
 	HandlePostReview() http.HandlerFunc

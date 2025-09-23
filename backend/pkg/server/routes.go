@@ -28,6 +28,11 @@ func RegisterRoutes(mux *http.ServeMux, network *model.Graph, db *sql.DB, handle
 		handler(w, r)
 	})))
 
+	mux.Handle("/api/routes", corsMiddleware("GET", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handler := handlerFuncs.HandleRoutesByCoordinates()
+		handler(w, r)
+	})))
+
 	mux.Handle("/api/all-ways", corsMiddleware("GET", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handler := handlerFuncs.HandleAllWays()
 		handler(w, r)
