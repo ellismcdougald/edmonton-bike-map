@@ -82,26 +82,29 @@ jobs:
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: bikemap_test
-        ports:
-          - 5434:5432
-        options: >-
-          --health-cmd "pg_isready -U testuser"
-          --health-interval 2s
-          --health-timeout 2s
-          --health-retries 10
     steps:
       - name: Log in to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Start Postgres container
+        run: |
+          docker run -d --name postgres_test \
+            -e POSTGRES_USER=testuser \
+            -e POSTGRES_PASSWORD=testpass \
+            -e POSTGRES_DB=bikemap_test \
+            -p 5434:5432 \
+            postgres:15
+          # Wait for Postgres to be ready
+          for i in {1..50}; do
+            if pg_isready -h localhost -p 5434 -U testuser; then
+              echo "Postgres is ready!"
+              break
+            fi
+            echo "Still waiting..."
+            sleep 2
+          done
       - uses: actions/checkout@v3
       - name: Set up Go
         uses: actions/setup-go@v4
@@ -116,17 +119,6 @@ jobs:
           npm ci
           npx playwright install
         working-directory: ./frontend
-      - name: Wait for Postgres
-        run: |
-          echo "Waiting for Postgres to be ready..."
-          for i in {1..50}; do
-            if pg_isready -h localhost -p 5434 -U testuser; then
-              echo "Postgres is ready!"
-              break
-            fi
-            echo "Still waiting..."
-            sleep 2
-          done
       - name: Install golang-migrate CLI
         run: |
           version=v4.18.3
@@ -163,3 +155,6 @@ jobs:
         if: always()
         run: |
           kill $(cat backend.pid) || true
+      - name: Stop Postgres container
+        if: always()
+        run: docker stop postgres_test
