@@ -93,7 +93,6 @@ const (
 	tagBicycle      = "bicycle"
 	tagBike         = "bike"
 	tagCycleway     = "cycleway"
-	tagHighway      = "highway"
 	tagLCN          = "lcn"
 	tagMotorVehicle = "motor_vehicle"
 	tagOneway       = "one_way"
@@ -114,6 +113,7 @@ func computeTagsMultiplier(tags map[string]string) float64 {
 func computeHighwayMultiplier(highwayTag string) float64 {
 	highwayPenalty := map[string]float64{
 		"cycleway":    0.9,
+		"path": 0.9,
 		"residential": 1,
 		"tertiary":    1.2,
 		"secondary":   1.5,
