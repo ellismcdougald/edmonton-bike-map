@@ -1,0 +1,10 @@
+[out:json][timeout:1800];
+area["name"="Edmonton"]->.searchArea;
+(
+  node(area.searchArea);
+  way(area.searchArea);
+  relation(area.searchArea);
+);
+out body;
+>;
+out skel qt;
