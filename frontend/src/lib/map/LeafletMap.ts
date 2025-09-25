@@ -176,6 +176,8 @@ export class LeafletMap {
 			this.map.removeLayer(this.routeLayer);
 			this.routeLayer = null;
 		}
+		this.endMarker?.closePopup();
+
 		this.routeLayer = this.L.geoJSON(geojson, {
 			pane: 'routePane',
 			style: { color: 'blue', weight: 5 },
@@ -222,6 +224,8 @@ export class LeafletMap {
 			this.routeLayer = null;
 			this.distanceControl?.remove();
 			this.distanceControl = null;
+			this.timeControl?.remove();
+			this.timeControl = null;
 		}
 	}
 
