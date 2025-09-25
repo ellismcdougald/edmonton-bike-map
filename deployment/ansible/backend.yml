@@ -13,11 +13,10 @@
         state: present
         update_cache: yes
 
-    - name: Create Docker CLI plugins directory
-      file:
-        path: /usr/local/lib/docker/cli-plugins
-        state: directory
-        mode: "0755"
+    - name: Check if Docker Compose binary exists
+      stat:
+        path: /usr/local/lib/docker/cli-plugins/docker-compose
+      register: docker_compose_binary
 
     - name: Download Docker Compose v2 binary
       get_url:
@@ -25,6 +24,7 @@
         dest: /usr/local/lib/docker/cli-plugins/docker-compose
         mode: "0755"
         force: no
+      when: not docker_compose_binary.stat.exists
 
     - name: Ensure app directory exists
       file:
