@@ -48,14 +48,18 @@ func (s *TxReviewStore) GetAllReviews() ([]Review, error) {
 		return nil, err
 	}
 
+	if reviews == nil {
+    reviews = []Review{}
+	}
+
 	return reviews, nil
 }
 
-// GetReviews retrieves all reviews for a specific way ID, including usernames.
 func (s *TxReviewStore) GetReviews(wayID int64) ([]Review, error) {
 	query := `
 		SELECT
 			r.way_id,
+			r.user_id,        -- Add this line
 			r.rating,
 			r.comment,
 			r.created_at,
@@ -64,7 +68,6 @@ func (s *TxReviewStore) GetReviews(wayID int64) ([]Review, error) {
 		LEFT JOIN users u ON r.user_id = u.id
 		WHERE r.way_id = $1;
 	`
-
 	rows, err := s.Tx.Query(query, wayID)
 	if err != nil {
 		return nil, err
@@ -78,7 +81,7 @@ func (s *TxReviewStore) GetReviews(wayID int64) ([]Review, error) {
 	var reviews []Review
 	for rows.Next() {
 		var review Review
-		err = rows.Scan(&review.WayID, &review.Rating, &review.Comment, &review.CreatedAt, &review.Username)
+		err = rows.Scan(&review.WayID, &review.UserID, &review.Rating, &review.Comment, &review.CreatedAt, &review.Username)  // Add &review.UserID
 		if err != nil {
 			return nil, err
 		}
@@ -90,7 +93,7 @@ func (s *TxReviewStore) GetReviews(wayID int64) ([]Review, error) {
 	}
 
 	if reviews == nil {
-		reviews = []Review{}
+    reviews = []Review{}
 	}
 
 	return reviews, nil
