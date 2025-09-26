@@ -118,8 +118,6 @@ func computeHighwayMultiplier(highwayTag string) float64 {
 		"tertiary":    1.2,
 		"secondary":   1.5,
 		"primary":     2.0,
-		"motorway":    math.Inf(1),
-		"trunk":       math.Inf(1),
 	}
 
 	highwayMultiplier, found := highwayPenalty[highwayTag]
