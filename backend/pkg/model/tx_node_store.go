@@ -22,6 +22,7 @@ func (s *TxNodeStore) Insert(n DBNode) error {
 }
 
 // InsertBatch inserts multiple DBNodes within the transaction in a single multi-row statement.
+// Does nothing for nodes that already exist.
 func (s *TxNodeStore) InsertBatch(nodes []DBNode) error {
 	if len(nodes) == 0 {
 		return nil
@@ -47,7 +48,8 @@ func (s *TxNodeStore) InsertBatch(nodes []DBNode) error {
 	return nil
 }
 
-// InsertBatchChunks inserts DBNodes in smaller batches within the transaction.
+// InsertBatchChunks inserts DBNodes in smaller batches to avoid exceeding parameter limits.
+// Each batch is inserted using InsertBatch.
 func (s *TxNodeStore) InsertBatchChunks(nodes []DBNode, batchSize int) error {
 	if len(nodes) == 0 {
 		return nil
@@ -70,7 +72,8 @@ func (s *TxNodeStore) InsertBatchChunks(nodes []DBNode, batchSize int) error {
 	return nil
 }
 
-// GetNode retrieves a node by ID using the transaction.
+// GetNode retrieves a single node by ID using the transaction.
+// Returns the DBNode or an error if not found.
 func (s *TxNodeStore) GetNode(id int64) (*DBNode, error) {
 	n := &DBNode{}
 	err := s.Tx.QueryRow("SELECT id, latitude, longitude FROM nodes WHERE id = $1", id).
@@ -84,7 +87,7 @@ func (s *TxNodeStore) GetNode(id int64) (*DBNode, error) {
 	return n, nil
 }
 
-// GetAllNodes retrieves all nodes using the transaction.
+// GetAllNodes retrieves all nodes within the transaction.
 // Returns a map from node ID to DBNode.
 func (s *TxNodeStore) GetAllNodes() (map[int64]DBNode, error) {
 	rows, err := s.Tx.Query("SELECT id, latitude, longitude FROM nodes")

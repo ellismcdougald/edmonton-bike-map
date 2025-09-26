@@ -6,11 +6,12 @@ import (
 	"log"
 )
 
-// TxReviewStore provides methods to insert reviews using an existing transaction.
+// TxReviewStore provides methods to insert and retrieve reviews within an existing transaction.
 type TxReviewStore struct {
 	Tx *sql.Tx
 }
 
+// GetAllReviews retrieves all reviews, including the username of each reviewer.
 func (s *TxReviewStore) GetAllReviews() ([]Review, error) {
 	query := `
 		SELECT
@@ -50,6 +51,7 @@ func (s *TxReviewStore) GetAllReviews() ([]Review, error) {
 	return reviews, nil
 }
 
+// GetReviews retrieves all reviews for a specific way ID, including usernames.
 func (s *TxReviewStore) GetReviews(wayID int64) ([]Review, error) {
 	query := `
 		SELECT
@@ -94,7 +96,7 @@ func (s *TxReviewStore) GetReviews(wayID int64) ([]Review, error) {
 	return reviews, nil
 }
 
-// InsertReview inserts a single review using the transaction.
+// InsertReview inserts a single review using the current transaction.
 func (s *TxReviewStore) InsertReview(review *Review) error {
 	query := `
 	INSERT INTO reviews (
@@ -109,8 +111,7 @@ func (s *TxReviewStore) InsertReview(review *Review) error {
 	return err
 }
 
-// InsertBatch inserts multiple reviews in a single transaction.
-// Uses one big multi-row INSERT to improve performance.
+// InsertBatch inserts multiple reviews in a single multi-row statement within the transaction.
 func (s *TxReviewStore) InsertBatch(reviews []Review) error {
 	if len(reviews) == 0 {
 		return nil
@@ -131,8 +132,8 @@ func (s *TxReviewStore) InsertBatch(reviews []Review) error {
 	return err
 }
 
-// InsertBatchChunks inserts reviews in smaller batches to avoid huge SQL statements.
-// Each batch uses InsertBatch.
+// InsertBatchChunks inserts reviews in smaller batches to avoid exceeding parameter limits.
+// Each batch is inserted using InsertBatch.
 func (s *TxReviewStore) InsertBatchChunks(reviews []Review, batchSize int) error {
 	if len(reviews) == 0 {
 		return nil

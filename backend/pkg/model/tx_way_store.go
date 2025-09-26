@@ -12,7 +12,7 @@ type TxWayStore struct {
 }
 
 // Insert inserts a single way and its nodes using the transaction.
-// Does nothing if the way already exists.
+// Does nothing if the way or its nodes already exist.
 func (s *TxWayStore) Insert(w DBWay) error {
 	tagsJSON, err := json.Marshal(w.Tags)
 	if err != nil {
@@ -41,6 +41,7 @@ func (s *TxWayStore) Insert(w DBWay) error {
 }
 
 // InsertBatch inserts multiple ways and their nodes using the transaction.
+// Uses a single multi-row INSERT for performance. Does nothing if the ways or nodes already exist.
 func (s *TxWayStore) InsertBatch(ways []DBWay) error {
 	if len(ways) == 0 {
 		return nil
@@ -94,7 +95,8 @@ func (s *TxWayStore) InsertBatch(ways []DBWay) error {
 	return nil
 }
 
-// InsertBatchChunks splits the batch into smaller chunks to avoid huge SQL statements.
+// InsertBatchChunks splits a large list of ways into smaller chunks to avoid huge SQL statements.
+// Each chunk is inserted using InsertBatch.
 func (s *TxWayStore) InsertBatchChunks(ways []DBWay, batchSize int) error {
 	if len(ways) == 0 {
 		return nil
@@ -117,6 +119,8 @@ func (s *TxWayStore) InsertBatchChunks(ways []DBWay, batchSize int) error {
 	return nil
 }
 
+// InsertBatchDynamic inserts ways in dynamically sized batches to avoid exceeding the maximum number of SQL parameters.
+// Each batch is flushed once the parameter limit is reached.
 func (s *TxWayStore) InsertBatchDynamic(ways []DBWay) error {
 	const maxParams = 65000
 	batch := []DBWay{}
@@ -148,4 +152,3 @@ func (s *TxWayStore) InsertBatchDynamic(ways []DBWay) error {
 
 	return flush()
 }
-
