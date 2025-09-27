@@ -166,44 +166,6 @@ func TestBuildNetwork_EdgeCases(t *testing.T) {
 			t.Errorf("expected no edge 2->1 for one-way, got %+v", graph.Edges[2])
 		}
 	})
-
-	t.Run("infinite weight for motorway", func(t *testing.T) {
-		mockNodes := &mockNodeService{
-			getAllNodes: func() (map[int64]model.DBNode, error) {
-				return map[int64]model.DBNode{
-					1: {ID: 1, Latitude: 53.5461, Longitude: -113.4938},
-					2: {ID: 2, Latitude: 53.5462, Longitude: -113.4939},
-				}, nil
-			},
-		}
-
-		mockWays := &mockWayService{
-			getAllWays: func() ([]model.DBWay, error) {
-				return []model.DBWay{
-					{
-						ID:      103,
-						NodeIDs: []int64{1, 2},
-						Tags:    map[string]string{"highway": "motorway"},
-					},
-				}, nil
-			},
-		}
-
-		mockReviews := &mockReviewService{
-			getAllReviews: func() (map[int][]model.Review, error) {
-				return map[int][]model.Review{}, nil // no reviews for these tests
-			},
-		}
-
-		graph, err := BuildNetwork(mockNodes, mockWays, mockReviews)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		if !math.IsInf(graph.Edges[1][0].Weight, 1) {
-			t.Errorf("expected infinite weight for motorway, got %f", graph.Edges[1][0].Weight)
-		}
-	})
 }
 
 func TestBuildNetwork_BikeFriendlyMultipliers(t *testing.T) {

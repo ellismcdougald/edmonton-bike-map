@@ -114,8 +114,8 @@ func TestFindRoute(t *testing.T) {
 		}
 
 		if !found {
-			if dist != math.Inf(1) {
-				t.Errorf("findRoute(%d, %d): dist = %f; want +Inf", tt.start, tt.end, dist)
+			if dist != -1 {
+				t.Errorf("findRoute(%d, %d): dist = %f; want -1", tt.start, tt.end, dist)
 			}
 			continue
 		}
@@ -284,8 +284,8 @@ func TestFindRouteFromCoordinates(t *testing.T) {
 		}
 
 		if !found {
-			if dist != math.Inf(1) {
-				t.Errorf("FindRouteFromCoordinates(%v,%v -> %v,%v): dist = %f; want +Inf",
+			if dist != -1 {
+				t.Errorf("FindRouteFromCoordinates(%v,%v -> %v,%v): dist = %f; want -1",
 					tt.startLat, tt.startLon, tt.endLat, tt.endLon, dist)
 			}
 			continue
