@@ -1,12 +1,5 @@
 package main
 
-/*
-TODOS:
-- Need to clear the nodes, ways, and way_nodes tables
-- Need to implement transactions for database inserts
-- Need to make sure other tables are protected from cascading deletes
-*/
-
 import (
 	"bytes"
 	"database/sql"
@@ -18,153 +11,198 @@ import (
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/data"
 	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
+)
+
+const (
+	overpassURL     = "https://overpass-api.de/api/interpreter"
+	queryFile       = "cmd/update_db/query.osmql"
+	osmJSONPath     = "cmd/update_db/edmonton-osm-data.json"
+	nodeBatchSize   = 5000
+	reviewBatchSize = 5000
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
+	loadEnv()
+	query := readQueryFile(queryFile)
+	fetchAndStoreOSMData(query, osmJSONPath)
+	db := connectDB()
+	defer closeDB(db)
+
+	osmResp := parseOSMJSON(osmJSONPath)
+	processDatabase(db, osmResp)
+}
+
+// Load environment variables
+func loadEnv() {
+	if err := godotenv.Load(); err != nil {
 		log.Print("Error loading .env file")
 	}
+}
 
-	overpassURL := "https://overpass-api.de/api/interpreter"
-	osmJSONPath := "cmd/update_db/edmonton-osm-data.json"
-
-	// Fetch most recent osm data
-	queryFile := "cmd/update_db/query.osmql"
-	query, err := os.ReadFile(queryFile)
+// Read OSMQL query file
+func readQueryFile(path string) []byte {
+	query, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatalf("Could not read query file: %v", err)
 	}
+	return query
+}
 
-	log.Printf("Fetching query from Overpass")
+// Fetch OSM data from Overpass and store in JSON file
+func fetchAndStoreOSMData(query []byte, path string) {
+	log.Printf("Fetching data from Overpass API...")
 	resp, err := http.Post(overpassURL, "application/x-www-form-urlencoded", bytes.NewReader(query))
 	if err != nil {
-		log.Fatalf("Could not get query from Overpass: %v", err)
+		log.Fatalf("Could not fetch data: %v", err)
 	}
-	defer resp.Body.Close()
-	log.Printf("Done fetching data from overpass")
+	defer func() {
+		if cerr := resp.Body.Close(); cerr != nil {
+			log.Printf("Error closing response body: %v", cerr)
+		}
+	}()
 
-	tmpPath := osmJSONPath + ".tmp"
+	tmpPath := path + ".tmp"
 	out, err := os.Create(tmpPath)
 	if err != nil {
-		log.Fatalf("Could not create file to store result: %v", err)
+		log.Fatalf("Could not create temp file: %v", err)
 	}
-	defer out.Close()
+	defer func() {
+		if cerr := out.Close(); cerr != nil {
+			log.Printf("Error closing file: %v", cerr)
+		}
+	}()
 
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		log.Printf("Could not store result in file: %v", err)
+	if _, err := io.Copy(out, resp.Body); err != nil {
+		log.Fatalf("Could not write to file: %v", err)
 	}
 
-	os.Rename(tmpPath, osmJSONPath)
-	log.Printf("Data written to file")
+	if err := os.Rename(tmpPath, path); err != nil {
+		log.Fatalf("Could not rename file: %v", err)
+	}
 
-	// Connect to database
+	log.Printf("OSM data saved to %s", path)
+}
+
+// Connect to Postgres database
+func connectDB() *sql.DB {
 	dbURL := os.Getenv("DATABASE_URL")
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
-		log.Fatalf("Could not connect to db: %v", err)
+		log.Fatalf("Could not connect to DB: %v", err)
 	}
-	defer func() {
-		if err := db.Close(); err != nil {
-			log.Printf("Error closing db: %v", err)
-		}
-	}()
 	if err := db.Ping(); err != nil {
-		log.Fatalf("Could not ping db: %v", err)
+		log.Fatalf("Could not ping DB: %v", err)
 	}
+	return db
+}
 
-	osmResp, err := data.ParseOSMJSON(osmJSONPath)
+// Close DB with logging
+func closeDB(db *sql.DB) {
+	if err := db.Close(); err != nil {
+		log.Printf("Error closing DB: %v", err)
+	}
+}
+
+// Parse OSM JSON file
+func parseOSMJSON(path string) *data.OSMResponse {
+	resp, err := data.ParseOSMJSON(path)
 	if err != nil {
-		log.Fatalf("Could not parse osm data: %v", err)
+		log.Fatalf("Could not parse OSM JSON: %v", err)
 	}
+	return resp
+}
 
-	// Begin updates
+// Process database update
+func processDatabase(db *sql.DB, osmResp *data.OSMResponse) {
 	tx, err := db.Begin()
 	if err != nil {
 		log.Fatalf("Failed to begin transaction: %v", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		if rerr := tx.Rollback(); rerr != nil && rerr != sql.ErrTxDone {
+			log.Printf("Error rolling back transaction: %v", rerr)
+		}
+	}()
 
+	// Load existing reviews
 	reviewStore := model.TxReviewStore{Tx: tx}
 	reviews, err := reviewStore.GetAllReviews()
 	if err != nil {
-		log.Fatalf("Could not get reviews from database: %v", err)
+		log.Fatalf("Could not fetch existing reviews: %v", err)
 	}
-	log.Printf("Saved existing reviews successfully")
+	log.Printf("Loaded %d existing reviews", len(reviews))
 
-	// Clear reviews, nodes, ways, and way_nodes
-	_, err = tx.Exec("TRUNCATE reviews, way_nodes, ways, nodes RESTART IDENTITY CASCADE;")
+	// Clear tables
+	clearTables(tx)
+
+	// Prepare nodes and ways
+	nodes, ways, wayIDs := extractNodesAndWays(osmResp)
+
+	// Insert nodes
+	nodeStore := model.TxNodeStore{Tx: tx}
+	if err := nodeStore.InsertBatchChunks(nodes, nodeBatchSize); err != nil {
+		log.Fatalf("Could not insert nodes: %v", err)
+	}
+	log.Printf("Inserted %d nodes", len(nodes))
+
+	// Insert ways
+	wayStore := model.TxWayStore{Tx: tx}
+	if err := wayStore.InsertBatchDynamic(ways); err != nil {
+		log.Fatalf("Could not insert ways: %v", err)
+	}
+	log.Printf("Inserted %d ways", len(ways))
+
+	// Filter valid reviews
+	validReviews := filterValidReviews(reviews, wayIDs)
+	if err := reviewStore.InsertBatchChunks(validReviews, reviewBatchSize); err != nil {
+		log.Fatalf("Could not insert reviews: %v", err)
+	}
+	log.Printf("Inserted %d reviews", len(validReviews))
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		log.Fatalf("Failed to commit transaction: %v", err)
+	}
+}
+
+// Clear relevant tables
+func clearTables(tx *sql.Tx) {
+	_, err := tx.Exec("TRUNCATE reviews, way_nodes, ways, nodes RESTART IDENTITY CASCADE;")
 	if err != nil {
 		log.Fatalf("Could not clear tables: %v", err)
 	}
-	log.Printf("Cleared tables successfully")
-	
+	log.Print("Cleared tables successfully")
+}
+
+// Extract nodes and ways from OSM response
+func extractNodesAndWays(osmResp *data.OSMResponse) ([]model.DBNode, []model.DBWay, map[int64]struct{}) {
 	nodes := []model.DBNode{}
 	ways := []model.DBWay{}
 	wayIDs := make(map[int64]struct{})
+
 	for _, el := range osmResp.Elements {
-		if el.Type == "node" {
-			n := model.DBNode{
-				ID:        el.ID,
-				Latitude:  el.Lat,
-				Longitude: el.Lon,
-			}
-			nodes = append(nodes, n)
-		} else if el.Type == "way" {
-			w := model.DBWay{
-				ID:      el.ID,
-				Tags:    el.Tags,
-				NodeIDs: el.Nodes,
-			}
-			ways = append(ways, w)
+		switch el.Type {
+		case "node":
+			nodes = append(nodes, model.DBNode{ID: el.ID, Latitude: el.Lat, Longitude: el.Lon})
+		case "way":
+			ways = append(ways, model.DBWay{ID: el.ID, Tags: el.Tags, NodeIDs: el.Nodes})
 			wayIDs[el.ID] = struct{}{}
 		}
 	}
-	nodeStore := model.TxNodeStore{Tx: tx}
-	err = nodeStore.InsertBatchChunks(nodes, 5000)
-	if err != nil {
-		log.Fatalf("Could not insert nodes: %v", err)
-	}
-	log.Printf("Inserted nodes succesfully")
-	wayStore := model.TxWayStore{Tx: tx}
-	err = wayStore.InsertBatchDynamic(ways)
-	if err != nil {
-		log.Fatalf("Could not insert ways: %v", err)
-	}
-	log.Printf("Inserted ways succesfully")
 
-	// Insert reviews
-	validReviews := []model.Review{}
+	return nodes, ways, wayIDs
+}
+
+// Filter reviews to only include valid way IDs
+func filterValidReviews(reviews []model.Review, wayIDs map[int64]struct{}) []model.Review {
+	valid := []model.Review{}
 	for _, r := range reviews {
 		if _, ok := wayIDs[r.WayID]; ok {
-			validReviews = append(validReviews, r)
+			valid = append(valid, r)
 		} else {
-			log.Printf("Skipping review for unknown way id %d", r.WayID)
+			log.Printf("Skipping review for unknown way ID %d", r.WayID)
 		}
 	}
-	err = reviewStore.InsertBatchChunks(validReviews, 5000)
-	if err != nil {
-		log.Fatalf("Could not insert reviews: %v", err)
-	}
-	log.Printf("Inserted reviews succesfully")
-
-	if err = tx.Commit(); err != nil {
-    log.Fatalf("Failed to commit transaction: %v", err)
-	}
-
-
-
-
-
-
-
-
-
-
-
-
-	
-
-
+	return valid
 }
