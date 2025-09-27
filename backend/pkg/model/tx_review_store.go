@@ -49,7 +49,7 @@ func (s *TxReviewStore) GetAllReviews() ([]Review, error) {
 	}
 
 	if reviews == nil {
-    reviews = []Review{}
+		reviews = []Review{}
 	}
 
 	return reviews, nil
@@ -81,7 +81,7 @@ func (s *TxReviewStore) GetReviews(wayID int64) ([]Review, error) {
 	var reviews []Review
 	for rows.Next() {
 		var review Review
-		err = rows.Scan(&review.WayID, &review.UserID, &review.Rating, &review.Comment, &review.CreatedAt, &review.Username)  // Add &review.UserID
+		err = rows.Scan(&review.WayID, &review.UserID, &review.Rating, &review.Comment, &review.CreatedAt, &review.Username) // Add &review.UserID
 		if err != nil {
 			return nil, err
 		}
@@ -93,7 +93,7 @@ func (s *TxReviewStore) GetReviews(wayID int64) ([]Review, error) {
 	}
 
 	if reviews == nil {
-    reviews = []Review{}
+		reviews = []Review{}
 	}
 
 	return reviews, nil

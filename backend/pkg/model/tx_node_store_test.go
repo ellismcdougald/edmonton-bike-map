@@ -278,8 +278,8 @@ func TestTxNodeStore_InsertBatch(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:      "empty slice does nothing",
-			nodes:     []DBNode{},
+			name:  "empty slice does nothing",
+			nodes: []DBNode{},
 			mockSetup: func(mock sqlmock.Sqlmock) {
 				mock.ExpectBegin()
 			},
