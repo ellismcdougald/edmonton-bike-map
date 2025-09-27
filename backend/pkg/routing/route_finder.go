@@ -41,7 +41,7 @@ func nearestNode(latitude float64, longitude float64, nodes map[int64]model.Node
 func findRoute(network *model.Graph, start, end int64) (dist float64, path []int64) {
 	_, prev, found := dijkstra(network, start, end)
 	if !found {
-		return math.Inf(1), nil
+		return -1, nil
 	}
 	path = reconstructPath(prev, end)
 	dist = estimateDistance(path, network.Nodes)
