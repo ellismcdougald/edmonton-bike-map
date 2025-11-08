@@ -160,13 +160,19 @@ func (r *SQLWayRepository) InsertBatches(ways []models.Way, batchSize int) error
 func (r *SQLWayRepository) GetWay(id int64) (*models.Way, error) {
 	var way models.Way
 	way.Tags = make(map[string]string)
+	var tagsJson []byte
 
 	err := r.DB.QueryRow("SELECT id, tags FROM ways WHERE id = $1", id).
-		Scan(&way.ID, &way.Tags)
+		Scan(&way.ID, &tagsJson)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("way with ID %d not found", id)
 		}
+		return nil, err
+	}
+
+	// Unmarshal tags JSON into the map
+	if err := json.Unmarshal(tagsJson, &way.Tags); err != nil {
 		return nil, err
 	}
 
