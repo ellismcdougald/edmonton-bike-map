@@ -22,6 +22,9 @@ func NewWayHandler(nodeService *service.NodeService, wayService *service.WayServ
 	}
 }
 
+// HandleAllWays returns an HTTP handler that fetches all ways and their associated nodes,
+// maps them to GeoJSON features, and responds with a FeatureCollection in JSON format.
+// Responds with HTTP 500 Internal Server Error if fetching data or mapping fails.
 func (h *WayHandler) HandleAllWays() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		allNodes, err := h.NodeService.GetAllNodes()
