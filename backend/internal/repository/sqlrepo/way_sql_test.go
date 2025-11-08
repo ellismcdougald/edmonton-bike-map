@@ -135,8 +135,4 @@ func TestSQLWayRepository_GetAllWays(t *testing.T) {
     require.NoError(t, mock.ExpectationsWereMet())
 }
 
-// pqArrayInt64 helps create a driver.Value for pq.Array of int64s in sqlmock rows.
-func pqArrayInt64(vals []int64) interface{} {
-    // sqlmock doesn't need an exact pq.Array; returning a slice is fine for matching
-    return vals
-}
+// (removed) pqArrayInt64 helper was unused and created a linter warning; tests use string array format instead.

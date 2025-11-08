@@ -180,7 +180,7 @@ func (r *SQLWayRepository) GetWay(id int64) (*models.Way, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var nodeID int64
