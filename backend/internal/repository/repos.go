@@ -25,3 +25,10 @@ type ReviewRepository interface {
 	GetAllReviews() (map[int64][]models.Review, error)
 }
 
+// UserRepository defines methods to interact with User data.
+type UserRepository interface {
+	GetByUsername(username string) (*models.User, error)
+	Create(user *models.User) error
+	UsernameExists(username string) (bool, error)
+}
+
