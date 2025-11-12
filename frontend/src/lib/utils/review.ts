@@ -35,22 +35,31 @@ import type { Review as ReviewObj } from '$lib/types';
 
 const apiUrl = import.meta.env.VITE_API_URL;
 
-export async function fetchReviews(wayId: number): Promise<ReviewObj[]> {
-	try {
-		const res = await fetch(`${apiUrl}/api/reviews?wayID=${wayId}`);
-		if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-		return await res.json();
-	} catch (e) {
-		console.error('Failed to fetch reviews: ', e);
-		return [];
-	}
-}
-
 export interface ReviewData {
 	wayId: number;
 	userId: number;
 	rating: number;
 	comment?: string | null;
+}
+
+export async function fetchReviews(wayId: number): Promise<ReviewObj[]> {
+	try {
+		const res = await fetch(`${apiUrl}/api/reviews?wayID=${wayId}`);
+		if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+		const data = await res.json();
+
+		return data.map((r: any) => ({
+			wayId: r.WayID,
+			userId: r.UserID,
+			rating: r.Rating,
+			comment: r.Comment,
+			createdAt: r.CreatedAt,
+			username: r.Username
+		}));
+	} catch (e) {
+		console.error('Failed to fetch reviews: ', e);
+		return [];
+	}
 }
 
 type FetchFn = typeof fetch;
