@@ -42,6 +42,7 @@ type mockReviewRepo struct {
 func (m *mockReviewRepo) CreateReview(review *models.Review) error { return nil }
 func (m *mockReviewRepo) GetReviews(wayID int64) ([]models.Review, error) { return m.revs[wayID], nil }
 func (m *mockReviewRepo) GetAllReviews() (map[int64][]models.Review, error) { return m.revs, m.err }
+func (m *mockReviewRepo) InsertBatches(reviews []models.Review, batchSize int) error { return nil }
 
 func TestBuildNetwork_SuccessAndEmpty(t *testing.T) {
     nodes := map[int64]models.Node{

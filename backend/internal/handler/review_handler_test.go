@@ -33,6 +33,13 @@ func (m *mockReviewRepo) GetAllReviews() (map[int64][]models.Review, error) {
     if m.err != nil { return nil, m.err }
     return m.reviews, nil
 }
+func (m *mockReviewRepo) InsertBatches(reviews []models.Review, batchSize int) error {
+    if m.err != nil { return m.err }
+    for _, r := range reviews {
+        m.reviews[r.WayID] = append(m.reviews[r.WayID], r)
+    }
+    return nil
+}
 
 func TestReviewHandler_HandleGetReviews_Success(t *testing.T) {
     repo := &mockReviewRepo{reviews: map[int64][]models.Review{

@@ -1,6 +1,7 @@
 package txrepo
 
 import (
+	"fmt"
 	"regexp"
 	"testing"
 	"time"
@@ -28,6 +29,42 @@ func TestTxReviewRepository_CreateReview(t *testing.T) {
     repo := NewTxReviewRepository(tx)
     err = repo.CreateReview(rev)
     require.NoError(t, err)
+
+    mock.ExpectCommit()
+    require.NoError(t, tx.Commit())
+    require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestTxReviewRepository_InsertBatches(t *testing.T) {
+    db, mock, err := sqlmock.New()
+    require.NoError(t, err)
+    defer func() { mock.ExpectClose(); _ = db.Close() }()
+
+    mock.ExpectBegin()
+    tx, err := db.Begin()
+    require.NoError(t, err)
+
+    repo := NewTxReviewRepository(tx)
+
+    mock.ExpectExec(regexp.QuoteMeta("INSERT INTO reviews (way_id, user_id, rating, comment) VALUES ($1, $2, $3, $4), ($5, $6, $7, $8)")).
+        WithArgs(int64(20), int64(5), 5, "super", int64(21), int64(6), 4, "nice").
+        WillReturnResult(sqlmock.NewResult(2, 2))
+
+    reviews := []models.Review{{WayID: 20, UserID: 5, Rating: 5, Comment: "super"}, {WayID: 21, UserID: 6, Rating: 4, Comment: "nice"}}
+    reqErr := repo.InsertBatches(reviews, 2)
+    require.NoError(t, reqErr)
+
+    // empty slice
+    reqErr = repo.InsertBatches([]models.Review{}, 2)
+    require.NoError(t, reqErr)
+
+    // exec error
+    mock.ExpectExec(regexp.QuoteMeta("INSERT INTO reviews (way_id, user_id, rating, comment) VALUES ($1, $2, $3, $4)")).
+        WithArgs(int64(22), int64(7), 2, "bad").
+        WillReturnError(fmt.Errorf("insert failure"))
+
+    reqErr = repo.InsertBatches([]models.Review{{WayID: 22, UserID: 7, Rating: 2, Comment: "bad"}}, 1)
+    require.Error(t, reqErr)
 
     mock.ExpectCommit()
     require.NoError(t, tx.Commit())

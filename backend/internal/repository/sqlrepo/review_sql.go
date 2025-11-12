@@ -2,6 +2,7 @@ package sqlrepo
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
@@ -115,5 +116,43 @@ func (r *SQLReviewRepository) GetAllReviews() (map[int64][]models.Review, error)
     }
 
     return result, nil
+}
+
+// insertBatch inserts multiple reviews in a single multi-row statement.
+func (r *SQLReviewRepository) insertBatch(reviews []models.Review) error {
+    if len(reviews) == 0 {
+        return nil
+    }
+
+    query := "INSERT INTO reviews (way_id, user_id, rating, comment) VALUES "
+    args := []interface{}{}
+    for i, rev := range reviews {
+        if i > 0 {
+            query += ", "
+        }
+        base := i*4 + 1
+        query += fmt.Sprintf("($%d, $%d, $%d, $%d)", base, base+1, base+2, base+3)
+        args = append(args, rev.WayID, rev.UserID, rev.Rating, rev.Comment)
+    }
+
+    _, err := r.DB.Exec(query, args...)
+    return err
+}
+
+// InsertBatches inserts reviews in batches of the specified size.
+func (r *SQLReviewRepository) InsertBatches(reviews []models.Review, batchSize int) error {
+    if len(reviews) == 0 {
+        return nil
+    }
+    for i := 0; i < len(reviews); i += batchSize {
+        end := i + batchSize
+        if end > len(reviews) {
+            end = len(reviews)
+        }
+        if err := r.insertBatch(reviews[i:end]); err != nil {
+            return err
+        }
+    }
+    return nil
 }
 

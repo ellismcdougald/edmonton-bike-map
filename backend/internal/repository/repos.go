@@ -23,6 +23,8 @@ type ReviewRepository interface {
 	CreateReview(review *models.Review) error
 	GetReviews(wayID int64) ([]models.Review, error)
 	GetAllReviews() (map[int64][]models.Review, error)
+	// InsertBatches inserts reviews in batches of the specified size.
+	InsertBatches(reviews []models.Review, batchSize int) error
 }
 
 // UserRepository defines methods to interact with User data.
