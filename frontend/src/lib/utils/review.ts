@@ -42,17 +42,25 @@ export interface ReviewData {
 	comment?: string | null;
 }
 
+interface ReviewResponse {
+	WayID: string;
+	UserID: string;
+	Rating: number;
+	Comment?: string;
+	CreatedAt: string;
+	Username: string;
+}
+
 export async function fetchReviews(wayId: number): Promise<ReviewObj[]> {
 	try {
 		const res = await fetch(`${apiUrl}/api/reviews?wayID=${wayId}`);
 		if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-		const data = await res.json();
+		const data: ReviewResponse[] = await res.json();
 
-		return data.map((r: any) => ({
-			wayId: r.WayID,
-			userId: r.UserID,
+		return data.map((r: ReviewResponse) => ({
+			wayId: Number(r.WayID),
 			rating: r.Rating,
-			comment: r.Comment,
+			comment: r.Comment ?? '',
 			createdAt: r.CreatedAt,
 			username: r.Username
 		}));
