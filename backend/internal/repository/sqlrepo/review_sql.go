@@ -11,17 +11,17 @@ import (
 
 // SQLReviewRepository implements ReviewRepository using a SQL database.
 type SQLReviewRepository struct {
-    DB *sql.DB
+	DB *sql.DB
 }
 
 // NewSQLReviewRepository creates a new SQLReviewRepository.
 func NewSQLReviewRepository(db *sql.DB) repository.ReviewRepository {
-    return &SQLReviewRepository{DB: db}
+	return &SQLReviewRepository{DB: db}
 }
 
 // CreateReview inserts a new review into the reviews table.
 func (r *SQLReviewRepository) CreateReview(review *models.Review) error {
-    query := `
+	query := `
         INSERT INTO reviews (
             way_id,
             user_id,
@@ -29,13 +29,13 @@ func (r *SQLReviewRepository) CreateReview(review *models.Review) error {
             comment
         ) VALUES ($1, $2, $3, $4)
     `
-    _, err := r.DB.Exec(query, review.WayID, review.UserID, review.Rating, review.Comment)
-    return err
+	_, err := r.DB.Exec(query, review.WayID, review.UserID, review.Rating, review.Comment)
+	return err
 }
 
 // GetReviews returns reviews for a specific way, including the reviewer's username.
 func (r *SQLReviewRepository) GetReviews(wayID int64) ([]models.Review, error) {
-    query := `
+	query := `
         SELECT
             r.way_id,
             r.user_id,
@@ -48,39 +48,39 @@ func (r *SQLReviewRepository) GetReviews(wayID int64) ([]models.Review, error) {
         WHERE r.way_id = $1;
     `
 
-    rows, err := r.DB.Query(query, wayID)
-    if err != nil {
-        return nil, err
-    }
-    defer func() {
-        if cerr := rows.Close(); cerr != nil {
-            log.Printf("Error closing rows: %v", cerr)
-        }
-    }()
+	rows, err := r.DB.Query(query, wayID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("Error closing rows: %v", cerr)
+		}
+	}()
 
-    var reviews []models.Review
-    for rows.Next() {
-        var rev models.Review
-        if err := rows.Scan(&rev.WayID, &rev.UserID, &rev.Rating, &rev.Comment, &rev.CreatedAt, &rev.Username); err != nil {
-            return nil, err
-        }
-        reviews = append(reviews, rev)
-    }
+	var reviews []models.Review
+	for rows.Next() {
+		var rev models.Review
+		if err := rows.Scan(&rev.WayID, &rev.UserID, &rev.Rating, &rev.Comment, &rev.CreatedAt, &rev.Username); err != nil {
+			return nil, err
+		}
+		reviews = append(reviews, rev)
+	}
 
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
-    if reviews == nil {
-        reviews = []models.Review{}
-    }
+	if reviews == nil {
+		reviews = []models.Review{}
+	}
 
-    return reviews, nil
+	return reviews, nil
 }
 
 // GetAllReviews retrieves all reviews grouped by way ID. Returns a map[wayID] -> []Review.
 func (r *SQLReviewRepository) GetAllReviews() (map[int64][]models.Review, error) {
-    query := `
+	query := `
         SELECT
             r.way_id,
             r.user_id,
@@ -92,67 +92,66 @@ func (r *SQLReviewRepository) GetAllReviews() (map[int64][]models.Review, error)
         LEFT JOIN users u ON r.user_id = u.id;
     `
 
-    rows, err := r.DB.Query(query)
-    if err != nil {
-        return nil, err
-    }
-    defer func() {
-        if cerr := rows.Close(); cerr != nil {
-            log.Printf("Error closing rows: %v", cerr)
-        }
-    }()
+	rows, err := r.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("Error closing rows: %v", cerr)
+		}
+	}()
 
-    result := make(map[int64][]models.Review)
-    for rows.Next() {
-        var rev models.Review
-        if err := rows.Scan(&rev.WayID, &rev.UserID, &rev.Rating, &rev.Comment, &rev.CreatedAt, &rev.Username); err != nil {
-            return nil, err
-        }
-        result[rev.WayID] = append(result[rev.WayID], rev)
-    }
+	result := make(map[int64][]models.Review)
+	for rows.Next() {
+		var rev models.Review
+		if err := rows.Scan(&rev.WayID, &rev.UserID, &rev.Rating, &rev.Comment, &rev.CreatedAt, &rev.Username); err != nil {
+			return nil, err
+		}
+		result[rev.WayID] = append(result[rev.WayID], rev)
+	}
 
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
-    return result, nil
+	return result, nil
 }
 
 // insertBatch inserts multiple reviews in a single multi-row statement.
 func (r *SQLReviewRepository) insertBatch(reviews []models.Review) error {
-    if len(reviews) == 0 {
-        return nil
-    }
+	if len(reviews) == 0 {
+		return nil
+	}
 
-    query := "INSERT INTO reviews (way_id, user_id, rating, comment) VALUES "
-    args := []interface{}{}
-    for i, rev := range reviews {
-        if i > 0 {
-            query += ", "
-        }
-        base := i*4 + 1
-        query += fmt.Sprintf("($%d, $%d, $%d, $%d)", base, base+1, base+2, base+3)
-        args = append(args, rev.WayID, rev.UserID, rev.Rating, rev.Comment)
-    }
+	query := "INSERT INTO reviews (way_id, user_id, rating, comment) VALUES "
+	args := []interface{}{}
+	for i, rev := range reviews {
+		if i > 0 {
+			query += ", "
+		}
+		base := i*4 + 1
+		query += fmt.Sprintf("($%d, $%d, $%d, $%d)", base, base+1, base+2, base+3)
+		args = append(args, rev.WayID, rev.UserID, rev.Rating, rev.Comment)
+	}
 
-    _, err := r.DB.Exec(query, args...)
-    return err
+	_, err := r.DB.Exec(query, args...)
+	return err
 }
 
 // InsertBatches inserts reviews in batches of the specified size.
 func (r *SQLReviewRepository) InsertBatches(reviews []models.Review, batchSize int) error {
-    if len(reviews) == 0 {
-        return nil
-    }
-    for i := 0; i < len(reviews); i += batchSize {
-        end := i + batchSize
-        if end > len(reviews) {
-            end = len(reviews)
-        }
-        if err := r.insertBatch(reviews[i:end]); err != nil {
-            return err
-        }
-    }
-    return nil
+	if len(reviews) == 0 {
+		return nil
+	}
+	for i := 0; i < len(reviews); i += batchSize {
+		end := i + batchSize
+		if end > len(reviews) {
+			end = len(reviews)
+		}
+		if err := r.insertBatch(reviews[i:end]); err != nil {
+			return err
+		}
+	}
+	return nil
 }
-

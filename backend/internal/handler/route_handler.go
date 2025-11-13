@@ -53,7 +53,7 @@ func (h *RouteHandler) HandleGetRoute() http.HandlerFunc {
 		}
 
 		// call service
-	dist, nodes, err := h.RouteService.FindRoute(startLatitude, startLongitude, endLatitude, endLongitude)
+		dist, nodes, err := h.RouteService.FindRoute(startLatitude, startLongitude, endLatitude, endLongitude)
 		if err != nil {
 			log.Printf("error finding route: %v", err)
 			http.Error(writer, "internal server error", http.StatusInternalServerError)

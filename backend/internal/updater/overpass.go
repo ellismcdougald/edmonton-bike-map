@@ -15,9 +15,9 @@ func FetchOverpassData(query []byte) ([]byte, error) {
 		return nil, err
 	}
 	defer func() {
-    if cerr := resp.Body.Close(); cerr != nil {
-        log.Printf("failed to close response body: %v", cerr)
-    }
+		if cerr := resp.Body.Close(); cerr != nil {
+			log.Printf("failed to close response body: %v", cerr)
+		}
 	}()
 
 	data, err := io.ReadAll(resp.Body)

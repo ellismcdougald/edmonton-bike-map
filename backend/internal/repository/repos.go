@@ -33,4 +33,3 @@ type UserRepository interface {
 	Create(user *models.User) error
 	UsernameExists(username string) (bool, error)
 }
-

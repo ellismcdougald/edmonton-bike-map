@@ -49,7 +49,6 @@ func main() {
 	nodeRepo := sqlrepo.NewSQLNodeRepository(db)
 	wayRepo := sqlrepo.NewSQLWayRepository(db)
 
-
 	var nodes []models.Node
 	var ways []models.Way
 

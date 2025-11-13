@@ -12,7 +12,7 @@ import (
 
 type WayHandler struct {
 	NodeService *service.NodeService
-	WayService *service.WayService
+	WayService  *service.WayService
 }
 
 func NewWayHandler(nodeService *service.NodeService, wayService *service.WayService) *WayHandler {
@@ -41,10 +41,10 @@ func (h *WayHandler) HandleAllWays() http.HandlerFunc {
 			return
 		}
 
-		allFeatures , err := geo.MapWaysToFeatures(allWays, allNodes)
+		allFeatures, err := geo.MapWaysToFeatures(allWays, allNodes)
 		if err != nil {
 			log.Printf("Error mapping ways to features: %v", err)
-			http.Error(writer, "Error mapping ways to features: " + err.Error(), http.StatusInternalServerError)
+			http.Error(writer, "Error mapping ways to features: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 

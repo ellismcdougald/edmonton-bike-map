@@ -38,7 +38,7 @@ func (m *mockUserRepo) UsernameExists(username string) (bool, error) {
 }
 
 // fake provider
-type fakeProvider struct{
+type fakeProvider struct {
 	token string
 	err   error
 }

@@ -8,7 +8,7 @@ import (
 
 // SQLUserRepository implements UserRepository using a SQL database.
 type SQLUserRepository struct {
-		DB *sql.DB
+	DB *sql.DB
 }
 
 // NewSQLUserRepository creates a new SQLUserRepository.
@@ -27,12 +27,12 @@ func (s *SQLUserRepository) GetByUsername(username string) (*models.User, error)
 			WHERE username = $1
 		`
 
-		var user models.User
-		err := s.DB.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.Password)
-		if err != nil {
-			return nil, err
-		}
-		return &user, nil
+	var user models.User
+	err := s.DB.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.Password)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 // CreateUser inserts a new user into the database.

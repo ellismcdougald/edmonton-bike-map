@@ -13,158 +13,158 @@ import (
 
 // TxWayRepository provides way operations within an existing transaction.
 type TxWayRepository struct {
-    Tx *sql.Tx
+	Tx *sql.Tx
 }
 
 // NewTxWayRepository returns a WayRepository that operates using the provided transaction.
 func NewTxWayRepository(tx *sql.Tx) repository.WayRepository {
-    return &TxWayRepository{Tx: tx}
+	return &TxWayRepository{Tx: tx}
 }
 
 // Insert inserts a single way and its nodes using the transaction.
 func (r *TxWayRepository) Insert(way models.Way) error {
-    tagsJSON, err := json.Marshal(way.Tags)
-    if err != nil {
-        return err
-    }
+	tagsJSON, err := json.Marshal(way.Tags)
+	if err != nil {
+		return err
+	}
 
-    _, err = r.Tx.Exec(
-        "INSERT INTO ways (id, tags) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING",
-        way.ID, tagsJSON,
-    )
-    if err != nil {
-        return err
-    }
+	_, err = r.Tx.Exec(
+		"INSERT INTO ways (id, tags) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING",
+		way.ID, tagsJSON,
+	)
+	if err != nil {
+		return err
+	}
 
-    for seq, nodeID := range way.NodeIDs {
-        _, err := r.Tx.Exec(
-            "INSERT INTO way_nodes (way_id, node_id, sequence_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
-            way.ID, nodeID, seq,
-        )
-        if err != nil {
-            return err
-        }
-    }
+	for seq, nodeID := range way.NodeIDs {
+		_, err := r.Tx.Exec(
+			"INSERT INTO way_nodes (way_id, node_id, sequence_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+			way.ID, nodeID, seq,
+		)
+		if err != nil {
+			return err
+		}
+	}
 
-    return nil
+	return nil
 }
 
 // insertBatch inserts multiple ways and associated way_nodes in a single multi-row statement.
 func (r *TxWayRepository) insertBatch(ways []models.Way) error {
-    if len(ways) == 0 {
-        return nil
-    }
+	if len(ways) == 0 {
+		return nil
+	}
 
-    // --- Insert ways ---
-    wayQuery := "INSERT INTO ways (id, tags) VALUES "
-    wayArgs := []interface{}{}
-    argIndex := 1
-    for i, w := range ways {
-        if i > 0 {
-            wayQuery += ", "
-        }
-        tagsJSON, err := json.Marshal(w.Tags)
-        if err != nil {
-            return fmt.Errorf("marshal tags for way %d: %w", w.ID, err)
-        }
+	// --- Insert ways ---
+	wayQuery := "INSERT INTO ways (id, tags) VALUES "
+	wayArgs := []interface{}{}
+	argIndex := 1
+	for i, w := range ways {
+		if i > 0 {
+			wayQuery += ", "
+		}
+		tagsJSON, err := json.Marshal(w.Tags)
+		if err != nil {
+			return fmt.Errorf("marshal tags for way %d: %w", w.ID, err)
+		}
 
-        wayQuery += fmt.Sprintf("($%d, $%d)", argIndex, argIndex+1)
-        wayArgs = append(wayArgs, w.ID, tagsJSON)
-        argIndex += 2
-    }
-    wayQuery += " ON CONFLICT (id) DO NOTHING"
+		wayQuery += fmt.Sprintf("($%d, $%d)", argIndex, argIndex+1)
+		wayArgs = append(wayArgs, w.ID, tagsJSON)
+		argIndex += 2
+	}
+	wayQuery += " ON CONFLICT (id) DO NOTHING"
 
-    if _, err := r.Tx.Exec(wayQuery, wayArgs...); err != nil {
-        return fmt.Errorf("insert batch ways: %w", err)
-    }
+	if _, err := r.Tx.Exec(wayQuery, wayArgs...); err != nil {
+		return fmt.Errorf("insert batch ways: %w", err)
+	}
 
-    // --- Insert way_nodes ---
-    nodeQuery := "INSERT INTO way_nodes (way_id, node_id, sequence_id) VALUES "
-    nodeArgs := []interface{}{}
-    argIndex = 1
-    first := true
-    for _, w := range ways {
-        for seq, nodeID := range w.NodeIDs {
-            if !first {
-                nodeQuery += ", "
-            }
-            first = false
-            nodeQuery += fmt.Sprintf("($%d, $%d, $%d)", argIndex, argIndex+1, argIndex+2)
-            nodeArgs = append(nodeArgs, w.ID, nodeID, seq)
-            argIndex += 3
-        }
-    }
-    nodeQuery += " ON CONFLICT DO NOTHING"
+	// --- Insert way_nodes ---
+	nodeQuery := "INSERT INTO way_nodes (way_id, node_id, sequence_id) VALUES "
+	nodeArgs := []interface{}{}
+	argIndex = 1
+	first := true
+	for _, w := range ways {
+		for seq, nodeID := range w.NodeIDs {
+			if !first {
+				nodeQuery += ", "
+			}
+			first = false
+			nodeQuery += fmt.Sprintf("($%d, $%d, $%d)", argIndex, argIndex+1, argIndex+2)
+			nodeArgs = append(nodeArgs, w.ID, nodeID, seq)
+			argIndex += 3
+		}
+	}
+	nodeQuery += " ON CONFLICT DO NOTHING"
 
-    if _, err := r.Tx.Exec(nodeQuery, nodeArgs...); err != nil {
-        return fmt.Errorf("insert batch way_nodes: %w", err)
-    }
+	if _, err := r.Tx.Exec(nodeQuery, nodeArgs...); err != nil {
+		return fmt.Errorf("insert batch way_nodes: %w", err)
+	}
 
-    return nil
+	return nil
 }
 
 // InsertBatches inserts ways in batches of the specified size using the transaction.
 func (r *TxWayRepository) InsertBatches(ways []models.Way, batchSize int) error {
-    if batchSize <= 0 {
-        return fmt.Errorf("invalid batch size: %d", batchSize)
-    }
+	if batchSize <= 0 {
+		return fmt.Errorf("invalid batch size: %d", batchSize)
+	}
 
-    for i := 0; i < len(ways); i += batchSize {
-        end := i + batchSize
-        if end > len(ways) {
-            end = len(ways)
-        }
-        if err := r.insertBatch(ways[i:end]); err != nil {
-            return fmt.Errorf("insert batch %d-%d: %w", i, end, err)
-        }
-    }
+	for i := 0; i < len(ways); i += batchSize {
+		end := i + batchSize
+		if end > len(ways) {
+			end = len(ways)
+		}
+		if err := r.insertBatch(ways[i:end]); err != nil {
+			return fmt.Errorf("insert batch %d-%d: %w", i, end, err)
+		}
+	}
 
-    return nil
+	return nil
 }
 
 // GetWay retrieves a way by its ID and returns the way with ordered node IDs.
 func (r *TxWayRepository) GetWay(id int64) (*models.Way, error) {
-    var way models.Way
-    way.Tags = make(map[string]string)
+	var way models.Way
+	way.Tags = make(map[string]string)
 
-    var tagsJson []byte
+	var tagsJson []byte
 
-    err := r.Tx.QueryRow("SELECT id, tags FROM ways WHERE id = $1", id).
-        Scan(&way.ID, &tagsJson)
-    if err != nil {
-        if err == sql.ErrNoRows {
-            return nil, fmt.Errorf("way with ID %d not found", id)
-        }
-        return nil, err
-    }
+	err := r.Tx.QueryRow("SELECT id, tags FROM ways WHERE id = $1", id).
+		Scan(&way.ID, &tagsJson)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("way with ID %d not found", id)
+		}
+		return nil, err
+	}
 
-    if err := json.Unmarshal(tagsJson, &way.Tags); err != nil {
-        return nil, err
-    }
+	if err := json.Unmarshal(tagsJson, &way.Tags); err != nil {
+		return nil, err
+	}
 
-    rows, err := r.Tx.Query("SELECT node_id FROM way_nodes WHERE way_id = $1 ORDER BY sequence_id", id)
-    if err != nil {
-        return nil, err
-    }
-    defer func() { _ = rows.Close() }()
+	rows, err := r.Tx.Query("SELECT node_id FROM way_nodes WHERE way_id = $1 ORDER BY sequence_id", id)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
 
-    for rows.Next() {
-        var nodeID int64
-        if err := rows.Scan(&nodeID); err != nil {
-            return nil, err
-        }
-        way.NodeIDs = append(way.NodeIDs, nodeID)
-    }
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
+	for rows.Next() {
+		var nodeID int64
+		if err := rows.Scan(&nodeID); err != nil {
+			return nil, err
+		}
+		way.NodeIDs = append(way.NodeIDs, nodeID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
-    return &way, nil
+	return &way, nil
 }
 
 // GetAllWays retrieves all ways and their node IDs.
 func (r *TxWayRepository) GetAllWays() ([]models.Way, error) {
-    query := `
+	query := `
         SELECT
             w.id,
             w.tags,
@@ -173,36 +173,36 @@ func (r *TxWayRepository) GetAllWays() ([]models.Way, error) {
         JOIN way_nodes wn ON wn.way_id = w.id
         GROUP BY w.id, w.tags;
     `
-    rows, err := r.Tx.Query(query)
-    if err != nil {
-        return nil, err
-    }
-    defer func() {
-        if cerr := rows.Close(); cerr != nil {
-            log.Printf("Error closing rows: %v", cerr)
-        }
-    }()
+	rows, err := r.Tx.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("Error closing rows: %v", cerr)
+		}
+	}()
 
-    var ways []models.Way
-    for rows.Next() {
-        var way models.Way
-        var tagsJson []byte
+	var ways []models.Way
+	for rows.Next() {
+		var way models.Way
+		var tagsJson []byte
 
-        err := rows.Scan(&way.ID, &tagsJson, pq.Array(&way.NodeIDs))
-        if err != nil {
-            return nil, err
-        }
-        err = json.Unmarshal(tagsJson, &way.Tags)
-        if err != nil {
-            return nil, err
-        }
+		err := rows.Scan(&way.ID, &tagsJson, pq.Array(&way.NodeIDs))
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(tagsJson, &way.Tags)
+		if err != nil {
+			return nil, err
+		}
 
-        ways = append(ways, way)
-    }
+		ways = append(ways, way)
+	}
 
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
-    return ways, nil
+	return ways, nil
 }

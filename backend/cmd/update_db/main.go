@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	queryFile       = "cmd/update_db/query.osmql"
+	queryFile = "cmd/update_db/query.osmql"
 )
 
 func main() {
@@ -46,4 +46,3 @@ func readQueryFile(path string) []byte {
 	}
 	return query
 }
-

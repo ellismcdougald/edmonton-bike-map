@@ -26,4 +26,3 @@ func squaredEucDistance(lat1, lon1, lat2, lon2 float64) float64 {
 	distLon := lon2 - lon1
 	return distLat*distLat + distLon*distLon
 }
-

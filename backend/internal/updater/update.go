@@ -19,9 +19,9 @@ func UpdateDatabase(db *sql.DB, osmResp *OSMResponse) error {
 		return err
 	}
 	defer func() {
-    if rerr := tx.Rollback(); rerr != nil && rerr != sql.ErrTxDone {
-        log.Printf("transaction rollback error: %v", rerr)
-    }
+		if rerr := tx.Rollback(); rerr != nil && rerr != sql.ErrTxDone {
+			log.Printf("transaction rollback error: %v", rerr)
+		}
 	}()
 
 	reviewRepo := txrepo.NewTxReviewRepository(tx)
@@ -85,15 +85,15 @@ func extractNodesAndWays(osmResp *OSMResponse) ([]models.Node, []models.Way, map
 }
 
 func filterValidReviews(reviewMap map[int64][]models.Review, wayIDs map[int64]struct{}) []models.Review {
-    valid := []models.Review{}
-    for wayID, revs := range reviewMap {
-        if _, exists := wayIDs[wayID]; exists {
-            valid = append(valid, revs...)
-        } else {
+	valid := []models.Review{}
+	for wayID, revs := range reviewMap {
+		if _, exists := wayIDs[wayID]; exists {
+			valid = append(valid, revs...)
+		} else {
 			for _, r := range revs {
 				log.Printf("Skipping review for non-existent way %d: %+v", wayID, r)
 			}
-        }
-    }
-    return valid
+		}
+	}
+	return valid
 }

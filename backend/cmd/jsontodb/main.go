@@ -49,9 +49,9 @@ func main() {
 	nodeRepo := sqlrepo.NewSQLNodeRepository(db)
 	for _, el := range resp.Elements {
 		if el.Type == "node" {
-			n := models.Node {
-				ID: 			el.ID,
-				Latitude: 	el.Lat,
+			n := models.Node{
+				ID:        el.ID,
+				Latitude:  el.Lat,
 				Longitude: el.Lon,
 			}
 			err = nodeRepo.Insert(n)
