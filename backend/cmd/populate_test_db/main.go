@@ -6,8 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ellismcdougald/edmonton-bike-map/pkg/data"
-	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
+	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
+	"github.com/ellismcdougald/edmonton-bike-map/internal/repository/sqlrepo"
+	"github.com/ellismcdougald/edmonton-bike-map/internal/updater"
 	"github.com/joho/godotenv"
 )
 
@@ -36,27 +37,31 @@ func main() {
 	if err != nil {
 		log.Fatalf("cannot get absolute path: %v", err)
 	}
-	resp, err := data.ParseOSMJSON(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
-		log.Fatalf("Could not parse OSM json: %v", err)
+		log.Fatalf("Could not read osm data file: %v", err)
+	}
+	resp, err := updater.ParseOSMBytes(data)
+	if err != nil {
+		log.Fatalf("Could not parse osm data: %v", err)
 	}
 
-	nodeService := &model.DBNodeStore{DB: db}
-	wayService := &model.DBWayStore{DB: db}
+	nodeRepo := sqlrepo.NewSQLNodeRepository(db)
+	wayRepo := sqlrepo.NewSQLWayRepository(db)
 
-	var nodes []model.DBNode
-	var ways []model.DBWay
+	var nodes []models.Node
+	var ways []models.Way
 
 	for _, el := range resp.Elements {
 		switch el.Type {
 		case "node":
-			nodes = append(nodes, model.DBNode{
+			nodes = append(nodes, models.Node{
 				ID:        el.ID,
 				Latitude:  el.Lat,
 				Longitude: el.Lon,
 			})
 		case "way":
-			ways = append(ways, model.DBWay{
+			ways = append(ways, models.Way{
 				ID:      el.ID,
 				Tags:    el.Tags,
 				NodeIDs: el.Nodes,
@@ -66,13 +71,13 @@ func main() {
 
 	log.Printf("Inserting nodes")
 	// Batch insert all nodes
-	if err := nodeService.InsertBatchChunks(nodes, 1000); err != nil {
+	if err := nodeRepo.InsertBatches(nodes, 1000); err != nil {
 		log.Fatalf("failed to insert nodes in batches: %v", err)
 	}
 
 	log.Printf("Inserting ways")
 	// Batch insert all ways
-	if err := wayService.InsertBatchChunks(ways, 500); err != nil {
+	if err := wayRepo.InsertBatches(ways, 500); err != nil {
 		log.Fatalf("failed to insert ways in batches: %v", err)
 	}
 	log.Printf("done populating")

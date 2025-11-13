@@ -7,10 +7,11 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq" // <-- Postgres driver import
+	_ "github.com/lib/pq"
 
-	"github.com/ellismcdougald/edmonton-bike-map/pkg/data"
-	"github.com/ellismcdougald/edmonton-bike-map/pkg/model"
+	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
+	"github.com/ellismcdougald/edmonton-bike-map/internal/repository/sqlrepo"
+	"github.com/ellismcdougald/edmonton-bike-map/internal/updater"
 )
 
 func main() {
@@ -36,35 +37,39 @@ func main() {
 		}
 	}()
 
-	resp, err := data.ParseOSMJSON("osm_bike_data.json")
+	data, err := os.ReadFile("osm_bike_data.json")
+	if err != nil {
+		log.Fatalf("Could not read osm data file: %v", err)
+	}
+	resp, err := updater.ParseOSMBytes(data)
 	if err != nil {
 		log.Fatalf("Could not parse osm data: %v", err)
 	}
 
-	nodeStore := model.DBNodeStore{DB: db}
+	nodeRepo := sqlrepo.NewSQLNodeRepository(db)
 	for _, el := range resp.Elements {
 		if el.Type == "node" {
-			n := model.DBNode{
+			n := models.Node{
 				ID:        el.ID,
 				Latitude:  el.Lat,
 				Longitude: el.Lon,
 			}
-			err = nodeStore.Insert(n)
+			err = nodeRepo.Insert(n)
 			if err != nil {
 				log.Printf("Warning: inserting node %d failed with error: %v", el.ID, err)
 			}
 		}
 	}
 
-	wayStore := model.DBWayStore{DB: db}
+	wayRepo := sqlrepo.NewSQLWayRepository(db)
 	for _, el := range resp.Elements {
 		if el.Type == "way" {
-			w := model.DBWay{
+			w := models.Way{
 				ID:      el.ID,
 				Tags:    el.Tags,
 				NodeIDs: el.Nodes,
 			}
-			err = wayStore.Insert(w)
+			err = wayRepo.Insert(w)
 			if err != nil {
 				log.Printf("Warning: inserting way %d failed with error: %v", el.ID, err)
 			}
