@@ -18,7 +18,11 @@ func UpdateDatabase(db *sql.DB, osmResp *OSMResponse) error {
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+    if rerr := tx.Rollback(); rerr != nil && rerr != sql.ErrTxDone {
+        log.Printf("transaction rollback error: %v", rerr)
+    }
+	}()
 
 	reviewRepo := txrepo.NewTxReviewRepository(tx)
 	reviews, err := reviewRepo.GetAllReviews()

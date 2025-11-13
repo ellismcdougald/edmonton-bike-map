@@ -3,6 +3,7 @@ package updater
 import (
 	"bytes"
 	"io"
+	"log"
 	"net/http"
 )
 
@@ -13,7 +14,11 @@ func FetchOverpassData(query []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+    if cerr := resp.Body.Close(); cerr != nil {
+        log.Printf("failed to close response body: %v", cerr)
+    }
+	}()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
