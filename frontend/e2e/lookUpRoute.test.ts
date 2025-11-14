@@ -19,8 +19,6 @@ test.describe('route finding with a test user', () => {
 
 	let client: Client;
 	test.beforeAll(async () => {
-		const dbUrl = `postgres://${dbConfig.user}:${dbConfig.password}@${dbConfig.host}:${dbConfig.port}/${dbConfig.database}?sslmode=disable`;
-
 		client = new Client(dbConfig);
 		await client.connect();
 
