@@ -1,5 +1,5 @@
 import { render, fireEvent, waitFor } from '@testing-library/svelte';
-import { vi } from 'vitest';
+import { vi, type Mock } from 'vitest';
 import * as navigation from '$app/navigation';
 import SettingsPage from './+page.svelte';
 
@@ -8,13 +8,14 @@ vi.mock('$app/navigation', () => ({
 }));
 
 // Mock fetch globally
-global.fetch = vi.fn();
+const mockFetch = vi.fn() as Mock;
+global.fetch = mockFetch;
 
 describe('Settings Page', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		localStorage.clear();
-		(global.fetch as any).mockReset();
+		mockFetch.mockReset();
 	});
 
 	it('redirects to login if user is not logged in', async () => {
@@ -58,7 +59,7 @@ describe('Settings Page', () => {
 
 	it('successfully changes password', async () => {
 		localStorage.setItem('token', 'fake-token');
-		(global.fetch as any).mockResolvedValueOnce({
+		mockFetch.mockResolvedValueOnce({
 			ok: true
 		});
 
@@ -86,7 +87,7 @@ describe('Settings Page', () => {
 
 	it('shows error message on failed password change', async () => {
 		localStorage.setItem('token', 'fake-token');
-		(global.fetch as any).mockResolvedValueOnce({
+		mockFetch.mockResolvedValueOnce({
 			ok: false,
 			text: async () => 'Current password is incorrect'
 		});
