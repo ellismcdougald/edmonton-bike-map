@@ -37,26 +37,26 @@ test.describe('sign up', () => {
 	});
 
 	test('user can sign up, log in, look up a route, then log out', async ({ page }) => {
-		await page.goto('./');
+		await page.goto('http://localhost:4173/');
 
-		await expect(page).toHaveURL('/login');
+		await expect(page).toHaveURL('http://localhost:4173/login');
 
 		const signupLink = page.locator('#signupLink');
 		await signupLink.click();
 
-		await expect(page).toHaveURL('/signup');
+		await expect(page).toHaveURL('http://localhost:4173/signup');
 
 		await page.fill('input[name="username"]', testUsername);
 		await page.fill('input[name="password"]', testPassword);
 		await page.locator('#submitButton').click();
 
-		await expect(page).toHaveURL('/login');
+		await expect(page).toHaveURL('http://localhost:4173/login');
 
 		await page.fill('input[name="username"]', testUsername);
 		await page.fill('input[name="password"]', testPassword);
 		await page.locator('#submitButton').click();
 
-		await expect(page).toHaveURL('/');
+		await expect(page).toHaveURL('http://localhost:4173/');
 
 		let token = await page.evaluate(() => localStorage.getItem('token'));
 		expect(token).toBeDefined();
@@ -84,7 +84,7 @@ test.describe('sign up', () => {
 		await page.locator('#usernameButton').hover();
 		await page.locator('#logoutButton').click();
 
-		await expect(page).toHaveURL('/login');
+		await expect(page).toHaveURL('http://localhost:4173/login');
 
 		token = await page.evaluate(() => localStorage.getItem('token'));
 		expect(token).toBeNull();
