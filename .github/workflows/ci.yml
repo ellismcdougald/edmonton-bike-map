@@ -140,7 +140,7 @@ jobs:
       - name: Start web page
         run: |
           npm run build
-          npm run preview -- --port 4173
+          npm run preview -- --port 4173 &
           echo $! > frontend.pid
           echo "Waiting for frontend..."
           for i in {1..30}; do
