@@ -82,14 +82,3 @@
     - name: Show update_db output
       debug:
         var: update_db_output
-
-    - name: Deploy weekly update-db cron service
-      community.docker.docker_compose_v2:
-        project_src: /root/app
-        state: present
-        pull: always
-        recreate: auto
-        files:
-          - backend-compose.yml
-        services:
-          - update-db-cron
