@@ -3,7 +3,7 @@ import { Client } from 'pg';
 import * as dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 
-dotenv.config({ path: '../.env' });
+dotenv.config({ path: '../../.env' });
 
 console.log(process.env.POSTGRES_TEST_USER);
 
