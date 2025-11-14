@@ -30,6 +30,8 @@ type ReviewRepository interface {
 // UserRepository defines methods to interact with User data.
 type UserRepository interface {
 	GetByUsername(username string) (*models.User, error)
+	GetByID(id int64) (*models.User, error)
 	Create(user *models.User) error
 	UsernameExists(username string) (bool, error)
+	UpdatePassword(userID int64, hashedPassword string) error
 }

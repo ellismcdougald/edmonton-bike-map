@@ -58,4 +58,14 @@ func RegisterRoutes(mux *http.ServeMux, handlers handler.Handlers) {
 			handler(w, r)
 		}
 	})))
+
+	mux.Handle("/api/change-password", corsMiddleware("POST", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodOptions:
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			handler := handlers.AuthHandler.HandleChangePassword()
+			handler(w, r)
+		}
+	})))
 }

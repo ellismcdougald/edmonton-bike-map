@@ -26,7 +26,7 @@ func corsMiddleware(allowedMethods ...string) func(http.Handler) http.Handler {
 			}
 
 			w.Header().Set("Access-Control-Allow-Methods", methods)
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 			if r.Method == http.MethodOptions {
 				w.WriteHeader(http.StatusNoContent)

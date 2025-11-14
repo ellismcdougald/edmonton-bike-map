@@ -21,6 +21,11 @@ func (s *UserService) GetUserByUsername(username string) (*models.User, error) {
 	return s.UserRepository.GetByUsername(username)
 }
 
+// GetUserByID retrieves a user by their ID using the UserRepository.
+func (s *UserService) GetUserByID(id int64) (*models.User, error) {
+	return s.UserRepository.GetByID(id)
+}
+
 // CreateUser creates a new user using the UserRepository.
 func (s *UserService) CreateUser(user *models.User) error {
 	return s.UserRepository.Create(user)
@@ -29,4 +34,9 @@ func (s *UserService) CreateUser(user *models.User) error {
 // UsernameExists checks if a username already exists using the UserRepository.
 func (s *UserService) UsernameExists(username string) (bool, error) {
 	return s.UserRepository.UsernameExists(username)
+}
+
+// UpdatePassword updates a user's password using the UserRepository.
+func (s *UserService) UpdatePassword(userID int64, hashedPassword string) error {
+	return s.UserRepository.UpdatePassword(userID, hashedPassword)
 }
