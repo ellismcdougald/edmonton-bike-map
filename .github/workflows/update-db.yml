@@ -1,4 +1,4 @@
-name: Weekly Backend Deployment
+name: Weekly Database Update
 
 on:
   schedule:
