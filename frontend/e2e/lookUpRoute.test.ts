@@ -3,13 +3,19 @@ import { Client } from 'pg';
 import * as dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 
-dotenv.config({ path: '../../.env' });
+const dotenvResult = dotenv.config({ path: '../../.env' });
+
+if (dotenvResult.error) {
+	console.error('Error loading .env file:', dotenvResult.error);
+} else {
+	console.log('dotenv.config() result (parsed variables):', dotenvResult.parsed);
+}
 
 console.log('After dotenv.config, checking env vars:');
-console.log(`POSTGRES_TEST_USER: ${process.env.POSTGRES_TEST_USER}`);
-console.log(`POSTGRES_TEST_PASSWORD: ${process.env.POSTGRES_TEST_PASSWORD}`);
-console.log(`POSTGRES_TEST_DB: ${process.env.POSTGRES_TEST_DB}`);
-console.log(`POSTGRES_TEST_PORT: ${process.env.POSTGRES_TEST_PORT}`);
+console.log(`POSTGRES_TEST_USER: "${process.env.POSTGRES_TEST_USER}"`);
+console.log(`POSTGRES_TEST_PASSWORD: "${process.env.POSTGRES_TEST_PASSWORD}"`);
+console.log(`POSTGRES_TEST_DB: "${process.env.POSTGRES_TEST_DB}"`);
+console.log(`POSTGRES_TEST_PORT: "${process.env.POSTGRES_TEST_PORT}"`);
 
 const parsedPort = parseInt(process.env.POSTGRES_TEST_PORT || '5434');
 const dbConfig = {
