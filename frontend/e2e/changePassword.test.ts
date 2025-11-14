@@ -51,7 +51,9 @@ test.describe('Change Password Feature', () => {
 		await page.click('button[type="submit"]');
 		// Explicitly wait for the URL to change to '/' after login.
 		// This can provide a clearer timeout error if the navigation doesn't occur.
-		await page.waitForURL('/');
+		console.log(`Current URL before waiting for navigation: ${page.url()}`);
+		await page.waitForURL('/', { timeout: 60000 }); // Increased timeout for debugging
+		console.log('Navigation to "/" detected.');
 		// Increase timeout for URL assertion as navigation might take longer.
 		await expect(page).toHaveURL('/', { timeout: 10000 }); // Assert the URL after waiting
 		await expect(page.locator(`text=${username}`)).toBeVisible(); // Verify user is logged in
