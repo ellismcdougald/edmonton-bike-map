@@ -5,17 +5,22 @@ import bcrypt from 'bcrypt';
 
 dotenv.config({ path: '../../.env' });
 
+console.log('After dotenv.config, checking env vars:');
 console.log(`POSTGRES_TEST_USER: ${process.env.POSTGRES_TEST_USER}`);
+console.log(`POSTGRES_TEST_PASSWORD: ${process.env.POSTGRES_TEST_PASSWORD}`);
+console.log(`POSTGRES_TEST_DB: ${process.env.POSTGRES_TEST_DB}`);
+console.log(`POSTGRES_TEST_PORT: ${process.env.POSTGRES_TEST_PORT}`);
 
+const parsedPort = parseInt(process.env.POSTGRES_TEST_PORT || '5434');
 const dbConfig = {
 	user: process.env.POSTGRES_TEST_USER,
 	password: process.env.POSTGRES_TEST_PASSWORD,
 	database: process.env.POSTGRES_TEST_DB,
 	host: 'localhost',
-	port: parseInt(process.env.POSTGRES_TEST_PORT || '5434')
+	port: isNaN(parsedPort) ? 5434 : parsedPort
 };
 
-console.log('DB Config:', dbConfig);
+console.log('Final DB Config:', dbConfig);
 
 test.describe('Change Password Feature', () => {
 	const testUsername = 'testuser';
