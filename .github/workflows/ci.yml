@@ -137,20 +137,6 @@ jobs:
           go run cmd/server/main.go &
           echo $! > backend.pid
         working-directory: backend
-      - name: Start web page
-        run: |
-          npm run build
-          npm run preview -- --port 4173 &
-          echo $! > frontend.pid
-          echo "Waiting for frontend..."
-          for i in {1..30}; do
-            if curl -s http://localhost:4173 >/dev/null; then
-              echo "Frontend is ready!"
-              break
-            fi
-            sleep 1
-          done
-        working-directory: ./frontend
       - name: Run E2E tests
         run: |
           npm run test:e2e -- --timeout 30000
@@ -165,7 +151,3 @@ jobs:
         if: always()
         run: |
           kill $(cat backend.pid) || true
-      - name: Stop web page
-        if: always()
-        run: |
-          kill $(cat frontend.pid) || true
