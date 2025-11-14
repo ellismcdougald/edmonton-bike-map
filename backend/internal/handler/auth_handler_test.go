@@ -18,14 +18,19 @@ import (
 
 // mockUserRepo implements repository.UserRepository for tests.
 type mockUserRepo struct {
-	user           *models.User
-	getErr         error
-	usernameExists bool
-	usernameErr    error
-	createErr      error
+	user              *models.User
+	getErr            error
+	usernameExists    bool
+	usernameErr       error
+	createErr         error
+	updatePasswordErr error
 }
 
 func (m *mockUserRepo) GetByUsername(username string) (*models.User, error) {
+	return m.user, m.getErr
+}
+
+func (m *mockUserRepo) GetByID(id int64) (*models.User, error) {
 	return m.user, m.getErr
 }
 
@@ -35,6 +40,10 @@ func (m *mockUserRepo) Create(user *models.User) error {
 
 func (m *mockUserRepo) UsernameExists(username string) (bool, error) {
 	return m.usernameExists, m.usernameErr
+}
+
+func (m *mockUserRepo) UpdatePassword(userID int64, hashedPassword string) error {
+	return m.updatePasswordErr
 }
 
 // fake provider
@@ -164,4 +173,82 @@ func TestHandleSignup_CreateError(t *testing.T) {
 	h.HandleSignup().ServeHTTP(rr, req)
 
 	require.Equal(t, http.StatusInternalServerError, rr.Code)
+}
+
+func TestHandleChangePassword_Success(t *testing.T) {
+	// Set JWT key for token validation
+	testSecret := []byte("test-secret")
+	jwtProvider := token.NewJWTProvider(testSecret)
+
+	pw := []byte("oldpassword")
+	hash, err := bcrypt.GenerateFromPassword(pw, bcrypt.DefaultCost)
+	require.NoError(t, err)
+
+	repo := &mockUserRepo{user: &models.User{ID: 123, Username: "alice", Password: string(hash)}}
+	svc := service.NewUserService(repo)
+	h := NewAuthHandler(svc, jwtProvider)
+
+	// Generate a valid token
+	validToken, err := jwtProvider.Generate("alice", 123)
+	require.NoError(t, err)
+
+	body, _ := json.Marshal(models.ChangePasswordRequest{
+		CurrentPassword: "oldpassword",
+		NewPassword:     "newpassword",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/change-password", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+validToken)
+	rr := httptest.NewRecorder()
+
+	h.HandleChangePassword().ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusNoContent, rr.Code)
+}
+
+func TestHandleChangePassword_WrongCurrentPassword(t *testing.T) {
+	testSecret := []byte("test-secret")
+	jwtProvider := token.NewJWTProvider(testSecret)
+
+	pw := []byte("oldpassword")
+	hash, err := bcrypt.GenerateFromPassword(pw, bcrypt.DefaultCost)
+	require.NoError(t, err)
+
+	repo := &mockUserRepo{user: &models.User{ID: 123, Username: "alice", Password: string(hash)}}
+	svc := service.NewUserService(repo)
+	h := NewAuthHandler(svc, jwtProvider)
+
+	validToken, err := jwtProvider.Generate("alice", 123)
+	require.NoError(t, err)
+
+	body, _ := json.Marshal(models.ChangePasswordRequest{
+		CurrentPassword: "wrongpassword",
+		NewPassword:     "newpassword",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/change-password", bytes.NewReader(body))
+	req.Header.Set("Authorization", "Bearer "+validToken)
+	rr := httptest.NewRecorder()
+
+	h.HandleChangePassword().ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusUnauthorized, rr.Code)
+}
+
+func TestHandleChangePassword_MissingToken(t *testing.T) {
+	testSecret := []byte("test-secret")
+	jwtProvider := token.NewJWTProvider(testSecret)
+
+	repo := &mockUserRepo{}
+	svc := service.NewUserService(repo)
+	h := NewAuthHandler(svc, jwtProvider)
+
+	body, _ := json.Marshal(models.ChangePasswordRequest{
+		CurrentPassword: "oldpassword",
+		NewPassword:     "newpassword",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/change-password", bytes.NewReader(body))
+	rr := httptest.NewRecorder()
+
+	h.HandleChangePassword().ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusUnauthorized, rr.Code)
 }

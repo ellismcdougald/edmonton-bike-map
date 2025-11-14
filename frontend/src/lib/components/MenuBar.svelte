@@ -54,6 +54,13 @@
              opacity-0 invisible translate-y-1 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0
              transition-all duration-200 ease-out"
 			>
+				<a
+					id="settingsLink"
+					href="/settings"
+					class="block w-full px-4 py-2 text-center hover:bg-gray-100"
+				>
+					Settings
+				</a>
 				<button
 					id="logoutButton"
 					class="block w-full px-4 py-2 text-center hover:bg-gray-100"

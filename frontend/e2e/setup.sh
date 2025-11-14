@@ -9,18 +9,6 @@ DB_PORT=5435
 PG_CONTAINER_NAME="bikemap_test_db"
 BACKEND_BINARY="./tmp/backend"
 
-# Cleanup function
-cleanup() {
-    echo "Cleaning up..."
-    if [[ -n "$BACKEND_PID" ]]; then
-        kill -9 $BACKEND_PID 2>/dev/null || true
-    fi
-    docker rm -f $PG_CONTAINER_NAME 2>/dev/null || true
-    rm -f $BACKEND_BINARY
-}
-# Ensure cleanup runs on exit or interrupt
-trap cleanup EXIT
-
 # Cleanup any existing container
 docker rm -f $PG_CONTAINER_NAME 2>/dev/null || true
 
@@ -59,6 +47,3 @@ export POSTGRES_TEST_USER=$DB_USER
 export POSTGRES_TEST_PASSWORD=$DB_PASS
 export POSTGRES_TEST_DB=$DB_NAME
 export POSTGRES_TEST_PORT=$DB_PORT
-
-# Run E2E tests
-cd ../frontend && npx playwright test

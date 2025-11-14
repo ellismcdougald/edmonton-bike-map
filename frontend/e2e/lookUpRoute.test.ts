@@ -5,8 +5,6 @@ import bcrypt from 'bcrypt';
 
 dotenv.config({ path: '../.env' });
 
-console.log(process.env.POSTGRES_TEST_USER);
-
 const dbConfig = {
 	user: process.env.POSTGRES_TEST_USER,
 	password: process.env.POSTGRES_TEST_PASSWORD,
@@ -21,9 +19,6 @@ test.describe('route finding with a test user', () => {
 
 	let client: Client;
 	test.beforeAll(async () => {
-		const dbUrl = `postgres://${dbConfig.user}:${dbConfig.password}@${dbConfig.host}:${dbConfig.port}/${dbConfig.database}?sslmode=disable`;
-		console.log('Effective DB URL:', dbUrl);
-
 		client = new Client(dbConfig);
 		await client.connect();
 
@@ -53,9 +48,9 @@ test.describe('route finding with a test user', () => {
 	test('user can log in, then select a start and end point and find a route between those two points', async ({
 		page
 	}) => {
-		await page.goto('./');
+		await page.goto('http://localhost:4173/');
 
-		await expect(page).toHaveURL('/login');
+		await expect(page).toHaveURL('http://localhost:4173/login');
 
 		await page.fill('input[name="username"]', testUsername);
 		await page.fill('input[name="password"]', testPassword);
@@ -94,9 +89,9 @@ test.describe('route finding with a test user', () => {
 	test('user can log in, then select a start and end point, find a route between those two points, then reset the map', async ({
 		page
 	}) => {
-		await page.goto('./');
+		await page.goto('http://localhost:4173/');
 
-		await expect(page).toHaveURL('/login');
+		await expect(page).toHaveURL('http://localhost:4173/login');
 
 		await page.fill('input[name="username"]', testUsername);
 		await page.fill('input[name="password"]', testPassword);

@@ -35,6 +35,25 @@ func (s *SQLUserRepository) GetByUsername(username string) (*models.User, error)
 	return &user, nil
 }
 
+// GetByID retrieves a user by their ID.
+func (s *SQLUserRepository) GetByID(id int64) (*models.User, error) {
+	query := `
+			SELECT
+				id,
+				username,
+				password
+			FROM users
+			WHERE id = $1
+		`
+
+	var user models.User
+	err := s.DB.QueryRow(query, id).Scan(&user.ID, &user.Username, &user.Password)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 // CreateUser inserts a new user into the database.
 // Returns any error encountered during the insert.
 func (s *SQLUserRepository) Create(user *models.User) error {
@@ -54,4 +73,13 @@ func (s *SQLUserRepository) UsernameExists(username string) (bool, error) {
 	var exists bool
 	err := s.DB.QueryRow(query, username).Scan(&exists)
 	return exists, err
+}
+
+// UpdatePassword updates a user's password in the database.
+func (s *SQLUserRepository) UpdatePassword(userID int64, hashedPassword string) error {
+	query := `
+		UPDATE users SET password = $1 WHERE id = $2
+	`
+	_, err := s.DB.Exec(query, hashedPassword, userID)
+	return err
 }
