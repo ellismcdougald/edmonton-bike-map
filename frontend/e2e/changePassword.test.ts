@@ -5,6 +5,8 @@ import bcrypt from 'bcrypt';
 
 dotenv.config({ path: '../.env' });
 
+console.log(`POSTGRES_TEST_USER: ${process.env.POSTGRES_TEST_USER}`);
+
 const dbConfig = {
 	user: process.env.POSTGRES_TEST_USER,
 	password: process.env.POSTGRES_TEST_PASSWORD,
@@ -13,6 +15,8 @@ const dbConfig = {
 	port: parseInt(process.env.POSTGRES_TEST_PORT || '5434')
 };
 
+console.log('DB Config:', dbConfig);
+
 test.describe('Change Password Feature', () => {
 	const testUsername = 'testuser';
 	const testPassword = 'password123';
@@ -20,8 +24,14 @@ test.describe('Change Password Feature', () => {
 
 	let client: Client;
 	test.beforeAll(async () => {
-		client = new Client(dbConfig);
-		await client.connect();
+		try {
+			client = new Client(dbConfig);
+			await client.connect();
+			console.log('Database connected successfully in changePassword.test.ts');
+		} catch (error) {
+			console.error('Failed to connect to database in changePassword.test.ts:', error);
+			throw error; // Re-throw to fail the test early
+		}
 	});
 
 	test.afterAll(async () => {
