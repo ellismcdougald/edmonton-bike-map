@@ -3,27 +3,16 @@ import { Client } from 'pg';
 import * as dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 
-const dotenvResult = dotenv.config({ path: '../../.env' });
+dotenv.config({ path: '../.env' });
 
-if (dotenvResult.error) {
-	console.error('Error loading .env file:', dotenvResult.error);
-} else {
-	console.log('dotenv.config() result (parsed variables):', dotenvResult.parsed);
-}
+console.log(process.env.POSTGRES_TEST_USER);
 
-console.log('After dotenv.config, checking env vars:');
-console.log(`POSTGRES_TEST_USER: "${process.env.POSTGRES_TEST_USER}"`);
-console.log(`POSTGRES_TEST_PASSWORD: "${process.env.POSTGRES_TEST_PASSWORD}"`);
-console.log(`POSTGRES_TEST_DB: "${process.env.POSTGRES_TEST_DB}"`);
-console.log(`POSTGRES_TEST_PORT: "${process.env.POSTGRES_TEST_PORT}"`);
-
-const parsedPort = parseInt(process.env.POSTGRES_TEST_PORT || '5434');
 const dbConfig = {
 	user: process.env.POSTGRES_TEST_USER,
 	password: process.env.POSTGRES_TEST_PASSWORD,
 	database: process.env.POSTGRES_TEST_DB,
 	host: 'localhost',
-	port: isNaN(parsedPort) ? 5434 : parsedPort
+	port: parseInt(process.env.POSTGRES_TEST_PORT || '5434')
 };
 
 test.describe('route finding with a test user', () => {

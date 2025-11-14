@@ -4,11 +4,7 @@ export default defineConfig({
 	workers: 1,
 	webServer: {
 		command: 'npm run build && npm run preview',
-		port: 4173,
-		timeout: 120 * 1000, // Increase webServer startup timeout to 120 seconds (2 minutes)
+		port: 4173
 	},
-	use: {
-		baseURL: 'http://localhost:4173', // Base URL for all page.goto() calls
-		trace: 'on-first-retry', // Record trace only when retrying a test for the first time.
-	},
+	testDir: 'e2e'
 });
