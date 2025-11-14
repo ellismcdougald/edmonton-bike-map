@@ -55,18 +55,6 @@
         state: touch
         mode: "0600"
 
-    - name: Deploy app with Compose
-      community.docker.docker_compose_v2:
-        project_src: /root/app
-        state: present
-        pull: always
-        recreate: auto
-        files:
-          - backend-compose.yml
-        services:
-          - backend
-          - traefik
-
     - name: Run database migrations
       shell: docker compose -f /root/app/backend-compose.yml run --rm migrate
       register: migrate_output
@@ -82,3 +70,15 @@
     - name: Show update_db output
       debug:
         var: update_db_output
+
+    - name: Deploy app with Compose
+      community.docker.docker_compose_v2:
+        project_src: /root/app
+        state: present
+        pull: always
+        recreate: auto
+        files:
+          - backend-compose.yml
+        services:
+          - backend
+          - traefik
