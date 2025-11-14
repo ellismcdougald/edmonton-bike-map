@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	queryFile = "cmd/update_db/query.osmql"
+	queryFile = "query.osmql"
 )
 
 func main() {
