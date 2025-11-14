@@ -5,7 +5,6 @@ export default defineConfig({
 	webServer: {
 		command: 'npm run build && npm run preview',
 		port: 4173,
-		url: 'http://localhost:4173', // Explicitly define the URL for the web server
 		timeout: 120 * 1000, // Increase webServer startup timeout to 120 seconds (2 minutes)
 	},
 	use: {
