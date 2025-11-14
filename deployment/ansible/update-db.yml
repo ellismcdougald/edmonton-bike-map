@@ -1,0 +1,60 @@
+---
+- name: Deploy Go backend on droplet
+  hosts: general
+  vars_files:
+    - vars.yml
+  become: yes
+  collections:
+    - community.docker
+  tasks:
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+    - name: Check if Docker Compose binary exists
+      stat:
+        path: /usr/local/lib/docker/cli-plugins/docker-compose
+      register: docker_compose_binary
+
+    - name: Download Docker Compose v2 binary
+      get_url:
+        url: https://github.com/docker/compose/releases/download/v2.39.2/docker-compose-linux-x86_64
+        dest: /usr/local/lib/docker/cli-plugins/docker-compose
+        mode: "0755"
+        force: no
+      when: not docker_compose_binary.stat.exists
+
+    - name: Ensure app directory exists
+      file:
+        path: /root/app
+        state: directory
+
+    - name: Copy backend-compose.yml to server
+      copy:
+        src: backend-compose.yml
+        dest: /root/app/backend-compose.yml
+        mode: "0644"
+
+    - name: Log in to GitHub Container Registry
+      docker_login:
+        registry_url: ghcr.io
+        username: "{{ lookup('env','GITHUB_ACTOR') }}"
+        password: "{{ ghcr_pat }}"
+
+    - name: Ensure letsencrypt directory exists
+      file:
+        path: /root/app/letsencrypt
+        state: directory
+        mode: "0700"
+
+    - name: Ensure acme.json exists
+      file:
+        path: /root/app/letsencrypt/acme.json
+        state: touch
+        mode: "0600"
+
+    - name: Run database update
+      shell: docker compose -f /root/app/backend-compose.yml run --rm backend ./update_db
+      register: update_db_output
