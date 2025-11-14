@@ -57,8 +57,10 @@
 
     - name: Run database update
       shell: docker compose -f /root/app/backend-compose.yml run --rm backend ./update_db
+      async: 600
+      poll: 15
       register: update_db_output
 
     - name: Show update_db output
       debug:
-        var: update_db_output
+        var: update_db_output.stdout
