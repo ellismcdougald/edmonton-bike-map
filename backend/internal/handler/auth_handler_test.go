@@ -18,11 +18,11 @@ import (
 
 // mockUserRepo implements repository.UserRepository for tests.
 type mockUserRepo struct {
-	user             *models.User
-	getErr           error
-	usernameExists   bool
-	usernameErr      error
-	createErr        error
+	user              *models.User
+	getErr            error
+	usernameExists    bool
+	usernameErr       error
+	createErr         error
 	updatePasswordErr error
 }
 

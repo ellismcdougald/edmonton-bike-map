@@ -58,6 +58,32 @@ func TestTxUserRepository_Create(t *testing.T) {
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
+func TestTxUserRepository_GetByID(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { mock.ExpectClose(); _ = db.Close() }()
+
+	mock.ExpectBegin()
+	tx, err := db.Begin()
+	require.NoError(t, err)
+
+	rows := sqlmock.NewRows([]string{"id", "username", "password"}).AddRow(int64(42), "alice", "pwhash")
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT id, username, password FROM users WHERE id = $1")).
+		WithArgs(int64(42)).
+		WillReturnRows(rows)
+
+	repo := NewTxUserRepository(tx)
+	user, err := repo.GetByID(42)
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	require.Equal(t, int64(42), user.ID)
+	require.Equal(t, "alice", user.Username)
+
+	mock.ExpectCommit()
+	require.NoError(t, tx.Commit())
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
 func TestTxUserRepository_UsernameExists(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
@@ -85,6 +111,28 @@ func TestTxUserRepository_UsernameExists(t *testing.T) {
 	ok2, err := repo.UsernameExists("dave")
 	require.NoError(t, err)
 	require.False(t, ok2)
+
+	mock.ExpectCommit()
+	require.NoError(t, tx.Commit())
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestTxUserRepository_UpdatePassword(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { mock.ExpectClose(); _ = db.Close() }()
+
+	mock.ExpectBegin()
+	tx, err := db.Begin()
+	require.NoError(t, err)
+
+	mock.ExpectExec(regexp.QuoteMeta("UPDATE users SET password = $1 WHERE id = $2")).
+		WithArgs("newhash", int64(123)).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	repo := NewTxUserRepository(tx)
+	err = repo.UpdatePassword(123, "newhash")
+	require.NoError(t, err)
 
 	mock.ExpectCommit()
 	require.NoError(t, tx.Commit())
