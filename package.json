@@ -1,0 +1,31 @@
+{
+  "name": "edmonton-bike-map",
+  "version": "1.0.0",
+  "description": "Finding a safe and comfortable bike route from one place to another isn't as simple as plugging in start and end addresses into Google Maps. I often find myself piecing together a route using a combination of a map of Edmonton's bike infastructure and Google Maps streetview to verify the suitability of different routes. Some roads are simply unsafe for bikes, while others may be uncomfortable. Even where bike infastructure is available, an adjacent quiet residential street might be more comfortable to ride on.",
+  "main": "commitlint.config.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "prepare": "husky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ellismcdougald/edmonton-bike-map.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ellismcdougald/edmonton-bike-map/issues"
+  },
+  "homepage": "https://github.com/ellismcdougald/edmonton-bike-map#readme",
+  "devDependencies": {
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "eslint": "^9.39.1",
+    "husky": "^9.1.7",
+    "prettier": "^3.6.2"
+  }
+}
