@@ -1,0 +1,14 @@
+FROM node:20
+
+WORKDIR /app
+
+# Install deps first to cache properly
+COPY package.json package-lock.json* ./
+RUN npm install
+
+# Source mounted at runtime
+COPY . .
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev", "--", "--host"]

@@ -29,5 +29,4 @@ jobs:
         run: ansible-playbook update-db.yml -i inventory.ini --private-key ~/.ssh/id_rsa -e "ghcr_pat=${{ secrets.GHCR_PAT }}"
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
-          LE_EMAIL: ${{ secrets.LE_EMAIL }}
         working-directory: deployment/ansible
