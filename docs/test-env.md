@@ -1,55 +1,44 @@
-# Development Environment
+# Testing Environment
 
-This page explains how to set up and run the Edmonton Bike Map web app locally using Docker.
+This page explains how to set up and run a test environment for local end-to-end testing.
 
-## Prerequisites
+## Development Environment
 
-Ensure that Docker (including Docker Compose), Go, Node, and Git are installed.
-
-## Testing Environment
+It is assumed that you have followed the `Development Environment` instructions and are able to run the app locally in that enviroment.
 
 The testing environment is separate from the development enviroment. It uses its own local database. The testing environment can be run alongside the development environment. The services use different ports. Because we are managing two different Docker Compose environments, there are many scripts defined in `package.json` to assist with Docker commands. Scripts defined here can build, start, stop, and restart containers as well as display logs. Some of these scripts are shown below.
 
-Set up the development environment and ensure that it works. Then try the testing environment.
-
 ## Steps
 
-### 1. Clone the repository
+### 1. Environment Variables
 
-```
-git clone git@github.com:ellismcdougald/edmonton-bike-map.git
-cd edmonton-bike-map
-```
+Create a `.env.test` file in the root. You may use `.env.test.example` as a template.
 
-### 2. Environment Variables
-
-Create a `.env` file in the root. You may use `.env.example` as a template. These variables allow the backend to connect to the database.
-
-### 3. Start the Development Environment
+### 2. Start the Testing Environment
 
 Build and start the containers.
 
 ```
-npm run dev:build
-npm run dev:start
+npm run test:build
+npm run test:start
 ```
 
 This starts:
 
-- PostgreSQL database on port `5433`
-- Backend server on port `8080`
-- Frontend server on port `5173`
+- PostgreSQL test database on port `5434`
+- Backend server on port `4000`
+- Frontend server on port `3000`
 
 The first time, database migrations will run automatically.
 
-### 4. Populate database with data
+### 3. Populate database with data
 
 If this is the first time starting the development environment, the database migrations will be automatically applied but the database tables will be empty. To populate the database, use the script `backend/cmd/update_db/main.go`. This will update the `nodes`, `ways`, and `way_nodes` tables with the most recent OpenStreetMap data while keeping existing reviews. It works with an empty database, so it can be used to populate the database for the first time.
 
 ```
 // Ensure DATABASE_URL environment variable is set using localhost:[LOCAL_PORT]
 // Do not use db:[DOCKER_PORT]. This only works to address the database from within one of the Docker containers. It will not work on localhost, which is where this script will run
-// You can see what port the database maps to on localhost in docker-compose.yml
+// You can see what port the database maps to on localhost in docker-compose.test.yml
 cd backend/cmd/update_db
 go run main.go
 ```
@@ -57,24 +46,31 @@ go run main.go
 You should then restart the backend so that it uses the new data.
 
 ```
-npm run dev:br
+npm run test:br
 ```
 
-### 5. Access the app
+### 4. Test that services are starting correctly
 
-- Frontend: [http://localhost:5173](http://localhost:5173)
-- Backend: [http://localhost:8080](http://localhost:8080)
+View the logs for the frontend and backend containers.
+
+```
+npm run test:fl
+npm run test:bl
+```
+
+### 5. Run tests
+
+End-to-end tests are in the `e2e` directory. They can be run with `npx playwright test`.
+
+```
+cd e2e
+npx playwright test
+```
 
 ### 6. Stop the environment
 
 To stop all containers:
 
 ```
-npm run dev:stop
+npm run test:stop
 ```
-
-## Notes
-
-- Frontend live reload is handled by _Vite_.
-- Backend live reload is handled by _Air_.
-- Database data is persisted in the `postgres_data` volume, so data is retained between sessions.
