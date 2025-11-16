@@ -1,5 +1,8 @@
 FROM node:20
 
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
+
 WORKDIR /app
 
 # Install deps first to cache properly

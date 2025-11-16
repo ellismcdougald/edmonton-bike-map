@@ -50,3 +50,6 @@ override.tf.json
 
 frontend/e2e/run.sh
 tmp/
+.github/copilot-instructions.md
+
+node_modules/

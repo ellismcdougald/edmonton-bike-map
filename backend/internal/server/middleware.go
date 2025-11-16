@@ -8,6 +8,8 @@ import (
 // corsMiddleware returns a middleware that sets CORS headers allowing only the specified methods.
 func corsMiddleware(allowedMethods ...string) func(http.Handler) http.Handler {
 	allowedOrigins := []string{
+		"http://localhost:3000",
+		"http://localhost:3001",
 		"http://localhost:4173",
 		"http://localhost:5173",
 		"https://edmonton-bike-map-frontend.vercel.app",
