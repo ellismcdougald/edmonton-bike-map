@@ -75,7 +75,7 @@
 	<div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
 		<h2 class="text-2xl font-bold mb-6">Cycling Preferences</h2>
 
-		<form on:submit|preventDefault={saveSpeed}>
+		<form on:submit|preventDefault={saveSpeed} novalidate>
 			<label for="cyclingSpeed" class="block mb-2 font-medium">Preferred Cycling Speed (km/h)</label
 			>
 			<input
