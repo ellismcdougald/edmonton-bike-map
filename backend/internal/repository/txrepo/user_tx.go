@@ -20,8 +20,8 @@ func NewTxUserRepository(tx *sql.Tx) repository.UserRepository {
 // GetByUsername retrieves a user by username within the transaction.
 func (r *TxUserRepository) GetByUsername(username string) (*models.User, error) {
 	var u models.User
-	err := r.Tx.QueryRow("SELECT id, username, password FROM users WHERE username = $1", username).
-		Scan(&u.ID, &u.Username, &u.Password)
+	err := r.Tx.QueryRow("SELECT id, username, password, cycling_speed FROM users WHERE username = $1", username).
+		Scan(&u.ID, &u.Username, &u.Password, &u.CyclingSpeed)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -34,8 +34,8 @@ func (r *TxUserRepository) GetByUsername(username string) (*models.User, error) 
 // GetByID retrieves a user by ID within the transaction.
 func (r *TxUserRepository) GetByID(id int64) (*models.User, error) {
 	var u models.User
-	err := r.Tx.QueryRow("SELECT id, username, password FROM users WHERE id = $1", id).
-		Scan(&u.ID, &u.Username, &u.Password)
+	err := r.Tx.QueryRow("SELECT id, username, password, cycling_speed FROM users WHERE id = $1", id).
+		Scan(&u.ID, &u.Username, &u.Password, &u.CyclingSpeed)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -61,5 +61,11 @@ func (r *TxUserRepository) UsernameExists(username string) (bool, error) {
 // UpdatePassword updates a user's password within the transaction.
 func (r *TxUserRepository) UpdatePassword(userID int64, hashedPassword string) error {
 	_, err := r.Tx.Exec("UPDATE users SET password = $1 WHERE id = $2", hashedPassword, userID)
+	return err
+}
+
+// UpdateCyclingSpeed updates the user's preferred cycling speed within the transaction.
+func (r *TxUserRepository) UpdateCyclingSpeed(userID int64, speed int) error {
+	_, err := r.Tx.Exec("UPDATE users SET cycling_speed = $1 WHERE id = $2", speed, userID)
 	return err
 }

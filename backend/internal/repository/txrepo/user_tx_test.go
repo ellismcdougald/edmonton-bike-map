@@ -18,8 +18,8 @@ func TestTxUserRepository_GetByUsername(t *testing.T) {
 	tx, err := db.Begin()
 	require.NoError(t, err)
 
-	rows := sqlmock.NewRows([]string{"id", "username", "password"}).AddRow(int64(1), "alice", "pwhash")
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT id, username, password FROM users WHERE username = $1")).
+	rows := sqlmock.NewRows([]string{"id", "username", "password", "cycling_speed"}).AddRow(int64(1), "alice", "pwhash", 10)
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT id, username, password, cycling_speed FROM users WHERE username = $1")).
 		WithArgs("alice").
 		WillReturnRows(rows)
 
@@ -67,8 +67,8 @@ func TestTxUserRepository_GetByID(t *testing.T) {
 	tx, err := db.Begin()
 	require.NoError(t, err)
 
-	rows := sqlmock.NewRows([]string{"id", "username", "password"}).AddRow(int64(42), "alice", "pwhash")
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT id, username, password FROM users WHERE id = $1")).
+	rows := sqlmock.NewRows([]string{"id", "username", "password", "cycling_speed"}).AddRow(int64(42), "alice", "pwhash", 11)
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT id, username, password, cycling_speed FROM users WHERE id = $1")).
 		WithArgs(int64(42)).
 		WillReturnRows(rows)
 

@@ -2,9 +2,10 @@ package models
 
 // User represents a user in the system with a hashed password.
 type User struct {
-	ID       int64
-	Username string
-	Password string // hashed password
+	ID           int64
+	Username     string
+	Password     string // hashed password
+	CyclingSpeed int    `json:"cyclingSpeed"` // preferred cycling speed in km/h
 }
 
 // Credentials represents user login/signup data in JSON.
