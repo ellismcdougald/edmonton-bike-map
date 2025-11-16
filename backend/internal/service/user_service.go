@@ -40,3 +40,8 @@ func (s *UserService) UsernameExists(username string) (bool, error) {
 func (s *UserService) UpdatePassword(userID int64, hashedPassword string) error {
 	return s.UserRepository.UpdatePassword(userID, hashedPassword)
 }
+
+// UpdateCyclingSpeed updates the user's preferred cycling speed.
+func (s *UserService) UpdateCyclingSpeed(userID int64, speed int) error {
+	return s.UserRepository.UpdateCyclingSpeed(userID, speed)
+}

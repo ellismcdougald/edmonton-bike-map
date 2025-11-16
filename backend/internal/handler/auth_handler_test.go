@@ -24,6 +24,7 @@ type mockUserRepo struct {
 	usernameErr       error
 	createErr         error
 	updatePasswordErr error
+	updateCyclingErr  error
 }
 
 func (m *mockUserRepo) GetByUsername(username string) (*models.User, error) {
@@ -44,6 +45,10 @@ func (m *mockUserRepo) UsernameExists(username string) (bool, error) {
 
 func (m *mockUserRepo) UpdatePassword(userID int64, hashedPassword string) error {
 	return m.updatePasswordErr
+}
+
+func (m *mockUserRepo) UpdateCyclingSpeed(userID int64, speed int) error {
+	return m.updateCyclingErr
 }
 
 // fake provider

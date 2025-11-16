@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/ellismcdougald/edmonton-bike-map/internal/handler"
@@ -66,6 +67,23 @@ func RegisterRoutes(mux *http.ServeMux, handlers handler.Handlers) {
 		default:
 			handler := handlers.AuthHandler.HandleChangePassword()
 			handler(w, r)
+		}
+	})))
+
+	mux.Handle("/api/user/settings", corsMiddleware("GET", "POST", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("hit settings")
+		switch r.Method {
+		case http.MethodOptions:
+			w.WriteHeader(http.StatusNoContent)
+		case http.MethodGet:
+			log.Printf("It's a get")
+			handler := handlers.UserHandler.HandleGetSettings()
+			handler(w, r)
+		case http.MethodPost:
+			handler := handlers.UserHandler.HandleUpdateCyclingSpeed()
+			handler(w, r)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})))
 }

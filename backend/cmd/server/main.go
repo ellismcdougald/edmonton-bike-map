@@ -71,11 +71,12 @@ func main() {
 
 	// handlers
 	authHandler := handler.NewAuthHandler(userSvc, tp)
+	userHandler := handler.NewUserHandler(userSvc)
 	wayHandler := handler.NewWayHandler(nodeSvc, waySvc)
 	reviewHandler := handler.NewReviewHandler(reviewSvc)
 	routeHandler := handler.NewRouteHandler(routeSvc)
 
-	handlers := handler.NewHandlers(authHandler, wayHandler, reviewHandler, routeHandler)
+	handlers := handler.NewHandlers(authHandler, userHandler, wayHandler, reviewHandler, routeHandler)
 
 	mux := http.NewServeMux()
 	internalserver.RegisterRoutes(mux, *handlers)
