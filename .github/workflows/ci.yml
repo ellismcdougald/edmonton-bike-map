@@ -104,11 +104,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 20
-      - name: Install frontend deps
-        run: |
-          npm ci
-          npx playwright install
-        working-directory: ./frontend
       - name: Wait for Postgres
         run: |
           echo "Waiting for Postgres to be ready..."
@@ -136,6 +131,15 @@ jobs:
           export DATABASE_URL="postgres://testuser:testpass@localhost:5432/bikemap_test?sslmode=disable"
           go run cmd/populate_test_db/main.go
         working-directory: backend
+      - name: Start frontend server
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+          npm run preview -- --port 3001 &
+          echo $! > frontend.pid
+        env:
+          VITE_API_URL: http://localhost:8080
       - name: Start backend server
         run: |
           export DATABASE_URL="postgres://testuser:testpass@localhost:5432/bikemap_test?sslmode=disable"
@@ -144,8 +148,10 @@ jobs:
         working-directory: backend
       - name: Run E2E tests
         run: |
-          npm run test:e2e -- --timeout 30000
-        working-directory: ./frontend
+          npm ci
+          npx playwright install
+          npx playwright test
+        working-directory: ./e2e
         env:
           VITE_API_URL: http://localhost:8080
           POSTGRES_TEST_USER: testuser
@@ -156,3 +162,6 @@ jobs:
         if: always()
         run: |
           kill $(cat backend.pid) || true
+      - name: Stop frontend server
+        if: always()
+        run: kill $(cat frontend.pid) || true
