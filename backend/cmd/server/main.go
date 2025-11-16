@@ -19,6 +19,7 @@ import (
 )
 
 func main() {
+	log.Printf("testing")
 	_ = godotenv.Load()
 
 	dbURL := os.Getenv("DATABASE_URL")
@@ -86,7 +87,12 @@ func main() {
 	})
 	mux.Handle("/", fileHandler)
 
-	addr := ":8080"
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	addr := ":" + port
 	log.Printf("Starting new_server on %s", addr)
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Fatalf("Server failed: %v", err)

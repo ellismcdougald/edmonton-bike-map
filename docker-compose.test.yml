@@ -1,0 +1,58 @@
+services:
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: test_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d test_db"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+
+  migrate:
+    image: migrate/migrate
+    command: >
+      -path /migrations
+      -database ${TEST_DATABASE_URL}
+      up
+    volumes:
+      - ./backend/migrations:/migrations
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.test
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=${TEST_DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - db
+      - migrate
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.test
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=test
+      - BACKEND_URL=http://backend:4000
+    depends_on:
+      - backend
+
+volumes:
+  postgres_test_data:
