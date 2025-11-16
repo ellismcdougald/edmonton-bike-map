@@ -1,5 +1,5 @@
 services:
-  db:
+  test-db:
     image: postgres:16
     restart: always
     environment:
@@ -16,7 +16,7 @@ services:
       timeout: 2s
       retries: 10
 
-  migrate:
+  test-migrate:
     image: migrate/migrate
     command: >
       -path /migrations
@@ -25,10 +25,10 @@ services:
     volumes:
       - ./backend/migrations:/migrations
     depends_on:
-      db:
+      test-db:
         condition: service_healthy
 
-  backend:
+  test-backend:
     build:
       context: ./backend
       dockerfile: Dockerfile.test
@@ -39,20 +39,21 @@ services:
       - DATABASE_URL=${TEST_DATABASE_URL}
       - JWT_SECRET=${JWT_SECRET}
     depends_on:
-      - db
-      - migrate
+      - test-db
+      - test-migrate
 
-  frontend:
+  test-frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.test
+      args:
+        VITE_API_URL: ${API_URL}
     ports:
       - "3001:3000"
     environment:
       - NODE_ENV=test
-      - BACKEND_URL=http://backend:4000
     depends_on:
-      - backend
+      - test-backend
 
 volumes:
   postgres_test_data:

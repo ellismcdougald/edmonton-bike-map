@@ -1,5 +1,5 @@
 services:
-  db:
+  dev-db:
     image: postgres:16
     restart: always
     environment:
@@ -16,7 +16,7 @@ services:
       timeout: 2s
       retries: 10
 
-  migrate:
+  dev-migrate:
     image: migrate/migrate
     command: >
       -path /migrations
@@ -25,10 +25,10 @@ services:
     volumes:
       - ./backend/migrations:/migrations
     depends_on:
-      db:
+      dev-db:
         condition: service_healthy
 
-  backend:
+  dev-backend:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
@@ -43,13 +43,15 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - JWT_SECRET=${JWT_SECRET}
     depends_on:
-      - db
-      - migrate
+      - dev-db
+      - dev-migrate
 
-  frontend:
+  dev-frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
+      args:
+        VITE_API_URL: ${API_URL}
     command: npm run dev -- --host
     ports:
       - "5173:5173"
