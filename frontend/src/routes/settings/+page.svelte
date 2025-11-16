@@ -1,93 +1,68 @@
-<!--
-  src/routes/settings/+page.svelte
-
-  Purpose:
-  Settings page for user account management, including password change functionality.
-
-  State:
-  - currentPassword (string): bound to current password input
-  - newPassword (string): bound to new password input
-  - confirmPassword (string): bound to confirm password input
-  - errorMsg (string): displays error messages
-  - successMsg (string): displays success message
-  - isSubmitting (boolean): disables form and shows submission state
-
-  Behavior:
-  - On form submit:
-      - Validates that new password and confirm password match
-      - Sends POST request to /api/change-password with Authorization header
-      - If successful, shows success message and clears form
-      - If failed, shows error message
-  - Submit button is disabled while change request is in progress
-  - Requires user to be logged in (JWT token in localStorage)
-
-  Notes:
-  - Uses Authorization header with Bearer token
-  - Relies on backend endpoint /api/change-password
-  - Input fields use native HTML validation for required values
--->
-
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 
 	const apiUrl = import.meta.env.VITE_API_URL;
 
-	let currentPassword: string = '';
-	let newPassword: string = '';
-	let confirmPassword: string = '';
-	let errorMsg: string = '';
-	let successMsg: string = '';
-	let isSubmitting: boolean = false;
+	let cyclingSpeed: number | null = null;
+	let isSubmitting = false;
+	let errorMsg = '';
+	let successMsg = '';
 
-	onMount(() => {
-		// Check if user is logged in
+	onMount(async () => {
 		const token = localStorage.getItem('token');
 		if (!token) {
 			goto('/login');
+			return;
+		}
+
+		// Try to prefill user's cycling speed
+		try {
+			const res = await fetch(`${apiUrl}/api/user/settings`, {
+				method: 'GET',
+				headers: { Authorization: `Bearer ${token}` }
+			});
+			if (res.ok) {
+				const data = await res.json();
+				cyclingSpeed = data.cyclingSpeed ?? 15;
+			} else {
+				cyclingSpeed = 15;
+			}
+		} catch (_e) {
+			cyclingSpeed = 15;
 		}
 	});
 
-	async function handleChangePassword(event: SubmitEvent) {
-		event.preventDefault();
-		isSubmitting = true;
+	async function saveSpeed(e: Event) {
+		e.preventDefault();
 		errorMsg = '';
 		successMsg = '';
-
-		// Validate passwords match
-		if (newPassword !== confirmPassword) {
-			errorMsg = 'New passwords do not match';
-			isSubmitting = false;
+		if (!cyclingSpeed || cyclingSpeed <= 0 || cyclingSpeed > 80) {
+			errorMsg = 'Please enter a valid cycling speed (1-80 km/h)';
 			return;
 		}
 
 		const token = localStorage.getItem('token');
 		if (!token) {
-			errorMsg = 'You must be logged in to change your password';
-			isSubmitting = false;
+			errorMsg = 'You must be logged in';
 			return;
 		}
 
-		const res = await fetch(`${apiUrl}/api/change-password`, {
+		isSubmitting = true;
+		const res = await fetch(`${apiUrl}/api/user/settings`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 				Authorization: `Bearer ${token}`
 			},
-			body: JSON.stringify({
-				currentPassword,
-				newPassword
-			})
+			body: JSON.stringify({ cyclingSpeed })
 		});
 
 		if (res.ok) {
-			successMsg = 'Password changed successfully';
-			currentPassword = '';
-			newPassword = '';
-			confirmPassword = '';
+			successMsg = 'Settings saved';
 		} else {
 			const text = await res.text();
-			errorMsg = text || 'Failed to change password';
+			errorMsg = text || 'Failed to save settings';
 		}
 
 		isSubmitting = false;
@@ -98,43 +73,26 @@
 	<h1 class="text-4xl font-extrabold mb-10">Settings</h1>
 
 	<div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-		<h2 class="text-2xl font-bold mb-6">Change Password</h2>
+		<h2 class="text-2xl font-bold mb-6">Cycling Preferences</h2>
 
-		<form on:submit={handleChangePassword}>
+		<form on:submit|preventDefault={saveSpeed}>
+			<label for="cyclingSpeed" class="block mb-2 font-medium">Preferred Cycling Speed (km/h)</label
+			>
 			<input
-				type="password"
-				name="currentPassword"
-				bind:value={currentPassword}
-				placeholder="Current Password"
-				required
+				type="number"
+				min="1"
+				max="80"
+				id="cyclingSpeed"
+				bind:value={cyclingSpeed}
 				class="w-full mb-4 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-			/>
-
-			<input
-				type="password"
-				name="newPassword"
-				bind:value={newPassword}
-				placeholder="New Password"
-				required
-				class="w-full mb-4 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-			/>
-
-			<input
-				type="password"
-				name="confirmPassword"
-				bind:value={confirmPassword}
-				placeholder="Confirm New Password"
-				required
-				class="w-full mb-6 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 			/>
 
 			<button
-				id="submitButton"
 				type="submit"
 				class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
 				disabled={isSubmitting}
 			>
-				{isSubmitting ? 'Changing password...' : 'Change Password'}
+				{isSubmitting ? 'Saving...' : 'Save Preferences'}
 			</button>
 
 			{#if successMsg}
@@ -147,7 +105,10 @@
 		</form>
 
 		<div class="mt-6 text-center">
-			<a href="/" class="text-blue-600 hover:underline">Back to Map</a>
+			<a href="/settings/password" class="text-blue-600 hover:underline">Change Password</a>
+		</div>
+		<div class="mt-2 text-center">
+			<a href="/" class="text-gray-600 hover:underline">Back to Map</a>
 		</div>
 	</div>
 </div>
