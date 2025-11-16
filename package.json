@@ -23,7 +23,9 @@
     "test:bl": "docker compose -p bike-map-test logs test-backend",
     "test:fr": "docker compose -p bike-map-test restart test-frontend",
     "test:br": "docker compose -p bike-map-test restart test-backend",
-    "test:restart": "npm run test:stop && npm run test:build && npm run test:start"
+    "test:restart": "npm run test:stop && npm run test:build && npm run test:start",
+    "format": "prettier --write",
+    "lint": "eslint"
   },
   "repository": {
     "type": "git",
@@ -45,11 +47,22 @@
     "@types/pg": "^8.15.6",
     "eslint": "^9.39.1",
     "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
     "prettier": "^3.6.2"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
     "dotenv": "^17.2.3",
     "pg": "^8.16.3"
+  },
+  "lint-staged": {
+    "frontend/**/*.{js,ts,svelte}": [
+      "prettier --write",
+      "eslint --fix --config frontend/eslint.config.js"
+    ],
+    "backend/**/*.go": [
+      "gofmt -w",
+      "sh -c 'cd backend && go vet ./...'"
+    ]
   }
 }
