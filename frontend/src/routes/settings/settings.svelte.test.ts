@@ -26,86 +26,96 @@ describe('Settings Page', () => {
 		});
 	});
 
-	it('displays change password form when logged in', () => {
+	it('prefills cycling speed when logged in and shows controls', async () => {
 		localStorage.setItem('token', 'fake-token');
 
-		const { getByPlaceholderText, getByRole } = render(SettingsPage);
-
-		expect(getByPlaceholderText('Current Password')).toBeTruthy();
-		expect(getByPlaceholderText('New Password')).toBeTruthy();
-		expect(getByPlaceholderText('Confirm New Password')).toBeTruthy();
-		expect(getByRole('button', { name: 'Change Password' })).toBeTruthy();
-	});
-
-	it('shows error when passwords do not match', async () => {
-		localStorage.setItem('token', 'fake-token');
-
-		const { getByPlaceholderText, getByText, getByRole } = render(SettingsPage);
-
-		const currentPasswordInput = getByPlaceholderText('Current Password') as HTMLInputElement;
-		const newPasswordInput = getByPlaceholderText('New Password') as HTMLInputElement;
-		const confirmPasswordInput = getByPlaceholderText('Confirm New Password') as HTMLInputElement;
-		const submitButton = getByRole('button', { name: 'Change Password' }) as HTMLButtonElement;
-
-		await fireEvent.input(currentPasswordInput, { target: { value: 'oldpassword' } });
-		await fireEvent.input(newPasswordInput, { target: { value: 'newpassword' } });
-		await fireEvent.input(confirmPasswordInput, { target: { value: 'differentpassword' } });
-		await fireEvent.click(submitButton);
-
-		await waitFor(() => {
-			expect(getByText('New passwords do not match')).toBeTruthy();
-		});
-	});
-
-	it('successfully changes password', async () => {
-		localStorage.setItem('token', 'fake-token');
 		mockFetch.mockResolvedValueOnce({
-			ok: true
+			ok: true,
+			json: async () => ({ username: 'alice', cyclingSpeed: 18 })
 		});
 
-		const { getByPlaceholderText, getByText, getByRole } = render(SettingsPage);
-
-		const currentPasswordInput = getByPlaceholderText('Current Password') as HTMLInputElement;
-		const newPasswordInput = getByPlaceholderText('New Password') as HTMLInputElement;
-		const confirmPasswordInput = getByPlaceholderText('Confirm New Password') as HTMLInputElement;
-		const submitButton = getByRole('button', { name: 'Change Password' }) as HTMLButtonElement;
-
-		await fireEvent.input(currentPasswordInput, { target: { value: 'oldpassword' } });
-		await fireEvent.input(newPasswordInput, { target: { value: 'newpassword' } });
-		await fireEvent.input(confirmPasswordInput, { target: { value: 'newpassword' } });
-		await fireEvent.click(submitButton);
+		const { getByLabelText, getByRole, getByText } = render(SettingsPage);
 
 		await waitFor(() => {
-			expect(getByText('Password changed successfully')).toBeTruthy();
+			expect(getByLabelText('Preferred Cycling Speed (km/h)')).toBeTruthy();
 		});
 
-		// Check that inputs are cleared
-		expect(currentPasswordInput.value).toBe('');
-		expect(newPasswordInput.value).toBe('');
-		expect(confirmPasswordInput.value).toBe('');
+		const input = getByLabelText('Preferred Cycling Speed (km/h)') as HTMLInputElement;
+		expect(input.value).toBe('18');
+		expect(getByRole('button', { name: 'Save Preferences' })).toBeTruthy();
+		expect(getByText('Change Password')).toBeTruthy();
 	});
 
-	it('shows error message on failed password change', async () => {
+	it('shows validation error for invalid speed', async () => {
 		localStorage.setItem('token', 'fake-token');
-		mockFetch.mockResolvedValueOnce({
-			ok: false,
-			text: async () => 'Current password is incorrect'
+
+		mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ cyclingSpeed: 15 }) });
+
+		const { getByLabelText, getByText, getByRole } = render(SettingsPage);
+		const input = getByLabelText('Preferred Cycling Speed (km/h)') as HTMLInputElement;
+		const saveButton = getByRole('button', { name: 'Save Preferences' }) as HTMLButtonElement;
+
+		await waitFor(() => expect(input).toBeTruthy());
+
+		await fireEvent.input(input, { target: { value: '-5' } });
+		await fireEvent.click(saveButton);
+
+		// The error message should appear when an invalid speed is entered.
+		await waitFor(() => {
+			expect(getByText(/Please enter a valid cycling speed/)).toBeTruthy();
 		});
 
-		const { getByPlaceholderText, getByText, getByRole } = render(SettingsPage);
+		// No POST should be attempted when validation fails (only the initial GET)
+		expect(mockFetch).toHaveBeenCalledTimes(1);
+	});
 
-		const currentPasswordInput = getByPlaceholderText('Current Password') as HTMLInputElement;
-		const newPasswordInput = getByPlaceholderText('New Password') as HTMLInputElement;
-		const confirmPasswordInput = getByPlaceholderText('Confirm New Password') as HTMLInputElement;
-		const submitButton = getByRole('button', { name: 'Change Password' }) as HTMLButtonElement;
+	it('successfully saves cycling speed', async () => {
+		localStorage.setItem('token', 'fake-token');
+		mockFetch
+			.mockResolvedValueOnce({ ok: true, json: async () => ({ cyclingSpeed: 15 }) }) // initial GET
+			.mockResolvedValueOnce({ ok: true }); // POST
 
-		await fireEvent.input(currentPasswordInput, { target: { value: 'wrongpassword' } });
-		await fireEvent.input(newPasswordInput, { target: { value: 'newpassword' } });
-		await fireEvent.input(confirmPasswordInput, { target: { value: 'newpassword' } });
-		await fireEvent.click(submitButton);
+		const { getByLabelText, getByRole, getByText } = render(SettingsPage);
+		const input = await waitFor(
+			() => getByLabelText('Preferred Cycling Speed (km/h)') as HTMLInputElement
+		);
+		const saveButton = getByRole('button', { name: 'Save Preferences' }) as HTMLButtonElement;
+
+		await fireEvent.input(input, { target: { value: '22' } });
+		await fireEvent.click(saveButton);
 
 		await waitFor(() => {
-			expect(getByText('Current password is incorrect')).toBeTruthy();
+			expect(getByText('Settings saved')).toBeTruthy();
+		});
+
+		// verify POST body
+		expect(mockFetch).toHaveBeenCalledWith(
+			expect.stringContaining('/api/user/settings'),
+			expect.objectContaining({
+				method: 'POST',
+				headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
+				body: JSON.stringify({ cyclingSpeed: 22 })
+			})
+		);
+	});
+
+	it('shows error message on failed save', async () => {
+		localStorage.setItem('token', 'fake-token');
+		mockFetch
+			.mockResolvedValueOnce({ ok: true, json: async () => ({ cyclingSpeed: 15 }) })
+			.mockResolvedValueOnce({ ok: false, text: async () => 'Save failed' });
+
+		const { getByLabelText, getByRole, getByText } = render(SettingsPage);
+		const input = await waitFor(
+			() => getByLabelText('Preferred Cycling Speed (km/h)') as HTMLInputElement
+		);
+		const saveButton = getByRole('button', { name: 'Save Preferences' }) as HTMLButtonElement;
+
+		await fireEvent.input(input, { target: { value: '30' } });
+		await fireEvent.click(saveButton);
+
+		await waitFor(() => {
+			expect(getByText('Save failed')).toBeTruthy();
 		});
 	});
 });
