@@ -26,6 +26,7 @@ describe('findRoute', () => {
 	});
 
 	it('fetches and applies route to map', async () => {
+		globalThis.localStorage?.setItem?.('token', 'jwt-abc');
 		const mockGeojson = { type: 'FeatureCollection', features: [] };
 		const mockFetch = vi.fn().mockResolvedValue({
 			ok: true,
@@ -50,6 +51,8 @@ describe('findRoute', () => {
 	});
 
 	it('alerts and logs if fetch fails', async () => {
+		// set token so fetch is attempted
+		globalThis.localStorage?.setItem?.('token', 'jwt-abc');
 		const mockFetch = vi.fn().mockResolvedValue({
 			ok: false,
 			json: vi.fn()
@@ -61,5 +64,34 @@ describe('findRoute', () => {
 			'Error fetching or displaying route: Failed to get route data'
 		);
 		expect(consoleErrorSpy).toHaveBeenCalled();
+	});
+
+	it('errors immediately when no auth token present', async () => {
+		// ensure token is not present
+		globalThis.localStorage?.removeItem?.('token');
+
+		await findRoute({ mapInstance });
+
+		expect(alertSpy).toHaveBeenCalledWith(
+			'Error fetching or displaying route: Missing auth token: please log in before requesting a route'
+		);
+	});
+
+	it('sends Authorization header when token exists', async () => {
+		// set token
+		globalThis.localStorage?.setItem?.('token', 'jwt-abc');
+
+		const mockFetch = vi.fn().mockResolvedValue({
+			ok: true,
+			json: vi.fn().mockResolvedValue({ type: 'FeatureCollection', features: [] })
+		} as unknown as Response);
+
+		await findRoute({ mapInstance, fetchFn: mockFetch });
+
+		expect(mockFetch).toHaveBeenCalled();
+		const calledWith = mockFetch.mock.calls[0];
+		// second arg is options
+		expect(calledWith[1]).toBeDefined();
+		expect(calledWith[1].headers.Authorization).toBe('Bearer jwt-abc');
 	});
 });

@@ -72,6 +72,10 @@ test.describe("change password", () => {
     // Ensure we're on the settings page
     await expect(page).toHaveURL(`${FRONTEND_URL}/settings`);
 
+    // Follow the link to the change password page
+    await page.click('a[href="/settings/password"]');
+    await expect(page).toHaveURL(`${FRONTEND_URL}/settings/password`);
+
     // Fill out change password form and submit
     await page.fill('input[name="currentPassword"]', testPassword);
     await page.fill('input[name="newPassword"]', testNewPassword);
@@ -83,7 +87,9 @@ test.describe("change password", () => {
       page.locator("text=Password changed successfully")
     ).toBeVisible({ timeout: 5000 });
 
-    // Return to the map page before logging out
+    // Return to the settings page, then back to the map before logging out
+    await page.click('a[href="/settings"]');
+    await expect(page).toHaveURL(`${FRONTEND_URL}/settings`);
     await page.click('a[href="/"]');
     await expect(page).toHaveURL(`${FRONTEND_URL}/`);
 
@@ -123,6 +129,10 @@ test.describe("change password", () => {
     await page.click("#settingsLink");
     await expect(page).toHaveURL(`${FRONTEND_URL}/settings`);
 
+    // Follow the link to the change password page
+    await page.click('a[href="/settings/password"]');
+    await expect(page).toHaveURL(`${FRONTEND_URL}/settings/password`);
+
     // Enter non-matching new passwords
     await page.fill('input[name="currentPassword"]', testPassword);
     await page.fill('input[name="newPassword"]', "first-new-password");
@@ -134,7 +144,7 @@ test.describe("change password", () => {
       timeout: 5000,
     });
 
-    // Stay on settings page
-    await expect(page).toHaveURL(`${FRONTEND_URL}/settings`);
+    // Stay on change-password page (client validation prevents submission)
+    await expect(page).toHaveURL(`${FRONTEND_URL}/settings/password`);
   });
 });

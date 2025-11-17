@@ -19,7 +19,6 @@ import (
 )
 
 func main() {
-	log.Printf("testing")
 	_ = godotenv.Load()
 
 	dbURL := os.Getenv("DATABASE_URL")
@@ -71,11 +70,12 @@ func main() {
 
 	// handlers
 	authHandler := handler.NewAuthHandler(userSvc, tp)
+	userHandler := handler.NewUserHandler(userSvc)
 	wayHandler := handler.NewWayHandler(nodeSvc, waySvc)
 	reviewHandler := handler.NewReviewHandler(reviewSvc)
-	routeHandler := handler.NewRouteHandler(routeSvc)
+	routeHandler := handler.NewRouteHandler(routeSvc, userSvc)
 
-	handlers := handler.NewHandlers(authHandler, wayHandler, reviewHandler, routeHandler)
+	handlers := handler.NewHandlers(authHandler, userHandler, wayHandler, reviewHandler, routeHandler)
 
 	mux := http.NewServeMux()
 	internalserver.RegisterRoutes(mux, *handlers)

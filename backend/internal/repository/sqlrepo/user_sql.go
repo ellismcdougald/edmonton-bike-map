@@ -22,13 +22,14 @@ func (s *SQLUserRepository) GetByUsername(username string) (*models.User, error)
 			SELECT
 				id,
 				username,
-				password
+				password,
+				cycling_speed
 			FROM users
 			WHERE username = $1
 		`
 
 	var user models.User
-	err := s.DB.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.Password)
+	err := s.DB.QueryRow(query, username).Scan(&user.ID, &user.Username, &user.Password, &user.CyclingSpeed)
 	if err != nil {
 		return nil, err
 	}
@@ -41,13 +42,14 @@ func (s *SQLUserRepository) GetByID(id int64) (*models.User, error) {
 			SELECT
 				id,
 				username,
-				password
+				password,
+				cycling_speed
 			FROM users
 			WHERE id = $1
 		`
 
 	var user models.User
-	err := s.DB.QueryRow(query, id).Scan(&user.ID, &user.Username, &user.Password)
+	err := s.DB.QueryRow(query, id).Scan(&user.ID, &user.Username, &user.Password, &user.CyclingSpeed)
 	if err != nil {
 		return nil, err
 	}
@@ -81,5 +83,14 @@ func (s *SQLUserRepository) UpdatePassword(userID int64, hashedPassword string) 
 		UPDATE users SET password = $1 WHERE id = $2
 	`
 	_, err := s.DB.Exec(query, hashedPassword, userID)
+	return err
+}
+
+// UpdateCyclingSpeed updates the user's preferred cycling speed (km/h).
+func (s *SQLUserRepository) UpdateCyclingSpeed(userID int64, speed int) error {
+	query := `
+		UPDATE users SET cycling_speed = $1 WHERE id = $2
+	`
+	_, err := s.DB.Exec(query, speed, userID)
 	return err
 }

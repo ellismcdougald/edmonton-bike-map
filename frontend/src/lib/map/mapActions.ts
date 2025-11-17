@@ -74,7 +74,21 @@ function buildRouteParams(
 }
 
 async function fetchRoute(params: URLSearchParams, fetchFn: FetchFn) {
-	const res = await fetchFn(`${apiUrl}/api/route?${params.toString()}`);
+	const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+
+	if (!token) {
+		throw new Error('Missing auth token: please log in before requesting a route');
+	}
+
+	const headers: Record<string, string> = {
+		'Content-Type': 'application/json',
+		Authorization: `Bearer ${token}`
+	};
+
+	const res = await fetchFn(`${apiUrl}/api/route?${params.toString()}`, {
+		method: 'GET',
+		headers
+	});
 	if (!res.ok) throw new Error('Failed to get route data');
 	return res.json();
 }

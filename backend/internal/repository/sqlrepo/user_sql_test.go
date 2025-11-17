@@ -17,7 +17,7 @@ func TestSQLUserRepository_GetByUsername(t *testing.T) {
 		_ = db.Close()
 	}()
 
-	rows := sqlmock.NewRows([]string{"id", "username", "password"}).AddRow(int64(1), "alice", "pwhash")
+	rows := sqlmock.NewRows([]string{"id", "username", "password", "cycling_speed"}).AddRow(int64(1), "alice", "pwhash", 15)
 
 	// match the SELECT that retrieves user by username
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT")).WithArgs("alice").WillReturnRows(rows)
@@ -60,7 +60,7 @@ func TestSQLUserRepository_GetByID(t *testing.T) {
 		_ = db.Close()
 	}()
 
-	rows := sqlmock.NewRows([]string{"id", "username", "password"}).AddRow(int64(42), "alice", "pwhash")
+	rows := sqlmock.NewRows([]string{"id", "username", "password", "cycling_speed"}).AddRow(int64(42), "alice", "pwhash", 12)
 
 	// match the SELECT that retrieves user by ID
 	mock.ExpectQuery(regexp.QuoteMeta("SELECT")).WithArgs(int64(42)).WillReturnRows(rows)

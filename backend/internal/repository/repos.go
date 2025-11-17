@@ -34,4 +34,5 @@ type UserRepository interface {
 	Create(user *models.User) error
 	UsernameExists(username string) (bool, error)
 	UpdatePassword(userID int64, hashedPassword string) error
+	UpdateCyclingSpeed(userID int64, speed int) error
 }

@@ -9,7 +9,7 @@ export default defineConfig({
 		globals: true,
 		environment: 'jsdom',
 		setupFiles: ['./vitest-setup-client.ts'],
-		include: ['src/**/*.svelte.{test,spec}.{js,ts}'],
+		include: ['src/**/*.svelte.{test,spec}.{js,ts}', 'src/**/*.test.{js,ts}'],
 		exclude: ['tests/e2e/**', 'src/**/*.e2e.{js,ts}']
 	}
 });

@@ -9,6 +9,7 @@ import (
 	"github.com/ellismcdougald/edmonton-bike-map/internal/domain/routing"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/service"
+	"github.com/ellismcdougald/edmonton-bike-map/internal/utils"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,8 +27,18 @@ func TestHandleGetRoute_HappyPath(t *testing.T) {
 		},
 	}
 
-	rh := NewRouteHandler(service.NewRouteService(g))
+	// set JWT key and generate a token for user 42
+	utils.SetJWTKey([]byte("test-jwt-key"))
+	token, err := utils.GenerateJWT("testuser", 42)
+	require.NoError(t, err)
+
+	// prepare user service with a mock user that has a cycling speed
+	repo := &mockUserRepo{user: &models.User{ID: 42, CyclingSpeed: 15}}
+	userSvc := service.NewUserService(repo)
+
+	rh := NewRouteHandler(service.NewRouteService(g), userSvc)
 	req, _ := http.NewRequest("GET", "/route?startLatitude=0&startLongitude=0&endLatitude=1&endLongitude=1", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 
 	handler := rh.HandleGetRoute()
@@ -37,7 +48,7 @@ func TestHandleGetRoute_HappyPath(t *testing.T) {
 	require.Equal(t, "application/json", rr.Header().Get("Content-Type"))
 
 	var resp map[string]any
-	err := json.NewDecoder(rr.Body).Decode(&resp)
+	err = json.NewDecoder(rr.Body).Decode(&resp)
 	require.NoError(t, err)
 
 	props, ok := resp["properties"].(map[string]any)
@@ -63,8 +74,16 @@ func TestHandleGetRoute_Unreachable(t *testing.T) {
 	}
 	g := &models.Network{Nodes: nodes, Edges: map[int64][]models.Edge{1: {}, 2: {}}}
 
-	rh := NewRouteHandler(service.NewRouteService(g))
+	utils.SetJWTKey([]byte("test-jwt-key"))
+	token, err := utils.GenerateJWT("testuser", 42)
+	require.NoError(t, err)
+
+	repo := &mockUserRepo{user: &models.User{ID: 42, CyclingSpeed: 15}}
+	userSvc := service.NewUserService(repo)
+
+	rh := NewRouteHandler(service.NewRouteService(g), userSvc)
 	req, _ := http.NewRequest("GET", "/route?startLatitude=0&startLongitude=0&endLatitude=10&endLongitude=10", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
 
 	handler := rh.HandleGetRoute()
@@ -74,10 +93,17 @@ func TestHandleGetRoute_Unreachable(t *testing.T) {
 }
 
 func TestHandleGetRoute_BadRequest(t *testing.T) {
-	rh := NewRouteHandler(service.NewRouteService(&models.Network{Nodes: map[int64]models.Node{}, Edges: map[int64][]models.Edge{}}))
-	req, _ := http.NewRequest("GET", "/route?startLatitude=notanumber&startLongitude=0&endLatitude=0&endLongitude=0", nil)
-	rr := httptest.NewRecorder()
+	utils.SetJWTKey([]byte("test-jwt-key"))
+	token, err := utils.GenerateJWT("testuser", 42)
+	require.NoError(t, err)
 
+	repo := &mockUserRepo{user: &models.User{ID: 42, CyclingSpeed: 15}}
+	userSvc := service.NewUserService(repo)
+
+	rh := NewRouteHandler(service.NewRouteService(&models.Network{Nodes: map[int64]models.Node{}, Edges: map[int64][]models.Edge{}}), userSvc)
+	req, _ := http.NewRequest("GET", "/route?startLatitude=notanumber&startLongitude=0&endLatitude=0&endLongitude=0", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	rr := httptest.NewRecorder()
 	handler := rh.HandleGetRoute()
 	handler(rr, req)
 

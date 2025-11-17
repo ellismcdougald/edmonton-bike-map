@@ -6,22 +6,46 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/ellismcdougald/edmonton-bike-map/internal/service"
+	"github.com/ellismcdougald/edmonton-bike-map/internal/utils"
 )
 
 type RouteHandler struct {
 	RouteService *service.RouteService
+	UserService  *service.UserService
 }
 
-func NewRouteHandler(routeService *service.RouteService) *RouteHandler {
+func NewRouteHandler(routeService *service.RouteService, userService *service.UserService) *RouteHandler {
 	return &RouteHandler{
 		RouteService: routeService,
+		UserService:  userService,
 	}
 }
 
 func (h *RouteHandler) HandleGetRoute() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
+		// Decode user id
+		authHeader := request.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(writer, "Missing authorization header", http.StatusUnauthorized)
+			return
+		}
+
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		if tokenString == authHeader {
+			http.Error(writer, "Invalid authorization header format", http.StatusUnauthorized)
+			return
+		}
+
+		claims, err := utils.ValidateJWT(tokenString)
+		if err != nil {
+			log.Printf("user_handler: token validation failed: %v", err)
+			http.Error(writer, "Invalid or expired token", http.StatusUnauthorized)
+			return
+		}
+
 		query := request.URL.Query()
 
 		getFloatParam := func(query url.Values, paramName string) (result float64, err error) {
@@ -74,6 +98,14 @@ func (h *RouteHandler) HandleGetRoute() http.HandlerFunc {
 			coordinates = append(coordinates, lonLat)
 		}
 
+		cyclingSpeed, err := h.UserService.GetCyclingSpeed(claims.UserID)
+		if err != nil {
+			log.Printf("error getting cycling speed: %v", err)
+			http.Error(writer, "internal server error", http.StatusInternalServerError)
+			return
+		}
+		timeMinutes := dist / float64(cyclingSpeed) * 60.0
+
 		geojson := map[string]any{
 			"type": "Feature",
 			"geometry": map[string]any{
@@ -81,7 +113,8 @@ func (h *RouteHandler) HandleGetRoute() http.HandlerFunc {
 				"coordinates": coordinates,
 			},
 			"properties": map[string]any{
-				"distance_km": dist,
+				"distance_km":  dist,
+				"time_minutes": timeMinutes,
 			},
 		}
 
