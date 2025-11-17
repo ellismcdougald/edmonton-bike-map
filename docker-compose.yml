@@ -32,7 +32,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
-    command: air
+    command: go run ./cmd/server
     ports:
       - "8080:8080"
     volumes:
