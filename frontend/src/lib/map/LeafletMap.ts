@@ -194,20 +194,41 @@ export class LeafletMap {
 		}
 
 		const feature = geojson as GeoJSON.Feature;
-		const distance = feature.properties?.['distance_km'];
-		// Add distance control
+		// read distance and time from backend properties if available
+		const rawDistance = feature.properties?.['distance_km'];
+		let distanceNum = 0;
+		if (typeof rawDistance === 'number') {
+			distanceNum = rawDistance;
+		} else if (typeof rawDistance === 'string') {
+			const parsed = parseFloat(rawDistance as string);
+			distanceNum = Number.isFinite(parsed) ? parsed : 0;
+		}
+
+		// Add distance control (safe formatting)
 		this.distanceControl = new (this.L.Control.extend({
 			onAdd: () => {
 				const div = this.L.DomUtil.create('div', 'distance-control') as HTMLDivElement;
-				div.innerHTML = `Distance: ${distance.toFixed(2)} km`;
+				div.innerHTML = `Distance: ${distanceNum.toFixed(2)} km`;
 				return div;
 			}
 		}))({ position: 'topright' });
 		this.distanceControl.addTo(this.map);
-		// Add time control
-		const avgSpeedKmh = 20; // commuter average speed
-		const timeH = distance / avgSpeedKmh;
-		const timeMin = Math.round(timeH * 60);
+
+		// Determine time in minutes: prefer backend-provided `time_minutes`, fall back to estimate
+		const rawTime = feature.properties?.['time_minutes'];
+		let timeMin = 0;
+		if (typeof rawTime === 'number') {
+			timeMin = Math.round(rawTime as number);
+		} else if (typeof rawTime === 'string') {
+			const parsed = parseFloat(rawTime as string);
+			timeMin = Number.isFinite(parsed) ? Math.round(parsed) : 0;
+		} else {
+			// fallback estimate using a sensible default speed
+			const avgSpeedKmh = 20; // commuter average speed fallback
+			const timeH = distanceNum / avgSpeedKmh;
+			timeMin = Math.round(timeH * 60);
+		}
+
 		this.timeControl = new (this.L.Control.extend({
 			onAdd: () => {
 				const div = this.L.DomUtil.create('div', 'time-control') as HTMLDivElement;
