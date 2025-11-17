@@ -45,3 +45,12 @@ func (s *UserService) UpdatePassword(userID int64, hashedPassword string) error 
 func (s *UserService) UpdateCyclingSpeed(userID int64, speed int) error {
 	return s.UserRepository.UpdateCyclingSpeed(userID, speed)
 }
+
+// GetCyclingSpeed retrieves the user's preferred cycling speed.
+func (s *UserService) GetCyclingSpeed(userID int64) (int, error) {
+	user, err := s.UserRepository.GetByID(userID)
+	if err != nil {
+		return 0, err
+	}
+	return user.CyclingSpeed, nil
+}
