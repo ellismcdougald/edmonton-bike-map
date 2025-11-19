@@ -16,53 +16,7 @@ jobs:
         with:
           configFile: commitlint.config.js
 
-  go-test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: "1.24"
-      - name: Run tests
-        run: go test -v ./...
-        working-directory: backend
-
-  golangci:
-    name: lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: 1.24
-      - name: Install golangci-lint
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin latest
-      - name: golangci-lint
-        run: golangci-lint run ./...
-        working-directory: backend
-
-  go-format:
-    name: format
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: 1.24
-      - name: Check Go code formatting
-        run: |
-          if ! gofmt -l . | grep .; then
-            echo "All files are formatted"
-          else
-            echo "Some files need formatting. Run 'gofmt -w .' to fix."
-            exit 1
-          fi
-        working-directory: backend
-
-  node:
+  frontend:
     name: Frontend CI
     runs-on: ubuntu-latest
     steps:
@@ -83,6 +37,35 @@ jobs:
       - name: Run Vitest unit tests
         run: npm run test:unit -- --run
         working-directory: ./frontend
+
+  backend:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin latest
+      - name: Run gofmt check
+        run: |
+          if ! gofmt -l . | grep .; then
+            echo "All files are formatted"
+          else
+            echo "Some files need formatting. Run 'gofmt -w .' to fix."
+            exit 1
+          fi
+        working-directory: backend
+      - name: Run golangci-lint
+        run: golangci-lint run ./...
+        working-directory: backend
+      - name: Run Go tests
+        run: go test -v ./...
+        working-directory: backend
 
   e2e:
     name: E2E Tests
