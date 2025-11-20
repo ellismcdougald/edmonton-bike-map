@@ -1,5 +1,5 @@
 ---
-- name: Deploy Go backend on droplet
+- name: Update Production Database
   hosts: general
   vars_files:
     - vars.yml

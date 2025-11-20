@@ -59,7 +59,7 @@
       shell: docker compose -f /root/app/backend-compose.yml run --rm migrate
       register: migrate_output
 
-    - name: Show DATABASE_URL captured
+    - name: Show migrate output
       debug:
         var: migrate_output
 
