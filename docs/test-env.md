@@ -14,6 +14,30 @@ The testing environment is separate from the development enviroment. It uses its
 
 Create a `.env.test` file in the root. You may use `.env.test.example` as a template.
 
+These are the necessary environment variables.
+
+```
+POSTGRES_TEST_USER=test_user
+POSTGRES_TEST_PASSWORD=test_password
+POSTGRES_TEST_DB=test_db
+POSTGRES_TEST_PORT=5434
+TEST_DATABASE_URL=postgres://test_user:test_password@db:5432/test_db?sslmode=disable
+FRONTEND_PORT=3001
+BACKEND_PORT=4000
+JWT_SECRET=your_jwt_secret
+API_URL=http://localhost:4000
+```
+
+You can choose a user, password, database name, and port for your database. You do not need to create a database yourself. One will be created in the `test-db` container when you start the environment. These variables simply configure that database.
+
+`TEST_DATABASE_URL` is used by the `test-migrate` and `test-backend` containers to connect to the database. Use the information from the `TEST_POSTGRES` variables for the "your_user", "your-password", and "your_db" items. The database can be accessed within the Docker network at `test-db:5432` as you see above.
+
+You can specify the ports to start the frontend and backend on. If you change the backend port, make sure you update `API_URL` accordingly.
+
+`JWT_SECRET` is the key used to sign and verify JWTs. This should be a long, random string. It must be kept secret.
+
+`API_URL` is used by the frontend to connect to the backend. By default, the backend is on port 8080.
+
 ### 2. Start the Testing Environment
 
 Build and start the containers.
