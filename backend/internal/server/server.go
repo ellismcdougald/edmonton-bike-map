@@ -1,10 +1,10 @@
 package server
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/ellismcdougald/edmonton-bike-map/internal/handler"
+	"github.com/ellismcdougald/edmonton-bike-map/internal/middleware"
 )
 
 // RegisterRoutes registers HTTP handlers for all API endpoints on the given ServeMux.
@@ -15,75 +15,70 @@ import (
 //   - POST /api/signup     : user signup
 //   - POST /api/login      : user login
 func RegisterRoutes(mux *http.ServeMux, handlers handler.Handlers) {
-	mux.Handle("/api/route", corsMiddleware("GET", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		handler := handlers.RouteHandler.HandleGetRoute()
-		handler(w, r)
-	})))
-
-	mux.Handle("/api/all-ways", corsMiddleware("GET", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		handler := handlers.WayHandler.HandleAllWays()
-		handler(w, r)
-	})))
-
-	mux.Handle("/api/reviews", corsMiddleware("GET", "POST", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodOptions:
-			w.WriteHeader(http.StatusNoContent)
-		case http.MethodGet:
-			handler := handlers.ReviewHandler.HandleGetReviews()
-			handler(w, r)
-		case http.MethodPost:
-			handler := handlers.ReviewHandler.HandlePostReview()
-			handler(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	// wrap handler with CORS and optionally Auth middleware
+	wrap := func(handler http.Handler, methods []string, requireAuth bool) http.Handler {
+		h := handler
+		if requireAuth {
+			h = middleware.AuthMiddleware(h)
 		}
-	})))
+		h = middleware.CorsMiddleware(methods...)(h)
+		return h
+	}
 
-	mux.Handle("/api/signup", corsMiddleware("POST", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodOptions:
-			w.WriteHeader(http.StatusNoContent)
-		default:
-			handler := handlers.AuthHandler.HandleSignup()
-			handler(w, r)
-		}
-	})))
+	// PUBLIC:
+	mux.Handle("/api/login", wrap(
+		http.HandlerFunc(handlers.AuthHandler.HandleLogin()),
+		[]string{"POST", "OPTIONS"},
+		false,
+	))
+	mux.Handle("/api/signup", wrap(
+		http.HandlerFunc(handlers.AuthHandler.HandleSignup()),
+		[]string{"POST", "OPTIONS"},
+		false,
+	))
 
-	mux.Handle("/api/login", corsMiddleware("POST", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodOptions:
-			w.WriteHeader(http.StatusNoContent)
-		default:
-			handler := handlers.AuthHandler.HandleLogin()
-			handler(w, r)
-		}
-	})))
-
-	mux.Handle("/api/change-password", corsMiddleware("POST", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.Method {
-		case http.MethodOptions:
-			w.WriteHeader(http.StatusNoContent)
-		default:
-			handler := handlers.AuthHandler.HandleChangePassword()
-			handler(w, r)
-		}
-	})))
-
-	mux.Handle("/api/user/settings", corsMiddleware("GET", "POST", "OPTIONS")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("hit settings")
-		switch r.Method {
-		case http.MethodOptions:
-			w.WriteHeader(http.StatusNoContent)
-		case http.MethodGet:
-			log.Printf("It's a get")
-			handler := handlers.UserHandler.HandleGetSettings()
-			handler(w, r)
-		case http.MethodPost:
-			handler := handlers.UserHandler.HandleUpdateCyclingSpeed()
-			handler(w, r)
-		default:
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	})))
+	// PROTECTED:
+	mux.Handle("/api/route", wrap(
+		http.HandlerFunc(handlers.RouteHandler.HandleGetRoute()),
+		[]string{"GET", "OPTIONS"},
+		true,
+	))
+	mux.Handle("/api/all-ways", wrap(
+		http.HandlerFunc(handlers.WayHandler.HandleAllWays()),
+		[]string{"GET", "OPTIONS"},
+		true,
+	))
+	mux.Handle("/api/reviews", wrap(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				handlers.ReviewHandler.HandleGetReviews()(w, r)
+			case http.MethodPost:
+				handlers.ReviewHandler.HandlePostReview()(w, r)
+			default:
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+		}),
+		[]string{"GET", "POST", "OPTIONS"},
+		true,
+	))
+	mux.Handle("/api/change-password", wrap(
+		http.HandlerFunc(handlers.AuthHandler.HandleChangePassword()),
+		[]string{"POST", "OPTIONS"},
+		true,
+	))
+	mux.Handle("/api/user/settings", wrap(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				handlers.UserHandler.HandleGetSettings()(w, r)
+			case http.MethodPost:
+				handlers.UserHandler.HandleUpdateCyclingSpeed()(w, r)
+			default:
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+		}),
+		[]string{"GET", "POST", "OPTIONS"},
+		true,
+	))
 }

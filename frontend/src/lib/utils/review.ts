@@ -53,7 +53,15 @@ interface ReviewResponse {
 
 export async function fetchReviews(wayId: number): Promise<ReviewObj[]> {
 	try {
-		const res = await fetch(`${apiUrl}/api/reviews?wayID=${wayId}`);
+		const token = localStorage.getItem('token');
+		const res = await fetch(`${apiUrl}/api/reviews?wayID=${wayId}`, {
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${token}`
+			}
+		});
+		if (res.status === 401) throw new Error('Unauthorized');
 		if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
 		const data: ReviewResponse[] = await res.json();
 
@@ -73,9 +81,10 @@ export async function fetchReviews(wayId: number): Promise<ReviewObj[]> {
 type FetchFn = typeof fetch;
 
 export async function submitReview(reviewData: ReviewData, fetchFn: FetchFn = fetch) {
+	const token = localStorage.getItem('token');
 	const res = await fetchFn(`${apiUrl}/api/reviews`, {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
+		headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
 		body: JSON.stringify(reviewData)
 	});
 

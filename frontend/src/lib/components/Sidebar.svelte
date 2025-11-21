@@ -31,12 +31,21 @@
 	import type { Review as ReviewObj } from '$lib/types';
 	import { fetchReviews, computeAverageRating } from '$lib/utils/review';
 	import { capitalizeFirstLetter } from '$lib/utils/helpers';
+	import { goto } from '$app/navigation';
 
 	let way: WayFeature | null = $derived(wayState.selectedWay);
 	let reviews: ReviewObj[] = $state([]);
 
 	async function loadReviews(wayId: number) {
-		reviews = await fetchReviews(wayId);
+		try {
+			reviews = await fetchReviews(wayId);
+		} catch (error) {
+			if (error instanceof Error && error.message === 'Unauthorized') {
+				goto('/login');
+			} else {
+				throw error;
+			}
+		}
 	}
 
 	let sidebarLoaded: boolean = $state(false);

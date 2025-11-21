@@ -70,11 +70,7 @@ describe('findRoute', () => {
 		// ensure token is not present
 		globalThis.localStorage?.removeItem?.('token');
 
-		await findRoute({ mapInstance });
-
-		expect(alertSpy).toHaveBeenCalledWith(
-			'Error fetching or displaying route: Missing auth token: please log in before requesting a route'
-		);
+		await expect(findRoute({ mapInstance })).rejects.toThrow('Unauthorized');
 	});
 
 	it('sends Authorization header when token exists', async () => {

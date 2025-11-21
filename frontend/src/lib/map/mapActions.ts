@@ -52,6 +52,8 @@ export async function findRoute({ mapInstance, fetchFn = fetch }: FindRouteOptio
 		applyRouteToMap(mapInstance, geojson);
 	} catch (err: unknown) {
 		if (err instanceof Error) {
+			if (err.message === 'Unauthorized') throw err;
+
 			alert('Error fetching or displaying route: ' + err.message);
 			console.error(err);
 		} else {
@@ -77,7 +79,7 @@ async function fetchRoute(params: URLSearchParams, fetchFn: FetchFn) {
 	const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
 
 	if (!token) {
-		throw new Error('Missing auth token: please log in before requesting a route');
+		throw new Error('Unauthorized');
 	}
 
 	const headers: Record<string, string> = {
@@ -89,6 +91,7 @@ async function fetchRoute(params: URLSearchParams, fetchFn: FetchFn) {
 		method: 'GET',
 		headers
 	});
+	if (res.status === 401) throw new Error('Unauthorized');
 	if (!res.ok) throw new Error('Failed to get route data');
 	return res.json();
 }

@@ -10,6 +10,15 @@ describe('submitReview', () => {
 	beforeEach(() => {
 		fetchMock = vi.fn();
 		globalThis.fetch = fetchMock;
+
+		// Create a mock localStorage implementation
+		globalThis.localStorage = {
+			getItem: vi.fn(),
+			setItem: vi.fn(),
+			removeItem: vi.fn(),
+			clear: vi.fn()
+		} as unknown as Storage;
+		vi.spyOn(globalThis.localStorage, 'getItem').mockReturnValue('test-token');
 	});
 
 	afterEach(() => {
@@ -32,7 +41,7 @@ describe('submitReview', () => {
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 		expect(fetchMock).toHaveBeenCalledWith(`${apiUrl}/api/reviews`, {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			headers: { 'Content-Type': 'application/json', Authorization: 'Bearer test-token' },
 			body: JSON.stringify(reviewData)
 		});
 	});
@@ -57,24 +66,24 @@ describe('computeAverageRating', () => {
 
 	it('returns the rating itself for single review', () => {
 		const reviews: Review[] = [
-			{ wayID: 1, username: 'alice', rating: 4, comment: 'Nice', createdAt: '2025-09-15' }
+			{ wayId: 1, username: 'alice', rating: 4, comment: 'Nice', createdAt: '2025-09-15' }
 		];
 		expect(computeAverageRating(reviews)).toBe(4);
 	});
 
 	it('calculates average rating rounded to 1 decimal', () => {
 		const reviews: Review[] = [
-			{ wayID: 1, username: 'alice', rating: 3, comment: '', createdAt: '2025-09-15' },
-			{ wayID: 1, username: 'bob', rating: 4, comment: '', createdAt: '2025-09-15' },
-			{ wayID: 1, username: 'carol', rating: 5, comment: '', createdAt: '2025-09-15' }
+			{ wayId: 1, username: 'alice', rating: 3, comment: '', createdAt: '2025-09-15' },
+			{ wayId: 1, username: 'bob', rating: 4, comment: '', createdAt: '2025-09-15' },
+			{ wayId: 1, username: 'carol', rating: 5, comment: '', createdAt: '2025-09-15' }
 		];
 		expect(computeAverageRating(reviews)).toBe(4); // (3+4+5)/3 = 4
 	});
 
 	it('rounds average to 1 decimal for non-integer result', () => {
 		const reviews: Review[] = [
-			{ wayID: 1, username: 'alice', rating: 3, comment: '', createdAt: '2025-09-15' },
-			{ wayID: 1, username: 'bob', rating: 4, comment: '', createdAt: '2025-09-15' }
+			{ wayId: 1, username: 'alice', rating: 3, comment: '', createdAt: '2025-09-15' },
+			{ wayId: 1, username: 'bob', rating: 4, comment: '', createdAt: '2025-09-15' }
 		];
 		expect(computeAverageRating(reviews)).toBe(3.5); // (3+4)/2 = 3.5
 	});

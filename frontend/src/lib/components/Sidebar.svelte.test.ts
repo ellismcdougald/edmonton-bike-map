@@ -5,14 +5,31 @@ import { wayState } from '$lib/state.svelte';
 import type { Review } from '$lib/types';
 import * as reviewUtils from '$lib/utils/review';
 
+// Mock SvelteKit navigation
+vi.mock('$app/navigation', () => ({
+	goto: vi.fn(),
+	beforeNavigate: vi.fn(() => () => {}), // returns unsubscribe fn
+	afterNavigate: vi.fn(() => () => {})
+}));
+
+// Mock SvelteKit stores
+vi.mock('$app/stores', () => {
+	const subscribe = vi.fn(() => () => {}); // dummy unsubscribe
+	return {
+		page: { subscribe },
+		navigating: { subscribe }
+		// add more stores if needed
+	};
+});
+
 vi.mock('./ReviewContainer.svelte', () => ({
 	default: () => '<div data-testid="review-container"></div>'
 }));
 
 const mockReviews: Review[] = [
-	{ wayID: 1, username: 'alice', rating: 3, comment: '', createdAt: '2025-09-15' },
-	{ wayID: 1, username: 'bob', rating: 4, comment: '', createdAt: '2025-09-15' },
-	{ wayID: 1, username: 'carol', rating: 5, comment: '', createdAt: '2025-09-15' }
+	{ wayId: 1, username: 'alice', rating: 3, comment: '', createdAt: '2025-09-15' },
+	{ wayId: 1, username: 'bob', rating: 4, comment: '', createdAt: '2025-09-15' },
+	{ wayId: 1, username: 'carol', rating: 5, comment: '', createdAt: '2025-09-15' }
 ];
 
 // deterministic mock way

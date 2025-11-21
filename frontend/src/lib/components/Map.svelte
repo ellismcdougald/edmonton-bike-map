@@ -33,6 +33,7 @@
 
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
+	import { goto } from '$app/navigation';
 	import type { WayFeature } from '$lib/types';
 	import type { MapModeState } from '$lib/map/mapModes';
 	import { toggleSelectStart, toggleSelectEnd } from '$lib/map/mapModes';
@@ -61,6 +62,27 @@
 			mode = toggleSelectEnd(mode);
 			mapInstance.showInfoLayer();
 		}
+	}
+
+	function handleFindRouteClick() {
+		if (!mapInstance) return;
+
+		findRoute({ mapInstance }).catch((err: unknown) => {
+			if (err instanceof Error) {
+				if (err.message === 'Unauthorized') {
+					// token expired or invalid → log out user
+					localStorage.removeItem('token');
+					goto('/login');
+				} else {
+					// other fetch/display errors
+					alert('Error fetching or displaying route: ' + err.message);
+					console.error(err);
+				}
+			} else {
+				alert('Error fetching or displaying route: ' + String(err));
+				console.error(err);
+			}
+		});
 	}
 
 	function handleSelectStartClick() {
@@ -94,7 +116,14 @@
 		mapInstance.onMapClick(onMapClick);
 
 		try {
-			const res = await fetch(allWaysEndpoint);
+			const token = localStorage.getItem('token');
+			const res = await fetch(allWaysEndpoint, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${token}`
+				}
+			});
 			if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 			const geojson = await res.json();
 			mapInstance.loadInfoLayer(
@@ -144,7 +173,7 @@
 			type="button"
 			id="findRouteButton"
 			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow"
-			onclick={() => findRoute({ mapInstance })}
+			onclick={handleFindRouteClick}
 		>
 			Find Route
 		</button>

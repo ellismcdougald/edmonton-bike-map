@@ -2,6 +2,23 @@ import { render, fireEvent, waitFor } from '@testing-library/svelte';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Map from './Map.svelte';
 
+// Mock SvelteKit navigation
+vi.mock('$app/navigation', () => ({
+	goto: vi.fn(),
+	beforeNavigate: vi.fn(() => () => {}), // returns unsubscribe fn
+	afterNavigate: vi.fn(() => () => {})
+}));
+
+// Mock SvelteKit stores
+vi.mock('$app/stores', () => {
+	const subscribe = vi.fn(() => () => {}); // dummy unsubscribe
+	return {
+		page: { subscribe },
+		navigating: { subscribe }
+		// add more stores if needed
+	};
+});
+
 vi.stubGlobal(
 	'fetch',
 	vi.fn().mockResolvedValue({
@@ -11,7 +28,7 @@ vi.stubGlobal(
 );
 
 vi.mock('$lib/map/mapActions', () => ({
-	findRoute: vi.fn()
+	findRoute: vi.fn(() => Promise.resolve())
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
