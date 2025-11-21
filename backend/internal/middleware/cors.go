@@ -1,12 +1,12 @@
-package server
+package middleware
 
 import (
 	"net/http"
 	"strings"
 )
 
-// corsMiddleware returns a middleware that sets CORS headers allowing only the specified methods.
-func corsMiddleware(allowedMethods ...string) func(http.Handler) http.Handler {
+// CorsMiddleware returns a middleware that sets CORS headers allowing only the specified methods.
+func CorsMiddleware(allowedMethods ...string) func(http.Handler) http.Handler {
 	allowedOrigins := []string{
 		"http://localhost:3000",
 		"http://localhost:3001",
