@@ -27,7 +27,11 @@
 	import AddReviewPopup from './AddReviewPopup.svelte';
 	import type { Review as ReviewObj } from '$lib/types';
 
-	let { wayId, reviews }: { wayId: number; reviews: ReviewObj[] } = $props();
+	let {
+		wayId,
+		reviews,
+		onReviewAdded
+	}: { wayId: number; reviews: ReviewObj[]; onReviewAdded?: () => void } = $props();
 	let addReviewActive: boolean = $state(false);
 </script>
 
@@ -49,6 +53,9 @@
 				addReviewActive = false;
 			}}
 			{wayId}
+			onReviewAdded={() => {
+				if (onReviewAdded && typeof onReviewAdded === 'function') onReviewAdded();
+			}}
 		/>
 	{/if}
 

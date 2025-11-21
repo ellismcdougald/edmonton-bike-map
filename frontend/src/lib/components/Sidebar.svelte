@@ -96,7 +96,7 @@
 			</h2>
 		</section>
 
-		<ReviewContainer wayId={way.id} {reviews} />
+		<ReviewContainer wayId={way.id} {reviews} onReviewAdded={() => loadReviews(way.id)} />
 	</div>
 {/if}
 
