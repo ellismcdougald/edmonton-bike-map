@@ -30,7 +30,7 @@
 	import { getUserIdFromToken } from '$lib/utils/auth';
 	import { submitReview } from '$lib/utils/review';
 
-	let { closePopup, wayId } = $props();
+	let { closePopup, wayId, onReviewAdded } = $props();
 
 	let rating: number | null = $state(null);
 	let comment: string | null = $state(null);
@@ -59,6 +59,7 @@
 			await submitReview({ wayId, userId, rating, comment });
 			rating = null;
 			comment = null;
+			if (onReviewAdded && typeof onReviewAdded === 'function') onReviewAdded?.();
 			closePopup();
 		} catch (err: unknown) {
 			errorMsg = err instanceof Error ? err.message : String(err);
