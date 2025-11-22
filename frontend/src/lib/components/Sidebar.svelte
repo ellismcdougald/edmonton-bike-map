@@ -49,14 +49,15 @@
 	}
 
 	let sidebarLoaded: boolean = $state(false);
+	let isVisible: boolean = $state(true);
 	$effect(() => {
 		if (way) {
+			// sidebar becomes visible when way is selected
+			isVisible = true;
 			loadReviews(way.id);
 			sidebarLoaded = true;
 		}
 	});
-
-	let isVisible: boolean = $state(true);
 
 	function toggleSidebar(): void {
 		isVisible = !isVisible;

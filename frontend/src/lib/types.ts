@@ -10,3 +10,15 @@ export interface Review {
 	comment: string;
 	createdAt: string;
 }
+
+export interface WayFeatureProperties {
+	id?: number;
+	[key: string]: string | number | boolean | undefined;
+}
+
+export type WayFeatureGeoJSON = GeoJSON.Feature<GeoJSON.Geometry, WayFeatureProperties>;
+
+export type WayFeatureCollection = GeoJSON.FeatureCollection<
+	GeoJSON.Geometry,
+	WayFeatureProperties
+>;
