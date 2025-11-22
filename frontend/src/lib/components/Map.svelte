@@ -78,7 +78,14 @@
 	}
 
 	async function loadWays() {
-		const res = await fetch(allWaysEndpoint);
+		const token = localStorage.getItem('token');
+		const res = await fetch(allWaysEndpoint, {
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${token}`
+			}
+		});
 		if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 		const geojson = await res.json();
 		waysGeoJSON = geojson;
