@@ -34,7 +34,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
-	import type { WayFeature } from '$lib/types';
+	import type { WayFeature, WayFeatureCollection } from '$lib/types';
 	import type { MapModeState } from '$lib/map/mapModes';
 	import { toggleSelectStart, toggleSelectEnd } from '$lib/map/mapModes';
 	import { wayState } from '$lib/state.svelte';
@@ -42,11 +42,82 @@
 	import { findRoute } from '$lib/map/mapActions';
 
 	const apiUrl = import.meta.env.VITE_API_URL;
+	const allWaysEndpoint = `${apiUrl}/api/all-ways`;
 
 	let mapInstance: InstanceType<typeof import('$lib/map/LeafletMap').LeafletMap> | null = null;
-	const allWaysEndpoint = `${apiUrl}/api/all-ways`;
+	let waysGeoJSON: GeoJSON.GeoJsonObject | null = null;
 	let mode: MapModeState = { selectStartActive: false, selectEndActive: false };
 
+	// URL Helpers:
+	function updateUrlWithWay(id: number) {
+		try {
+			const path = `${window.location.pathname}?way=${encodeURIComponent(String(id))}`;
+			goto(path, { replaceState: true, noScroll: true });
+		} catch {
+			/* ignore */
+		}
+	}
+
+	// Map setup:
+	async function initializeMap() {
+		await createMap();
+		await loadWays();
+		restoreSelectionFromUrl();
+	}
+
+	async function createMap() {
+		const { LeafletMap } = await loadLeaflet();
+		mapInstance = new LeafletMap();
+		mapInstance.addTileLayer(
+			'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+			19,
+			10,
+			'© OpenStreetMap contributors'
+		);
+		mapInstance.onMapClick(onMapClick);
+	}
+
+	async function loadWays() {
+		const token = localStorage.getItem('token');
+		const res = await fetch(allWaysEndpoint, {
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${token}`
+			}
+		});
+		if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+		const geojson = await res.json();
+		waysGeoJSON = geojson;
+		mapInstance?.loadInfoLayer(geojson, { color: 'red', weight: 1, opacity: 0 }, handleWayClick);
+	}
+
+	function restoreSelectionFromUrl() {
+		if (!waysGeoJSON || typeof window === 'undefined' || !window.location?.search) return;
+
+		const match = window.location.search.match(/[?&]way=([^&]+)/);
+		const targetId = match?.[1] ? Number(decodeURIComponent(match[1])) : null;
+		if (!targetId) return;
+
+		if (waysGeoJSON.type === 'FeatureCollection') {
+			const featureCollection = waysGeoJSON as WayFeatureCollection;
+			const feature = featureCollection.features.find((f) => {
+				const id = f.id ?? f.properties?.id;
+				return Number(id) === targetId;
+			});
+
+			if (feature) {
+				wayState.selectedWay = {
+					id: Number(feature.id ?? feature.properties.id),
+					tags: Object.fromEntries(
+						Object.entries(feature.properties || {}).map(([k, v]) => [k, String(v)])
+					)
+				};
+			}
+		}
+	}
+
+	// Map interactions:
 	function onMapClick(latlng: [number, number]): void {
 		const [lat, lng] = latlng;
 		if (!mapInstance) return;
@@ -102,47 +173,22 @@
 		}
 	}
 
+	function handleWayClick(way: WayFeature) {
+		way.id = Number(way.id);
+		wayState.selectedWay = way;
+		updateUrlWithWay(way.id);
+	}
+
 	onMount(async () => {
-		const { LeafletMap } = await loadLeaflet();
-		mapInstance = new LeafletMap();
-
-		mapInstance.addTileLayer(
-			'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-			19,
-			10,
-			'© OpenStreetMap contributors'
-		);
-
-		mapInstance.onMapClick(onMapClick);
-
 		try {
-			const token = localStorage.getItem('token');
-			const res = await fetch(allWaysEndpoint, {
-				method: 'GET',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${token}`
-				}
-			});
-			if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-			const geojson = await res.json();
-			mapInstance.loadInfoLayer(
-				geojson,
-				{ color: 'red', weight: 1, opacity: 0 },
-				(way: WayFeature) => {
-					way.id = Number(way.id);
-					wayState.selectedWay = way;
-				}
-			);
+			await initializeMap();
 		} catch (err) {
-			console.error('Error loading info layer:', err);
+			console.error('Error initializing map:', err);
 		}
 	});
 
 	onDestroy(() => {
-		if (mapInstance?.map) {
-			mapInstance.map.remove();
-		}
+		mapInstance?.map?.remove();
 	});
 </script>
 

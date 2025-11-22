@@ -27,6 +27,10 @@ vi.stubGlobal(
 	})
 );
 
+vi.mock('$app/navigation', () => ({
+	goto: vi.fn()
+}));
+
 vi.mock('$lib/map/mapActions', () => ({
 	findRoute: vi.fn(() => Promise.resolve())
 }));
