@@ -41,12 +41,10 @@
 	import { loadLeaflet } from '$lib/map/loadLeaflet';
 	import { findRoute } from '$lib/map/mapActions';
 
-	const apiUrl = import.meta.env.VITE_API_URL;
-	const allWaysEndpoint = `${apiUrl}/api/all-ways`;
-
 	let mapInstance: InstanceType<typeof import('$lib/map/LeafletMap').LeafletMap> | null = null;
-	let waysGeoJSON: GeoJSON.GeoJsonObject | null = null;
 	let mode: MapModeState = { selectStartActive: false, selectEndActive: false };
+
+	let { ways }: { ways: GeoJSON.GeoJsonObject | null } = $props();
 
 	// URL Helpers:
 	function updateUrlWithWay(id: number) {
@@ -61,7 +59,9 @@
 	// Map setup:
 	async function initializeMap() {
 		await createMap();
-		await loadWays();
+		if (ways) {
+			mapInstance?.loadInfoLayer(ways, { color: 'red', weight: 1, opacity: 0 }, handleWayClick);
+		}
 		restoreSelectionFromUrl();
 	}
 
@@ -77,30 +77,15 @@
 		mapInstance.onMapClick(onMapClick);
 	}
 
-	async function loadWays() {
-		const token = localStorage.getItem('token');
-		const res = await fetch(allWaysEndpoint, {
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${token}`
-			}
-		});
-		if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-		const geojson = await res.json();
-		waysGeoJSON = geojson;
-		mapInstance?.loadInfoLayer(geojson, { color: 'red', weight: 1, opacity: 0 }, handleWayClick);
-	}
-
 	function restoreSelectionFromUrl() {
-		if (!waysGeoJSON || typeof window === 'undefined' || !window.location?.search) return;
+		if (!ways || typeof window === 'undefined' || !window.location?.search) return;
 
 		const match = window.location.search.match(/[?&]way=([^&]+)/);
 		const targetId = match?.[1] ? Number(decodeURIComponent(match[1])) : null;
 		if (!targetId) return;
 
-		if (waysGeoJSON.type === 'FeatureCollection') {
-			const featureCollection = waysGeoJSON as WayFeatureCollection;
+		if (ways?.type === 'FeatureCollection') {
+			const featureCollection = ways as WayFeatureCollection;
 			const feature = featureCollection.features.find((f) => {
 				const id = f.id ?? f.properties?.id;
 				return Number(id) === targetId;
