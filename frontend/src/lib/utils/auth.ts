@@ -1,31 +1,4 @@
-/**
- * utils/auth.ts
- *
- * Purpose:
- * Provides helper functions to extract user information from a JWT stored in localStorage
- * and to manage the token.
- *
- * Functions:
- * - getUsernameFromToken(): returns the `username` from the JWT payload, or null if missing/invalid
- * - getUserIdFromToken(): returns the `userId` from the JWT payload, or null if missing/invalid
- * - removeToken(): removes the JWT token from localStorage
- *
- * Behavior:
- * - Reads token from localStorage key 'token'
- * - Decodes the JWT payload using atob and JSON.parse
- * - Safely handles missing tokens, malformed tokens, or missing fields by returning null
- * - removeToken() simply deletes the token from localStorage
- *
- * Notes:
- * - Purely synchronous; does not communicate with backend
- * - Assumes token payload contains `username` and/or `userId`
- * - Useful for identifying the logged-in user on the frontend and for logging out
- */
-
-export function getUsernameFromToken(): string | null {
-	const token = localStorage.getItem('token');
-	if (!token) return null;
-
+export function getUsernameFromToken(token: string): string | null {
 	try {
 		const payload = JSON.parse(atob(token.split('.')[1])) as { username?: string };
 		const username = payload.username;

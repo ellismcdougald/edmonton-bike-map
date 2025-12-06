@@ -6,5 +6,5 @@
 	export let data;
 </script>
 
-<MenuBar />
+<MenuBar username={data.username} />
 <Display ways={data.ways} />

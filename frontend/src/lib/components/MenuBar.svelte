@@ -1,38 +1,8 @@
-<!--
-  Header.svelte
-
-  Purpose:
-  Displays the app header with title and user login state.
-
-  Props:
-  - none
-
-  State:
-  - username (string | null): derived from JWT; shows if user is logged in
-
-  Behavior:
-  - On mount, extracts username from JWT via getUsernameFromToken()
-  - If username exists, displays it on the right side
-  - If no username, shows "Log In" link
-
-  Notes:
-  - Depends on $lib/utils/auth
--->
-
 <script lang="ts">
-	import { getUsernameFromToken, removeToken } from '$lib/utils/auth';
-	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
-
-	let username: string | null = null;
-
-	onMount(() => {
-		username = getUsernameFromToken();
-	});
+	let { username }: { username: string | null } = $props();
 
 	function logout() {
-		removeToken();
-		goto('/login');
+		console.log('TODO: IMPLEMENT LOGOUT FUNCTIONALITY');
 	}
 </script>
 
