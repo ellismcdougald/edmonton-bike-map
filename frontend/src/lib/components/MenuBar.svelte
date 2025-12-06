@@ -1,9 +1,5 @@
 <script lang="ts">
 	let { username }: { username: string | null } = $props();
-
-	function logout() {
-		console.log('TODO: IMPLEMENT LOGOUT FUNCTIONALITY');
-	}
 </script>
 
 <div class="flex items-center justify-between px-4 py-2 w-full">
@@ -31,13 +27,13 @@
 				>
 					Settings
 				</a>
-				<button
+				<a
 					id="logoutButton"
 					class="block w-full px-4 py-2 text-center hover:bg-gray-100"
-					on:click={logout}
+					href="/logout"
 				>
 					Log out
-				</button>
+				</a>
 			</div>
 		</div>
 	</div>
