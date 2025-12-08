@@ -29,7 +29,7 @@
 	import type { WayFeature } from '$lib/types';
 	import { determineRouteType, determineBicycleRoute } from '$lib/utils/route';
 	import type { Review as ReviewObj } from '$lib/types';
-	import { fetchReviews, computeAverageRating } from '$lib/utils/review';
+	import { computeAverageRating } from '$lib/utils/review';
 	import { capitalizeFirstLetter } from '$lib/utils/helpers';
 	import { goto } from '$app/navigation';
 
@@ -38,13 +38,20 @@
 
 	async function loadReviews(wayId: number) {
 		try {
-			reviews = await fetchReviews(wayId);
-		} catch (error) {
-			if (error instanceof Error && error.message === 'Unauthorized') {
-				goto('/login');
-			} else {
-				throw error;
+			const res = await fetch(`/api/reviews/${wayId}`);
+
+			if (!res.ok) {
+				if (res.status === 401) {
+					await fetch('/logout');
+					goto('/login');
+				}
+				throw new Error(`Failed to fetch reviews: ${res.statusText}`);
 			}
+
+			// Parse JSON and update state
+			reviews = await res.json();
+		} catch (error) {
+			console.error('Error loading reviews:', error);
 		}
 	}
 
