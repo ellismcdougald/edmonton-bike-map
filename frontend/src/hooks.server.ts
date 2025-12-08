@@ -8,7 +8,6 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 export const handleFetch: HandleFetch = async ({ event, request, fetch }) => {
 	const token = event.locals.token;
-	console.log('token', token);
 	if (token) {
 		request.headers.set('Authorization', `Bearer ${token}`);
 	}
