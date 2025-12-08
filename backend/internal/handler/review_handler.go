@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/ellismcdougald/edmonton-bike-map/internal/middleware"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/service"
 )
@@ -63,6 +64,15 @@ func (h *ReviewHandler) HandlePostReview() http.HandlerFunc {
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
+
+		// Get user ID from context (set by AuthMiddleware)
+		userID, ok := middleware.UserIDFromContext(r.Context())
+		if !ok {
+			log.Printf("User ID not found in context")
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		review.UserID = userID
 
 		if review.Rating < 1 || review.Rating > 10 {
 			log.Printf("Invalid rating: %d", review.Rating)

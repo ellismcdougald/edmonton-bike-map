@@ -1,35 +1,4 @@
-<!--
-  AddReviewPopup.svelte
-
-  Purpose:
-  Modal popup for submitting a new review on a given way.
-
-  Props:
-  - closePopup (function): Closes the popup/modal
-  - wayId (string | number): ID of the currently selected way to associate the review with
-
-  State:
-  - rating (number | null): User rating input (required)
-  - comment (string | null): User review text input
-  - errorMsg (string): Error message shown on validation or submission failure
-  - isSubmitting (boolean): Tracks form submission state (disables form while submitting)
-
-  Behavior:
-  - Validates that rating is present before submitting
-  - Uses `getUserIdFromToken` to check authentication
-  - Sends POST request via `submitReview({ wayId, userId, rating, comment })`
-  - Resets inputs and closes popup on successful submission
-  - Displays error message if submission fails
-
-  Notes:
-  - Depends on `$lib/utils/auth` and `$lib/utils/review`
-  - Designed as an overlay modal with fixed positioning
--->
-
 <script lang="ts">
-	import { getUserIdFromToken } from '$lib/utils/auth';
-	import { submitReview } from '$lib/utils/review';
-
 	let { closePopup, wayId, onReviewAdded } = $props();
 
 	let rating: number | null = $state(null);
@@ -46,17 +15,14 @@
 			return;
 		}
 
-		const userId = getUserIdFromToken();
-		if (!userId) {
-			errorMsg = 'User is not logged in!';
-			return;
-		}
-
 		isSubmitting = true;
 		errorMsg = '';
 
 		try {
-			await submitReview({ wayId, userId, rating, comment });
+			await fetch('/api/reviews', {
+				method: 'POST',
+				body: JSON.stringify({ wayId, rating, comment })
+			});
 			rating = null;
 			comment = null;
 			if (onReviewAdded && typeof onReviewAdded === 'function') onReviewAdded?.();
