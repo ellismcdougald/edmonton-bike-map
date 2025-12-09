@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { updateCyclingSpeed } from '$lib/api/settings';
+	import { updateCyclingSpeed } from '$lib/api/client/settings';
 
 	type PageData = { cyclingSpeed?: number | null; loadError?: string };
 

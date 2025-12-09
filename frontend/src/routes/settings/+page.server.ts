@@ -1,5 +1,5 @@
 import type { PageServerLoad } from './$types';
-import { fetchSettings } from '$lib/api/settings';
+import { fetchSettings } from '$lib/api/server/settings';
 
 export const load: PageServerLoad = async ({ fetch }) => {
 	try {
