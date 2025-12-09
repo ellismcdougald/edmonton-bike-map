@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { createReview } from '$lib/api/reviews';
+
 	let { closePopup, wayId, onReviewAdded } = $props();
 
 	let rating: number | null = $state(null);
@@ -19,18 +21,11 @@
 		errorMsg = '';
 
 		try {
-			const res = await fetch('/api/reviews', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ wayId, rating, comment })
-			});
+			await createReview(wayId, rating, comment);
 
-			if (!res.ok) {
-				const text = await res.text();
-				throw new Error(text || 'Failed to submit review');
-			}
 			rating = null;
 			comment = null;
+
 			if (onReviewAdded && typeof onReviewAdded === 'function') onReviewAdded?.();
 			closePopup();
 		} catch (err: unknown) {
