@@ -1,43 +1,22 @@
 import { render, fireEvent, waitFor } from '@testing-library/svelte';
-import { vi, type Mock } from 'vitest';
-import * as navigation from '$app/navigation';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import SettingsPage from './+page.svelte';
 
-vi.mock('$app/navigation', () => ({
-	goto: vi.fn()
-}));
-
-// Mock fetch globally
-const mockFetch = vi.fn() as Mock;
-global.fetch = mockFetch;
+const fetchMock = vi.fn();
 
 describe('Settings Page', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
-		localStorage.clear();
-		mockFetch.mockReset();
+		fetchMock.mockReset();
+		vi.stubGlobal('fetch', fetchMock);
 	});
 
-	it('redirects to login if user is not logged in', async () => {
-		render(SettingsPage);
-
-		await waitFor(() => {
-			expect(navigation.goto).toHaveBeenCalledWith('/login');
-		});
+	afterEach(() => {
+		vi.unstubAllGlobals();
 	});
 
-	it('prefills cycling speed when logged in and shows controls', async () => {
-		localStorage.setItem('token', 'fake-token');
-
-		mockFetch.mockResolvedValueOnce({
-			ok: true,
-			json: async () => ({ username: 'alice', cyclingSpeed: 18 })
-		});
-
-		const { getByLabelText, getByRole, getByText } = render(SettingsPage);
-
-		await waitFor(() => {
-			expect(getByLabelText('Preferred Cycling Speed (km/h)')).toBeTruthy();
+	it('prefills cycling speed and shows controls', async () => {
+		const { getByLabelText, getByRole, getByText } = render(SettingsPage, {
+			data: { cyclingSpeed: 18 }
 		});
 
 		const input = getByLabelText('Preferred Cycling Speed (km/h)') as HTMLInputElement;
@@ -47,38 +26,29 @@ describe('Settings Page', () => {
 	});
 
 	it('shows validation error for invalid speed', async () => {
-		localStorage.setItem('token', 'fake-token');
-
-		mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({ cyclingSpeed: 15 }) });
-
-		const { getByLabelText, getByText, getByRole } = render(SettingsPage);
+		const { getByLabelText, getByText, getByRole } = render(SettingsPage, {
+			data: { cyclingSpeed: 15 }
+		});
 		const input = getByLabelText('Preferred Cycling Speed (km/h)') as HTMLInputElement;
 		const saveButton = getByRole('button', { name: 'Save Preferences' }) as HTMLButtonElement;
-
-		await waitFor(() => expect(input).toBeTruthy());
 
 		await fireEvent.input(input, { target: { value: '-5' } });
 		await fireEvent.click(saveButton);
 
-		// The error message should appear when an invalid speed is entered.
 		await waitFor(() => {
 			expect(getByText(/Please enter a valid cycling speed/)).toBeTruthy();
 		});
 
-		// No POST should be attempted when validation fails (only the initial GET)
-		expect(mockFetch).toHaveBeenCalledTimes(1);
+		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
 	it('successfully saves cycling speed', async () => {
-		localStorage.setItem('token', 'fake-token');
-		mockFetch
-			.mockResolvedValueOnce({ ok: true, json: async () => ({ cyclingSpeed: 15 }) }) // initial GET
-			.mockResolvedValueOnce({ ok: true }); // POST
+		fetchMock.mockResolvedValueOnce({ ok: true });
 
-		const { getByLabelText, getByRole, getByText } = render(SettingsPage);
-		const input = await waitFor(
-			() => getByLabelText('Preferred Cycling Speed (km/h)') as HTMLInputElement
-		);
+		const { getByLabelText, getByRole, getByText } = render(SettingsPage, {
+			data: { cyclingSpeed: 15 }
+		});
+		const input = getByLabelText('Preferred Cycling Speed (km/h)') as HTMLInputElement;
 		const saveButton = getByRole('button', { name: 'Save Preferences' }) as HTMLButtonElement;
 
 		await fireEvent.input(input, { target: { value: '22' } });
@@ -88,9 +58,8 @@ describe('Settings Page', () => {
 			expect(getByText('Settings saved')).toBeTruthy();
 		});
 
-		// verify POST body
-		expect(mockFetch).toHaveBeenCalledWith(
-			expect.stringContaining('/api/user/settings'),
+		expect(fetchMock).toHaveBeenCalledWith(
+			'/api/settings',
 			expect.objectContaining({
 				method: 'POST',
 				headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
@@ -100,15 +69,12 @@ describe('Settings Page', () => {
 	});
 
 	it('shows error message on failed save', async () => {
-		localStorage.setItem('token', 'fake-token');
-		mockFetch
-			.mockResolvedValueOnce({ ok: true, json: async () => ({ cyclingSpeed: 15 }) })
-			.mockResolvedValueOnce({ ok: false, text: async () => 'Save failed' });
+		fetchMock.mockResolvedValueOnce({ ok: false, text: async () => 'Save failed' });
 
-		const { getByLabelText, getByRole, getByText } = render(SettingsPage);
-		const input = await waitFor(
-			() => getByLabelText('Preferred Cycling Speed (km/h)') as HTMLInputElement
-		);
+		const { getByLabelText, getByRole, getByText } = render(SettingsPage, {
+			data: { cyclingSpeed: 15 }
+		});
+		const input = getByLabelText('Preferred Cycling Speed (km/h)') as HTMLInputElement;
 		const saveButton = getByRole('button', { name: 'Save Preferences' }) as HTMLButtonElement;
 
 		await fireEvent.input(input, { target: { value: '30' } });

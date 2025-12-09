@@ -1,9 +1,8 @@
 import { render, fireEvent, waitFor } from '@testing-library/svelte';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import Sidebar from './Sidebar.svelte';
 import { wayState } from '$lib/state.svelte';
 import type { Review } from '$lib/types';
-import * as reviewUtils from '$lib/utils/review';
 
 // Mock SvelteKit navigation
 vi.mock('$app/navigation', () => ({
@@ -32,6 +31,8 @@ const mockReviews: Review[] = [
 	{ wayId: 1, username: 'carol', rating: 5, comment: '', createdAt: '2025-09-15' }
 ];
 
+const fetchMock = vi.fn();
+
 // deterministic mock way
 const mockWay = {
 	id: 1,
@@ -48,13 +49,25 @@ const mockWay = {
 describe('Sidebar.svelte', () => {
 	beforeEach(() => {
 		wayState.selectedWay = mockWay;
-		vi.spyOn(reviewUtils, 'fetchReviews').mockResolvedValue(mockReviews);
+		fetchMock.mockResolvedValue({
+			ok: true,
+			status: 200,
+			statusText: 'OK',
+			json: async () => mockReviews
+		});
+		vi.stubGlobal('fetch', fetchMock);
+	});
+
+	afterEach(() => {
+		fetchMock.mockReset();
+		vi.unstubAllGlobals();
 	});
 
 	it('renders route info correctly', async () => {
 		const { getByText } = render(Sidebar);
 
 		await waitFor(() => {
+			expect(fetchMock).toHaveBeenCalledWith('/api/reviews/1');
 			expect(getByText('Shared Use Path')).toBeTruthy();
 			expect(getByText('Yes')).toBeTruthy();
 			expect(getByText('Asphalt')).toBeTruthy();

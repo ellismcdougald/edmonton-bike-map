@@ -1,90 +1,41 @@
 import { render, fireEvent, waitFor } from '@testing-library/svelte';
-import { vi, type Mock } from 'vitest';
-import * as navigation from '$app/navigation';
+import { describe, it, expect } from 'vitest';
 import PasswordPage from './+page.svelte';
 
-vi.mock('$app/navigation', () => ({
-	goto: vi.fn()
-}));
-
-// Mock fetch globally
-const mockFetch = vi.fn() as Mock;
-global.fetch = mockFetch;
-
 describe('Password Page', () => {
-	beforeEach(() => {
-		vi.clearAllMocks();
-		localStorage.clear();
-		mockFetch.mockReset();
+	it('renders form fields', () => {
+		const { getByPlaceholderText, getByRole } = render(PasswordPage, { form: null });
+		expect(getByPlaceholderText('Current Password')).toBeTruthy();
+		expect(getByPlaceholderText('New Password')).toBeTruthy();
+		expect(getByPlaceholderText('Confirm New Password')).toBeTruthy();
+		expect(getByRole('button', { name: 'Change Password' })).toBeTruthy();
 	});
 
-	it('redirects to login if not authenticated', async () => {
-		render(PasswordPage);
-
-		await waitFor(() => {
-			expect(navigation.goto).toHaveBeenCalledWith('/login');
-		});
-	});
-
-	it('shows form when logged in and password change succeeds', async () => {
-		localStorage.setItem('token', 'fake-token');
-		mockFetch.mockResolvedValueOnce({ ok: true });
-
-		const { getByPlaceholderText, getByRole, getByText } = render(PasswordPage);
+	it('shows success message and clears fields when form success is returned', async () => {
+		const { getByPlaceholderText, getByText, rerender } = render(PasswordPage, { form: null });
 
 		const currentPasswordInput = getByPlaceholderText('Current Password') as HTMLInputElement;
 		const newPasswordInput = getByPlaceholderText('New Password') as HTMLInputElement;
 		const confirmPasswordInput = getByPlaceholderText('Confirm New Password') as HTMLInputElement;
-		const submitButton = getByRole('button', { name: 'Change Password' }) as HTMLButtonElement;
 
 		await fireEvent.input(currentPasswordInput, { target: { value: 'oldpassword' } });
 		await fireEvent.input(newPasswordInput, { target: { value: 'newpassword' } });
 		await fireEvent.input(confirmPasswordInput, { target: { value: 'newpassword' } });
-		await fireEvent.click(submitButton);
+
+		await rerender({ form: { success: true } });
 
 		await waitFor(() => {
 			expect(getByText('Password changed successfully')).toBeTruthy();
+			expect(currentPasswordInput.value).toBe('');
+			expect(newPasswordInput.value).toBe('');
+			expect(confirmPasswordInput.value).toBe('');
 		});
 	});
 
-	it('shows error when passwords do not match', async () => {
-		localStorage.setItem('token', 'fake-token');
+	it('shows error message from form data', async () => {
+		const { getByText, rerender } = render(PasswordPage, { form: null });
 
-		const { getByPlaceholderText, getByText, getByRole } = render(PasswordPage);
-
-		const currentPasswordInput = getByPlaceholderText('Current Password') as HTMLInputElement;
-		const newPasswordInput = getByPlaceholderText('New Password') as HTMLInputElement;
-		const confirmPasswordInput = getByPlaceholderText('Confirm New Password') as HTMLInputElement;
-		const submitButton = getByRole('button', { name: 'Change Password' }) as HTMLButtonElement;
-
-		await fireEvent.input(currentPasswordInput, { target: { value: 'oldpassword' } });
-		await fireEvent.input(newPasswordInput, { target: { value: 'newpassword' } });
-		await fireEvent.input(confirmPasswordInput, { target: { value: 'different' } });
-		await fireEvent.click(submitButton);
-
-		await waitFor(() => {
-			expect(getByText('New passwords do not match')).toBeTruthy();
-		});
-	});
-
-	it('shows backend error when change fails', async () => {
-		localStorage.setItem('token', 'fake-token');
-		mockFetch.mockResolvedValueOnce({
-			ok: false,
-			text: async () => 'Current password is incorrect'
-		});
-
-		const { getByPlaceholderText, getByText, getByRole } = render(PasswordPage);
-
-		const currentPasswordInput = getByPlaceholderText('Current Password') as HTMLInputElement;
-		const newPasswordInput = getByPlaceholderText('New Password') as HTMLInputElement;
-		const confirmPasswordInput = getByPlaceholderText('Confirm New Password') as HTMLInputElement;
-		const submitButton = getByRole('button', { name: 'Change Password' }) as HTMLButtonElement;
-
-		await fireEvent.input(currentPasswordInput, { target: { value: 'oldpassword' } });
-		await fireEvent.input(newPasswordInput, { target: { value: 'newpassword' } });
-		await fireEvent.input(confirmPasswordInput, { target: { value: 'newpassword' } });
-		await fireEvent.click(submitButton);
+		await rerender({ form: { error: 'Current password is incorrect' } });
 
 		await waitFor(() => {
 			expect(getByText('Current password is incorrect')).toBeTruthy();

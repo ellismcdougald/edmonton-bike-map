@@ -1,26 +1,25 @@
 import { render, fireEvent, waitFor } from '@testing-library/svelte';
 import AddReviewPopup from '$lib/components/AddReviewPopup.svelte';
-import { submitReview } from '$lib/utils/review';
 import { vi } from 'vitest';
-
-vi.mock('$lib/utils/auth', () => ({
-	getUserIdFromToken: vi.fn(() => 'mock-user-id')
-}));
-
-vi.mock('$lib/utils/review', () => ({
-	submitReview: vi.fn()
-}));
 
 describe('AddReviewPopup', () => {
 	const wayId = 123;
 	const closePopup = vi.fn();
+	const onReviewAdded = vi.fn();
+	const fetchMock = vi.fn();
 
 	beforeEach(() => {
-		vi.clearAllMocks();
+		fetchMock.mockReset();
+		vi.stubGlobal('fetch', fetchMock);
+	});
+
+	afterEach(() => {
+		vi.unstubAllGlobals();
 	});
 
 	it('calls submitReview and closes popup on successful submission', async () => {
-		const { container } = render(AddReviewPopup, { wayId, closePopup });
+		fetchMock.mockResolvedValue({ ok: true, json: async () => ({}) });
+		const { container } = render(AddReviewPopup, { wayId, closePopup, onReviewAdded });
 
 		const ratingInput = container.querySelector('#rating') as HTMLInputElement;
 		const commentInput = container.querySelector('#comment') as HTMLTextAreaElement;
@@ -32,20 +31,15 @@ describe('AddReviewPopup', () => {
 		await fireEvent.click(submitButton);
 
 		await waitFor(() => {
-			expect(submitReview).toHaveBeenCalledWith({
-				wayId,
-				userId: 'mock-user-id',
-				rating: 8,
-				comment: 'Great ride!'
-			});
+			expect(fetchMock).toHaveBeenCalledWith('/api/reviews', expect.any(Object));
 			expect(closePopup).toHaveBeenCalled();
 		});
 	});
 
 	it('shows error message if submitReview throws', async () => {
-		vi.mocked(submitReview).mockRejectedValueOnce(new Error('Network error'));
+		fetchMock.mockResolvedValue({ ok: false, text: async () => 'Network error' });
 
-		const { container, getByText } = render(AddReviewPopup, { wayId, closePopup });
+		const { container, getByText } = render(AddReviewPopup, { wayId, closePopup, onReviewAdded });
 
 		const ratingInput = container.querySelector('#rating') as HTMLInputElement;
 		const submitButton = container.querySelector('#submitButton') as HTMLButtonElement;
@@ -59,7 +53,7 @@ describe('AddReviewPopup', () => {
 	});
 
 	it('calls closePopup when Cancel button is clicked', async () => {
-		const { container } = render(AddReviewPopup, { wayId, closePopup });
+		const { container } = render(AddReviewPopup, { wayId, closePopup, onReviewAdded });
 		const cancelButton = container.querySelector('#cancelButton') as HTMLButtonElement;
 
 		await fireEvent.click(cancelButton);

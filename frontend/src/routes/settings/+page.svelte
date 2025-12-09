@@ -25,7 +25,6 @@
 			},
 			body: JSON.stringify({ cyclingSpeed })
 		});
-		console.log(res);
 
 		if (res.ok) {
 			successMsg = 'Settings saved';

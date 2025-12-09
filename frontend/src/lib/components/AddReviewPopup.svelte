@@ -19,10 +19,16 @@
 		errorMsg = '';
 
 		try {
-			await fetch('/api/reviews', {
+			const res = await fetch('/api/reviews', {
 				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ wayId, rating, comment })
 			});
+
+			if (!res.ok) {
+				const text = await res.text();
+				throw new Error(text || 'Failed to submit review');
+			}
 			rating = null;
 			comment = null;
 			if (onReviewAdded && typeof onReviewAdded === 'function') onReviewAdded?.();
