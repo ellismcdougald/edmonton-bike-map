@@ -11,7 +11,7 @@
 	import type { Review as ReviewObj } from '$lib/types';
 	import { computeAverageRating } from '$lib/utils/review';
 	import { capitalizeFirstLetter } from '$lib/utils/helpers';
-	import { fetchReviews } from '$lib/api/reviews';
+	import { fetchReviews } from '$lib/api/server/reviews';
 
 	let way: WayFeature | null = $derived(wayState.selectedWay);
 	let reviews: ReviewObj[] = $state([]);

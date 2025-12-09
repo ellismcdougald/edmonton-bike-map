@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { createReview } from '$lib/api/reviews';
+	import { createReview } from '$lib/api/client/reviews';
 
 	let { closePopup, wayId, onReviewAdded } = $props();
 
