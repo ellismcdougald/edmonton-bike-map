@@ -23,6 +23,7 @@
 				<a
 					id="settingsLink"
 					href="/settings"
+					data-sveltekit-reload
 					class="block w-full px-4 py-2 text-center hover:bg-gray-100"
 				>
 					Settings

@@ -67,7 +67,7 @@ func RegisterRoutes(mux *http.ServeMux, handlers handler.Handlers) {
 		[]string{"POST", "OPTIONS"},
 		true,
 	))
-	mux.Handle("/api/user/settings", wrap(
+	mux.Handle("/api/settings", wrap(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodGet:

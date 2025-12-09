@@ -1,37 +1,12 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
+	type PageData = { cyclingSpeed?: number | null; loadError?: string };
 
-	const apiUrl = import.meta.env.VITE_API_URL;
+	export let data: PageData;
 
-	let cyclingSpeed: number | null = null;
+	let cyclingSpeed: number | null = data.cyclingSpeed ?? 15;
 	let isSubmitting = false;
-	let errorMsg = '';
+	let errorMsg = data.loadError ?? '';
 	let successMsg = '';
-
-	onMount(async () => {
-		const token = localStorage.getItem('token');
-		if (!token) {
-			goto('/login');
-			return;
-		}
-
-		// Try to prefill user's cycling speed
-		try {
-			const res = await fetch(`${apiUrl}/api/user/settings`, {
-				method: 'GET',
-				headers: { Authorization: `Bearer ${token}` }
-			});
-			if (res.ok) {
-				const data = await res.json();
-				cyclingSpeed = data.cyclingSpeed ?? 15;
-			} else {
-				cyclingSpeed = 15;
-			}
-		} catch (_e) {
-			cyclingSpeed = 15;
-		}
-	});
 
 	async function saveSpeed(e: Event) {
 		e.preventDefault();
@@ -42,21 +17,15 @@
 			return;
 		}
 
-		const token = localStorage.getItem('token');
-		if (!token) {
-			errorMsg = 'You must be logged in';
-			return;
-		}
-
 		isSubmitting = true;
-		const res = await fetch(`${apiUrl}/api/user/settings`, {
+		const res = await fetch('/api/settings', {
 			method: 'POST',
 			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${token}`
+				'Content-Type': 'application/json'
 			},
 			body: JSON.stringify({ cyclingSpeed })
 		});
+		console.log(res);
 
 		if (res.ok) {
 			successMsg = 'Settings saved';
