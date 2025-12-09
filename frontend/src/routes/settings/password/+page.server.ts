@@ -1,8 +1,6 @@
-import { API_URL } from '$env/static/private';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-
-const endpoint = API_URL ? `${API_URL}/api/change-password` : '/api/change-password';
+import { changePassword } from '$lib/api/user';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.token) {
@@ -22,6 +20,7 @@ export const actions: Actions = {
 		const newPassword = String(formData.get('newPassword') ?? '');
 		const confirmPassword = String(formData.get('confirmPassword') ?? '');
 
+		// Basic validation stays here
 		if (!currentPassword || !newPassword) {
 			return fail(400, { error: 'Current password and new password are required' });
 		}
@@ -30,17 +29,13 @@ export const actions: Actions = {
 			return fail(400, { error: 'New passwords do not match' });
 		}
 
-		const res = await fetch(endpoint, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ currentPassword, newPassword })
-		});
-
-		if (res.ok) {
+		try {
+			await changePassword(fetch, currentPassword, newPassword);
 			return { success: true };
+		} catch (err) {
+			return fail(400, {
+				error: err instanceof Error ? err.message : 'Failed to change password'
+			});
 		}
-
-		const text = await res.text();
-		return fail(res.status, { error: text || 'Failed to change password' });
 	}
 };
