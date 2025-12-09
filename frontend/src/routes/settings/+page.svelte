@@ -77,7 +77,7 @@
 			<a href="/settings/password" class="text-blue-600 hover:underline">Change Password</a>
 		</div>
 		<div class="mt-2 text-center">
-			<a href="/" class="text-gray-600 hover:underline">Back to Map</a>
+			<a href="/map" class="text-gray-600 hover:underline">Back to Map</a>
 		</div>
 	</div>
 </div>
