@@ -16,7 +16,13 @@ export const load: PageServerLoad = async ({ fetch, cookies }) => {
 
 	// Get ways
 	const waysResponse = await fetch(ALL_WAYS_ENDPOINT);
-	if (!waysResponse.ok) throw new Error(`HTTP error! status: ${waysResponse.status}`);
+	if (!waysResponse.ok) {
+		if (waysResponse.status === 401) {
+			throw redirect(302, '/login');
+		}
+		throw new Error(`HTTP error! status: ${waysResponse.status}`);
+	}
+
 	const ways = await waysResponse.json();
 	return { username, ways };
 };
