@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { updateCyclingSpeed } from '$lib/api/settings';
+
 	type PageData = { cyclingSpeed?: number | null; loadError?: string };
 
 	export let data: PageData;
@@ -8,32 +10,27 @@
 	let errorMsg = data.loadError ?? '';
 	let successMsg = '';
 
-	async function saveSpeed(e: Event) {
-		e.preventDefault();
+	async function saveSpeed(event: Event) {
+		event.preventDefault();
+
 		errorMsg = '';
 		successMsg = '';
+
 		if (!cyclingSpeed || cyclingSpeed <= 0 || cyclingSpeed > 80) {
 			errorMsg = 'Please enter a valid cycling speed (1-80 km/h)';
 			return;
 		}
 
 		isSubmitting = true;
-		const res = await fetch('/api/settings', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ cyclingSpeed })
-		});
 
-		if (res.ok) {
+		try {
+			await updateCyclingSpeed(cyclingSpeed);
 			successMsg = 'Settings saved';
-		} else {
-			const text = await res.text();
-			errorMsg = text || 'Failed to save settings';
+		} catch (err: unknown) {
+			errorMsg = err instanceof Error ? err.message : String(err);
+		} finally {
+			isSubmitting = false;
 		}
-
-		isSubmitting = false;
 	}
 </script>
 
