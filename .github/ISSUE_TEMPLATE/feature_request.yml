@@ -1,0 +1,42 @@
+name: Feature / Enhancement Request
+description: Suggest a new feature or improvement
+title: "[Feature] "
+labels: [] # No default label; user selects from dropdown
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: A short description of the requested feature or enhancement
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why is this feature or enhancement useful or needed?
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: How should this feature or enhancement work?
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Any alternative solutions or approaches?
+      required: false
+
+  - type: dropdown
+    id: label_choice
+    attributes:
+      label: Choose a label
+      description: Select the label that best fits this issue
+      options:
+        - feature
+        - enhancement
+      required: true

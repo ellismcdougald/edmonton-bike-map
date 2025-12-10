@@ -1,0 +1,25 @@
+name: Refactor / Chore
+description: Improve existing code or perform maintenance
+title: "[Refactor] "
+labels: refactor
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: What code or module needs refactoring?
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why should this be refactored or updated?
+      required: false
+
+  - type: textarea
+    id: approach
+    attributes:
+      label: Proposed Approach
+      description: How do you plan to refactor or improve it?
+      required: false
