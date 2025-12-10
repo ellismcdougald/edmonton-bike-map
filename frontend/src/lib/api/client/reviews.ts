@@ -12,6 +12,7 @@ export async function createReview(wayId: number, rating: number, comment: strin
 		if (res.status === 401) {
 			await fetch('/logout', { method: 'POST' });
 			goto('/login');
+			return;
 		}
 		const text = await res.text();
 		throw new Error(text || 'Failed to submit review');
@@ -25,6 +26,7 @@ export async function fetchReviews(wayId: number): Promise<ReviewObj[]> {
 		if (res.status === 401) {
 			await fetch('/logout', { method: 'POST' });
 			goto('/login');
+			return [] as ReviewObj[];
 		}
 		throw new Error(`Failed to fetch reviews: ${res.statusText}`);
 	}
