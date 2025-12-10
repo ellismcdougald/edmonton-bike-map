@@ -42,7 +42,7 @@
 	import { findRoute } from '$lib/map/mapActions';
 
 	let mapInstance: InstanceType<typeof import('$lib/map/LeafletMap').LeafletMap> | null = null;
-	let mode: MapModeState = { selectStartActive: false, selectEndActive: false };
+	let mode: MapModeState = $state({ selectStartActive: false, selectEndActive: false });
 
 	let { ways }: { ways: GeoJSON.GeoJsonObject | null } = $props();
 
@@ -183,9 +183,10 @@
 		<button
 			type="button"
 			id="selectStartButton"
-			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow"
-			class:active={mode.selectStartActive}
+			class="text-white py-2 px-4 rounded transition flex-grow bg-blue-600 hover:bg-blue-700"
+			class:bg-blue-800={mode.selectStartActive}
 			onclick={handleSelectStartClick}
+			class:active={mode.selectStartActive}
 		>
 			Select Start Location
 		</button>
@@ -193,9 +194,10 @@
 		<button
 			type="button"
 			id="selectEndButton"
-			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow"
-			class:active={mode.selectEndActive}
+			class="text-white py-2 px-4 rounded transition flex-grow bg-blue-600 hover:bg-blue-700"
+			class:bg-blue-800={mode.selectEndActive}
 			onclick={handleSelectEndClick}
+			class:active={mode.selectEndActive}
 		>
 			Select End Location
 		</button>
@@ -203,7 +205,7 @@
 		<button
 			type="button"
 			id="findRouteButton"
-			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow"
+			class="text-white py-2 px-4 rounded transition flex-grow bg-blue-600 hover:bg-blue-700"
 			onclick={handleFindRouteClick}
 		>
 			Find Route
@@ -212,8 +214,8 @@
 		<button
 			type="button"
 			id="resetButton"
-			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow"
-			onclick={() => resetMap()}
+			class="text-white py-2 px-4 rounded transition flex-grow bg-blue-600 hover:bg-blue-700"
+			onclick={resetMap}
 		>
 			Reset
 		</button>
@@ -229,6 +231,11 @@
 			font-size: 0.875rem;
 			font-weight: 500;
 			text-align: center;
+		}
+
+		button.active {
+			box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.5);
+			transform: scale(1.05);
 		}
 	</style>
 </div>
