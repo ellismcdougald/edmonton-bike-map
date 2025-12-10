@@ -25,8 +25,6 @@
 import type { LeafletMap } from './LeafletMap';
 import type { FeatureCollection } from 'geojson';
 
-const apiUrl = import.meta.env.VITE_API_URL;
-
 type FetchFn = typeof fetch;
 
 interface FindRouteOptions {
@@ -34,7 +32,7 @@ interface FindRouteOptions {
 	fetchFn?: FetchFn; // fetch function to be used by findRoute
 }
 
-export async function findRoute({ mapInstance, fetchFn = fetch }: FindRouteOptions) {
+export async function findRoute({ mapInstance }: FindRouteOptions) {
 	if (!mapInstance) return;
 
 	const startLatLng = mapInstance.getStartLatLng();
@@ -48,7 +46,7 @@ export async function findRoute({ mapInstance, fetchFn = fetch }: FindRouteOptio
 	const params = buildRouteParams(startLatLng, endLatLng);
 
 	try {
-		const geojson = await fetchRoute(params, fetchFn);
+		const geojson = await fetchRoute(params);
 		applyRouteToMap(mapInstance, geojson);
 	} catch (err: unknown) {
 		if (err instanceof Error) {
@@ -75,25 +73,21 @@ function buildRouteParams(
 	});
 }
 
-async function fetchRoute(params: URLSearchParams, fetchFn: FetchFn) {
-	const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+async function fetchRoute(params: URLSearchParams) {
+	const query = params.toString();
+	const url = query ? `/api/route?${query}` : '/api/route';
 
-	if (!token) {
-		throw new Error('Unauthorized');
+	try {
+		const res = await fetch(url);
+
+		if (res.status === 401) throw new Error('Unauthorized');
+		if (!res.ok) throw new Error('Failed to get route data');
+
+		return await res.json();
+	} catch (err) {
+		console.error('Error fetching route:', err);
+		throw err;
 	}
-
-	const headers: Record<string, string> = {
-		'Content-Type': 'application/json',
-		Authorization: `Bearer ${token}`
-	};
-
-	const res = await fetchFn(`${apiUrl}/api/route?${params.toString()}`, {
-		method: 'GET',
-		headers
-	});
-	if (res.status === 401) throw new Error('Unauthorized');
-	if (!res.ok) throw new Error('Failed to get route data');
-	return res.json();
 }
 
 function applyRouteToMap(mapInstance: LeafletMap, geojson: FeatureCollection) {
