@@ -6,8 +6,7 @@
  * and displays it on the map.
  *
  * Types:
- * - FindRouteOptions: object with `mapInstance` (LeafletMap | null) and optional `fetchFn`
- * - FetchFn: type alias for a fetch-like function
+ * - FindRouteOptions: object with `mapInstance` (LeafletMap | null)
  *
  * Behavior:
  * - Validates that both start and end markers exist; alerts user if missing
@@ -17,7 +16,7 @@
  * - Catches and alerts errors during fetch or display
  *
  * Notes:
- * - Default fetch function is browser global `fetch`, but can be overridden (useful for testing)
+ * - Uses browser global `fetch` to communicate with the backend
  * - Depends on LeafletMap class for marker retrieval and map updates
  * - Alerts are used for user feedback in case of missing points or errors
  */
@@ -25,11 +24,8 @@
 import type { LeafletMap } from './LeafletMap';
 import type { FeatureCollection } from 'geojson';
 
-type FetchFn = typeof fetch;
-
 interface FindRouteOptions {
 	mapInstance: LeafletMap | null;
-	fetchFn?: FetchFn; // fetch function to be used by findRoute
 }
 
 export async function findRoute({ mapInstance }: FindRouteOptions) {
@@ -73,7 +69,7 @@ function buildRouteParams(
 	});
 }
 
-async function fetchRoute(params: URLSearchParams) {
+async function fetchRoute(params: URLSearchParams): Promise<FeatureCollection> {
 	const query = params.toString();
 	const url = query ? `/api/route?${query}` : '/api/route';
 
