@@ -96,8 +96,8 @@ test.describe("route time updates with cycling speed", () => {
     });
 
     // Return to map and re-run route between the same two points
-    await page.click('a[href="/"]');
-    await expect(page).toHaveURL(`${FRONTEND_URL}/`);
+    await page.click('a[href="/map"]');
+    await expect(page).toHaveURL(`${FRONTEND_URL}/map`);
 
     // re-select same positions and find route again
     await page.locator("#selectStartButton").click();

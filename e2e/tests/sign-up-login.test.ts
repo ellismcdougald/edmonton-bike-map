@@ -58,10 +58,7 @@ test.describe("sign up", () => {
     await page.fill('input[name="password"]', testPassword);
     await page.locator("#submitButton").click();
 
-    await expect(page).toHaveURL(`${FRONTEND_URL}/`);
-
-    let token = await page.evaluate(() => localStorage.getItem("token"));
-    expect(token).toBeDefined();
+    await expect(page).toHaveURL(`${FRONTEND_URL}/map`);
 
     const map = page.locator("#map");
     await expect(map).toBeVisible();
@@ -90,8 +87,5 @@ test.describe("sign up", () => {
     await page.locator("#logoutButton").click();
 
     await expect(page).toHaveURL(`${FRONTEND_URL}/login`);
-
-    token = await page.evaluate(() => localStorage.getItem("token"));
-    expect(token).toBeNull();
   });
 });

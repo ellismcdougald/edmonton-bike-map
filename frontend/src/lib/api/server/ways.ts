@@ -1,6 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-
-const API_URL = process.env.API_URL;
+import { API_URL } from '$env/static/private';
 
 export async function fetchAllWays(fetch: typeof global.fetch) {
 	const response = await fetch(`${API_URL}/api/all-ways`);

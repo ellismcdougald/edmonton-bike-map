@@ -23,6 +23,7 @@
 		/>
 
 		<button
+			id="submitButton"
 			type="submit"
 			class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
 		>
@@ -36,6 +37,6 @@
 
 	<p class="mt-4 text-sm text-center">
 		Don't have an account?
-		<a href="/signup" class="text-blue-600 hover:underline">Sign up</a>
+		<a href="/signup" id="signupLink" class="text-blue-600 hover:underline">Sign up</a>
 	</p>
 </div>

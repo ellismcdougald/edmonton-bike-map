@@ -27,7 +27,6 @@ test.describe("route finding with a test user", () => {
     const result = await client.query(
       "SELECT current_database(), current_user"
     );
-    console.log("Frontend DB:", result.rows[0]);
   });
 
   test.afterAll(async () => {
