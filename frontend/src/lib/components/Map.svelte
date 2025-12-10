@@ -128,9 +128,16 @@
 		}
 	}
 
-	function handleFindRouteClick() {
+	async function handleFindRouteClick() {
 		if (!mapInstance) return;
-		findRoute({ mapInstance });
+		try {
+			await findRoute({ mapInstance });
+		} catch (err) {
+			if (err instanceof Error && err.message === 'Unauthorized') {
+				await fetch('/logout', { method: 'POST' });
+				goto('/login');
+			}
+		}
 	}
 
 	function handleSelectStartClick() {
