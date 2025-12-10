@@ -1,71 +1,36 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
+	import { updateCyclingSpeed } from '$lib/api/client/settings';
 
-	const apiUrl = import.meta.env.VITE_API_URL;
+	type PageData = { cyclingSpeed?: number | null; loadError?: string };
 
-	let cyclingSpeed: number | null = null;
+	export let data: PageData;
+
+	let cyclingSpeed: number | null = data.cyclingSpeed ?? 15;
 	let isSubmitting = false;
-	let errorMsg = '';
+	let errorMsg = data.loadError ?? '';
 	let successMsg = '';
 
-	onMount(async () => {
-		const token = localStorage.getItem('token');
-		if (!token) {
-			goto('/login');
-			return;
-		}
+	async function saveSpeed(event: Event) {
+		event.preventDefault();
 
-		// Try to prefill user's cycling speed
-		try {
-			const res = await fetch(`${apiUrl}/api/user/settings`, {
-				method: 'GET',
-				headers: { Authorization: `Bearer ${token}` }
-			});
-			if (res.ok) {
-				const data = await res.json();
-				cyclingSpeed = data.cyclingSpeed ?? 15;
-			} else {
-				cyclingSpeed = 15;
-			}
-		} catch (_e) {
-			cyclingSpeed = 15;
-		}
-	});
-
-	async function saveSpeed(e: Event) {
-		e.preventDefault();
 		errorMsg = '';
 		successMsg = '';
+
 		if (!cyclingSpeed || cyclingSpeed <= 0 || cyclingSpeed > 80) {
 			errorMsg = 'Please enter a valid cycling speed (1-80 km/h)';
 			return;
 		}
 
-		const token = localStorage.getItem('token');
-		if (!token) {
-			errorMsg = 'You must be logged in';
-			return;
-		}
-
 		isSubmitting = true;
-		const res = await fetch(`${apiUrl}/api/user/settings`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${token}`
-			},
-			body: JSON.stringify({ cyclingSpeed })
-		});
 
-		if (res.ok) {
+		try {
+			await updateCyclingSpeed(cyclingSpeed);
 			successMsg = 'Settings saved';
-		} else {
-			const text = await res.text();
-			errorMsg = text || 'Failed to save settings';
+		} catch (err: unknown) {
+			errorMsg = err instanceof Error ? err.message : String(err);
+		} finally {
+			isSubmitting = false;
 		}
-
-		isSubmitting = false;
 	}
 </script>
 
@@ -108,7 +73,7 @@
 			<a href="/settings/password" class="text-blue-600 hover:underline">Change Password</a>
 		</div>
 		<div class="mt-2 text-center">
-			<a href="/" class="text-gray-600 hover:underline">Back to Map</a>
+			<a href="/map" class="text-gray-600 hover:underline">Back to Map</a>
 		</div>
 	</div>
 </div>

@@ -1,65 +1,23 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
+	import type { ActionData } from './$types';
 
-	const apiUrl = import.meta.env.VITE_API_URL;
+	export let form: ActionData | null;
 
-	let currentPassword: string = '';
-	let newPassword: string = '';
-	let confirmPassword: string = '';
-	let errorMsg: string = '';
-	let successMsg: string = '';
-	let isSubmitting: boolean = false;
+	let currentPassword = '';
+	let newPassword = '';
+	let confirmPassword = '';
+	let errorMsg = '';
+	let successMsg = '';
 
-	onMount(() => {
-		const token = localStorage.getItem('token');
-		if (!token) {
-			goto('/login');
-		}
-	});
-
-	async function handleChangePassword(event: SubmitEvent) {
-		event.preventDefault();
-		isSubmitting = true;
+	$: if (form?.success) {
+		successMsg = 'Password changed successfully';
 		errorMsg = '';
+		currentPassword = '';
+		newPassword = '';
+		confirmPassword = '';
+	} else if (form?.error) {
+		errorMsg = form.error;
 		successMsg = '';
-
-		if (newPassword !== confirmPassword) {
-			errorMsg = 'New passwords do not match';
-			isSubmitting = false;
-			return;
-		}
-
-		const token = localStorage.getItem('token');
-		if (!token) {
-			errorMsg = 'You must be logged in to change your password';
-			isSubmitting = false;
-			return;
-		}
-
-		const res = await fetch(`${apiUrl}/api/change-password`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${token}`
-			},
-			body: JSON.stringify({
-				currentPassword,
-				newPassword
-			})
-		});
-
-		if (res.ok) {
-			successMsg = 'Password changed successfully';
-			currentPassword = '';
-			newPassword = '';
-			confirmPassword = '';
-		} else {
-			const text = await res.text();
-			errorMsg = text || 'Failed to change password';
-		}
-
-		isSubmitting = false;
 	}
 </script>
 
@@ -67,7 +25,7 @@
 	<h1 class="text-4xl font-extrabold mb-10">Change Password</h1>
 
 	<div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-		<form on:submit={handleChangePassword}>
+		<form method="POST">
 			<input
 				type="password"
 				name="currentPassword"
@@ -99,9 +57,8 @@
 				id="submitButton"
 				type="submit"
 				class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition"
-				disabled={isSubmitting}
 			>
-				{isSubmitting ? 'Changing password...' : 'Change Password'}
+				Change Password
 			</button>
 
 			{#if successMsg}

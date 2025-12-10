@@ -90,8 +90,8 @@ test.describe("change password", () => {
     // Return to the settings page, then back to the map before logging out
     await page.click('a[href="/settings"]');
     await expect(page).toHaveURL(`${FRONTEND_URL}/settings`);
-    await page.click('a[href="/"]');
-    await expect(page).toHaveURL(`${FRONTEND_URL}/`);
+    await page.click('a[href="/map"]');
+    await expect(page).toHaveURL(`${FRONTEND_URL}/map`);
 
     const mapBeforeLogout = page.locator("#map");
     await expect(mapBeforeLogout).toBeVisible({ timeout: 10000 });

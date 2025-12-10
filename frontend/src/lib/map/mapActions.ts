@@ -6,8 +6,7 @@
  * and displays it on the map.
  *
  * Types:
- * - FindRouteOptions: object with `mapInstance` (LeafletMap | null) and optional `fetchFn`
- * - FetchFn: type alias for a fetch-like function
+ * - FindRouteOptions: object with `mapInstance` (LeafletMap | null)
  *
  * Behavior:
  * - Validates that both start and end markers exist; alerts user if missing
@@ -17,7 +16,7 @@
  * - Catches and alerts errors during fetch or display
  *
  * Notes:
- * - Default fetch function is browser global `fetch`, but can be overridden (useful for testing)
+ * - Uses browser global `fetch` to communicate with the backend
  * - Depends on LeafletMap class for marker retrieval and map updates
  * - Alerts are used for user feedback in case of missing points or errors
  */
@@ -25,16 +24,18 @@
 import type { LeafletMap } from './LeafletMap';
 import type { FeatureCollection } from 'geojson';
 
-const apiUrl = import.meta.env.VITE_API_URL;
-
-type FetchFn = typeof fetch;
-
 interface FindRouteOptions {
 	mapInstance: LeafletMap | null;
-	fetchFn?: FetchFn; // fetch function to be used by findRoute
 }
 
-export async function findRoute({ mapInstance, fetchFn = fetch }: FindRouteOptions) {
+/**
+ * Fetches a route between the map's selected start and end points and renders it on the provided LeafletMap.
+ *
+ * If `mapInstance` is null the function does nothing. If either start or end point is missing an alert is shown and no request is made. A thrown `Error` with message `"Unauthorized"` is rethrown; other errors cause an alert to the user and are logged to the console.
+ *
+ * @param mapInstance - The LeafletMap to read start/end points from and to render the route; may be null
+ */
+export async function findRoute({ mapInstance }: FindRouteOptions) {
 	if (!mapInstance) return;
 
 	const startLatLng = mapInstance.getStartLatLng();
@@ -48,7 +49,7 @@ export async function findRoute({ mapInstance, fetchFn = fetch }: FindRouteOptio
 	const params = buildRouteParams(startLatLng, endLatLng);
 
 	try {
-		const geojson = await fetchRoute(params, fetchFn);
+		const geojson = await fetchRoute(params);
 		applyRouteToMap(mapInstance, geojson);
 	} catch (err: unknown) {
 		if (err instanceof Error) {
@@ -63,6 +64,13 @@ export async function findRoute({ mapInstance, fetchFn = fetch }: FindRouteOptio
 	}
 }
 
+/**
+ * Create URLSearchParams containing start and end coordinates for a route query.
+ *
+ * @param startLatLng - Tuple [latitude, longitude] of the start point
+ * @param endLatLng - Tuple [latitude, longitude] of the end point
+ * @returns URLSearchParams with keys `startLatitude`, `startLongitude`, `endLatitude`, and `endLongitude` whose values are the corresponding coordinates as strings
+ */
 function buildRouteParams(
 	startLatLng: [number, number],
 	endLatLng: [number, number]
@@ -75,27 +83,38 @@ function buildRouteParams(
 	});
 }
 
-async function fetchRoute(params: URLSearchParams, fetchFn: FetchFn) {
-	const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+/**
+ * Fetches a route GeoJSON from the backend using the provided query parameters.
+ *
+ * @param params - URLSearchParams containing route query keys (e.g., `startLatitude`, `startLongitude`, `endLatitude`, `endLongitude`)
+ * @returns The GeoJSON FeatureCollection describing the route
+ * @throws `Error('Unauthorized')` if the server responds with HTTP 401
+ * @throws `Error('Failed to get route data')` if the response is not OK (non-2xx and not 401)
+ * @throws Any underlying network or parsing error encountered during fetch
+ */
+async function fetchRoute(params: URLSearchParams): Promise<FeatureCollection> {
+	const query = params.toString();
+	const url = query ? `/api/route?${query}` : '/api/route';
 
-	if (!token) {
-		throw new Error('Unauthorized');
+	try {
+		const res = await fetch(url);
+
+		if (res.status === 401) throw new Error('Unauthorized');
+		if (!res.ok) throw new Error('Failed to get route data');
+
+		return await res.json();
+	} catch (err) {
+		console.error('Error fetching route:', err);
+		throw err;
 	}
-
-	const headers: Record<string, string> = {
-		'Content-Type': 'application/json',
-		Authorization: `Bearer ${token}`
-	};
-
-	const res = await fetchFn(`${apiUrl}/api/route?${params.toString()}`, {
-		method: 'GET',
-		headers
-	});
-	if (res.status === 401) throw new Error('Unauthorized');
-	if (!res.ok) throw new Error('Failed to get route data');
-	return res.json();
 }
 
+/**
+ * Replace the current route layer on the given map with the provided GeoJSON route.
+ *
+ * @param mapInstance - The LeafletMap instance to update
+ * @param geojson - A GeoJSON FeatureCollection representing the route to render
+ */
 function applyRouteToMap(mapInstance: LeafletMap, geojson: FeatureCollection) {
 	mapInstance.removeRouteLayer();
 	mapInstance.loadRouteLayer(geojson);

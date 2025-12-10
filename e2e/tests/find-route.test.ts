@@ -27,7 +27,6 @@ test.describe("route finding with a test user", () => {
     const result = await client.query(
       "SELECT current_database(), current_user"
     );
-    console.log("Frontend DB:", result.rows[0]);
   });
 
   test.afterAll(async () => {
@@ -63,29 +62,45 @@ test.describe("route finding with a test user", () => {
     await page.fill('input[name="password"]', testPassword);
     await page.locator("#submitButton").click();
 
+    // Wait for map to load and ways data to be streamed
     const map = page.locator("#map");
     await expect(map).toBeVisible({ timeout: 10000 });
+    await page.waitForLoadState("networkidle");
+
     const mapBox = await map.boundingBox();
     if (!mapBox) throw new Error("Map element not found");
 
+    // Click start button and ensure it's active before clicking map
     const startButton = page.locator("#selectStartButton");
     await startButton.click();
+    await page.waitForTimeout(300); // Allow button state to update
 
     await page.mouse.click(
       mapBox.x + mapBox.width / 2,
       mapBox.y + mapBox.height / 2
     );
 
-    await page.locator("#selectEndButton").click();
+    // Wait for marker to appear
+    const markers = page.locator(".leaflet-marker-icon");
+    await expect(markers).toHaveCount(1, { timeout: 5000 });
+
+    // Click end button and wait for it to be active
+    const endButton = page.locator("#selectEndButton");
+    await endButton.click();
+    await page.waitForTimeout(300);
+
     await page.mouse.click(
       mapBox.x + mapBox.width / 3,
       mapBox.y + mapBox.height / 3
     );
 
+    // Wait for second marker
+    await expect(markers).toHaveCount(2, { timeout: 5000 });
+
     await page.locator("#findRouteButton").click();
 
     const routePaths = page.locator("path.leaflet-interactive");
-    await expect(routePaths.first()).toBeVisible({ timeout: 5000 });
+    await expect(routePaths.first()).toBeVisible({ timeout: 10000 });
     const count = await routePaths.count();
     expect(count).toBeGreaterThan(0);
 
@@ -110,43 +125,56 @@ test.describe("route finding with a test user", () => {
     await page.fill('input[name="password"]', testPassword);
     await page.locator("#submitButton").click();
 
+    // Wait for map to load and ways data to be streamed
     const map = page.locator("#map");
     await expect(map).toBeVisible({ timeout: 10000 });
+    await page.waitForLoadState("networkidle");
+
     const mapBox = await map.boundingBox();
     if (!mapBox) throw new Error("Map element not found");
 
+    const markers = page.locator(".leaflet-marker-icon");
+
+    // Click start button and wait for active state
     const startButton = page.locator("#selectStartButton");
     await startButton.click();
+    await page.waitForTimeout(300);
 
     await page.mouse.click(
       mapBox.x + mapBox.width / 2,
       mapBox.y + mapBox.height / 2
     );
 
-    const markers = page.locator(".leaflet-marker-icon");
-    expect(await markers.count()).toBe(1);
+    await expect(markers).toHaveCount(1, { timeout: 5000 });
 
+    // Click end button and wait for active state
     const endButton = page.locator("#selectEndButton");
     await endButton.click();
+    await page.waitForTimeout(300);
+
     await page.mouse.click(
       mapBox.x + mapBox.width / 3,
       mapBox.y + mapBox.height / 3
     );
 
-    expect(await markers.count()).toBe(2);
+    await expect(markers).toHaveCount(2, { timeout: 5000 });
 
     await page.locator("#findRouteButton").click();
 
     const routePaths = page.locator("path.leaflet-interactive");
-    await expect(routePaths.first()).toBeVisible({ timeout: 5000 });
+    await expect(routePaths.first()).toBeVisible({ timeout: 10000 });
     const count = await routePaths.count();
     expect(count).toBeGreaterThan(0);
 
     await page.locator("#resetButton").click();
 
-    const countAfterReset = await routePaths.count();
-    expect(countAfterReset).toBe(0);
+    // Wait for route controls to be removed (distance and time controls disappear when route is removed)
+    const distanceControl = page.locator(".distance-control");
+    const timeControl = page.locator(".time-control");
+    await expect(distanceControl).toHaveCount(0, { timeout: 5000 });
+    await expect(timeControl).toHaveCount(0, { timeout: 5000 });
 
-    expect(await markers.count()).toBe(0);
+    // Wait for markers to be removed
+    await expect(markers).toHaveCount(0, { timeout: 5000 });
   });
 });

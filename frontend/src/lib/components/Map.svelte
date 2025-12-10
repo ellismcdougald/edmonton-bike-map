@@ -41,12 +41,10 @@
 	import { loadLeaflet } from '$lib/map/loadLeaflet';
 	import { findRoute } from '$lib/map/mapActions';
 
-	const apiUrl = import.meta.env.VITE_API_URL;
-	const allWaysEndpoint = `${apiUrl}/api/all-ways`;
-
 	let mapInstance: InstanceType<typeof import('$lib/map/LeafletMap').LeafletMap> | null = null;
-	let waysGeoJSON: GeoJSON.GeoJsonObject | null = null;
-	let mode: MapModeState = { selectStartActive: false, selectEndActive: false };
+	let mode: MapModeState = $state({ selectStartActive: false, selectEndActive: false });
+
+	let { ways }: { ways: Promise<GeoJSON.GeoJsonObject> } = $props();
 
 	// URL Helpers:
 	function updateUrlWithWay(id: number) {
@@ -61,8 +59,13 @@
 	// Map setup:
 	async function initializeMap() {
 		await createMap();
-		await loadWays();
-		restoreSelectionFromUrl();
+		try {
+			const waysData = await ways;
+			mapInstance?.loadInfoLayer(waysData, { color: 'red', weight: 1, opacity: 0 }, handleWayClick);
+			restoreSelectionFromUrl();
+		} catch (err) {
+			console.error('Error loading ways:', err);
+		}
 	}
 
 	async function createMap() {
@@ -77,43 +80,33 @@
 		mapInstance.onMapClick(onMapClick);
 	}
 
-	async function loadWays() {
-		const token = localStorage.getItem('token');
-		const res = await fetch(allWaysEndpoint, {
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${token}`
-			}
-		});
-		if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-		const geojson = await res.json();
-		waysGeoJSON = geojson;
-		mapInstance?.loadInfoLayer(geojson, { color: 'red', weight: 1, opacity: 0 }, handleWayClick);
-	}
-
-	function restoreSelectionFromUrl() {
-		if (!waysGeoJSON || typeof window === 'undefined' || !window.location?.search) return;
+	async function restoreSelectionFromUrl() {
+		if (typeof window === 'undefined' || !window.location?.search) return;
 
 		const match = window.location.search.match(/[?&]way=([^&]+)/);
 		const targetId = match?.[1] ? Number(decodeURIComponent(match[1])) : null;
 		if (!targetId) return;
 
-		if (waysGeoJSON.type === 'FeatureCollection') {
-			const featureCollection = waysGeoJSON as WayFeatureCollection;
-			const feature = featureCollection.features.find((f) => {
-				const id = f.id ?? f.properties?.id;
-				return Number(id) === targetId;
-			});
+		try {
+			const waysData = await ways;
+			if (waysData?.type === 'FeatureCollection') {
+				const featureCollection = waysData as WayFeatureCollection;
+				const feature = featureCollection.features.find((f) => {
+					const id = f.id ?? f.properties?.id;
+					return Number(id) === targetId;
+				});
 
-			if (feature) {
-				wayState.selectedWay = {
-					id: Number(feature.id ?? feature.properties.id),
-					tags: Object.fromEntries(
-						Object.entries(feature.properties || {}).map(([k, v]) => [k, String(v)])
-					)
-				};
+				if (feature) {
+					wayState.selectedWay = {
+						id: Number(feature.id ?? feature.properties.id),
+						tags: Object.fromEntries(
+							Object.entries(feature.properties || {}).map(([k, v]) => [k, String(v)])
+						)
+					};
+				}
 			}
+		} catch (err) {
+			console.error('Error restoring selection:', err);
 		}
 	}
 
@@ -135,25 +128,16 @@
 		}
 	}
 
-	function handleFindRouteClick() {
+	async function handleFindRouteClick() {
 		if (!mapInstance) return;
-
-		findRoute({ mapInstance }).catch((err: unknown) => {
-			if (err instanceof Error) {
-				if (err.message === 'Unauthorized') {
-					// token expired or invalid → log out user
-					localStorage.removeItem('token');
-					goto('/login');
-				} else {
-					// other fetch/display errors
-					alert('Error fetching or displaying route: ' + err.message);
-					console.error(err);
-				}
-			} else {
-				alert('Error fetching or displaying route: ' + String(err));
-				console.error(err);
+		try {
+			await findRoute({ mapInstance });
+		} catch (err) {
+			if (err instanceof Error && err.message === 'Unauthorized') {
+				await fetch('/logout', { method: 'POST' });
+				goto('/login');
 			}
-		});
+		}
 	}
 
 	function handleSelectStartClick() {
@@ -198,9 +182,10 @@
 		<button
 			type="button"
 			id="selectStartButton"
-			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow"
-			class:active={mode.selectStartActive}
+			class="text-white py-2 px-4 rounded transition flex-grow bg-blue-600 hover:bg-blue-700"
+			class:bg-blue-800={mode.selectStartActive}
 			onclick={handleSelectStartClick}
+			class:active={mode.selectStartActive}
 		>
 			Select Start Location
 		</button>
@@ -208,9 +193,10 @@
 		<button
 			type="button"
 			id="selectEndButton"
-			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow"
-			class:active={mode.selectEndActive}
+			class="text-white py-2 px-4 rounded transition flex-grow bg-blue-600 hover:bg-blue-700"
+			class:bg-blue-800={mode.selectEndActive}
 			onclick={handleSelectEndClick}
+			class:active={mode.selectEndActive}
 		>
 			Select End Location
 		</button>
@@ -218,7 +204,7 @@
 		<button
 			type="button"
 			id="findRouteButton"
-			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow"
+			class="text-white py-2 px-4 rounded transition flex-grow bg-blue-600 hover:bg-blue-700"
 			onclick={handleFindRouteClick}
 		>
 			Find Route
@@ -227,8 +213,8 @@
 		<button
 			type="button"
 			id="resetButton"
-			class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition flex-grow"
-			onclick={() => resetMap()}
+			class="text-white py-2 px-4 rounded transition flex-grow bg-blue-600 hover:bg-blue-700"
+			onclick={resetMap}
 		>
 			Reset
 		</button>
@@ -244,6 +230,11 @@
 			font-size: 0.875rem;
 			font-weight: 500;
 			text-align: center;
+		}
+
+		button.active {
+			box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.5);
+			transform: scale(1.05);
 		}
 	</style>
 </div>

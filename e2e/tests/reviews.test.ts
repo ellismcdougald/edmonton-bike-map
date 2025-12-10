@@ -25,42 +25,6 @@ const dbConfig = {
 const FRONTEND_URL = `http://localhost:${process.env.FRONTEND_PORT || 3001}`;
 const API_URL = process.env.API_URL || "http://localhost:8080";
 
-async function getToken(page) {
-  return page.evaluate(
-    () =>
-      new Promise<string>((resolve) => {
-        const interval = setInterval(() => {
-          const t = localStorage.getItem("token");
-          if (t) {
-            clearInterval(interval);
-            resolve(t);
-          }
-        }, 50);
-      })
-  );
-}
-
-async function fetchWayId(page, token) {
-  const apiRes = await page.request.get(`${API_URL}/api/all-ways`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!apiRes.ok())
-    throw new Error(`Failed to fetch ways from API: ${apiRes.status()}`);
-  const geojson = await apiRes.json();
-  if (!geojson?.features?.length)
-    throw new Error("No ways available from API to run reviews test against");
-
-  const feature = geojson.features.find((f: any) => {
-    const candidate = f.id ?? f.properties?.id;
-    return candidate != null && !Number.isNaN(Number(candidate));
-  });
-  if (!feature)
-    throw new Error(
-      "No feature with numeric id found in /api/all-ways response"
-    );
-  return Number(feature.id ?? feature.properties.id);
-}
-
 test.describe("reviews e2e", () => {
   const testUsername = "test-user";
   const testPassword = "test-password";
@@ -104,10 +68,7 @@ test.describe("reviews e2e", () => {
     await page.fill('input[name="password"]', testPassword);
     await page.locator("#submitButton").click();
 
-    const token = await getToken(page);
-    const wayId = await fetchWayId(page, token);
-
-    await page.goto(`${FRONTEND_URL}/?way=${wayId}`);
+    await page.goto(`${FRONTEND_URL}/map?way=20948648`);
     await page.waitForLoadState("networkidle");
     await page.waitForSelector("#sidebar-content", {
       state: "attached",
@@ -152,14 +113,7 @@ test.describe("reviews e2e", () => {
     );
     const seededUserId = res.rows[0].id;
 
-    await page.goto(FRONTEND_URL);
-    await expect(page).toHaveURL(`${FRONTEND_URL}/login`);
-    await page.fill('input[name="username"]', seededUsername);
-    await page.fill('input[name="password"]', seededPassword);
-    await page.locator("#submitButton").click();
-
-    const token = await getToken(page);
-    const wayId = await fetchWayId(page, token);
+    const wayId = 20948648;
 
     const existingComment = `preexisting review ${Date.now()}`;
     await client.query(
@@ -167,7 +121,13 @@ test.describe("reviews e2e", () => {
       [wayId, seededUserId, 7, existingComment]
     );
 
-    await page.goto(`${FRONTEND_URL}/?way=${wayId}`);
+    await page.goto(FRONTEND_URL);
+    await expect(page).toHaveURL(`${FRONTEND_URL}/login`);
+    await page.fill('input[name="username"]', seededUsername);
+    await page.fill('input[name="password"]', seededPassword);
+    await page.locator("#submitButton").click();
+
+    await page.goto(`${FRONTEND_URL}/map?way=${wayId}`);
     await page.waitForLoadState("networkidle");
     await page.waitForSelector("#sidebar-content", {
       state: "attached",

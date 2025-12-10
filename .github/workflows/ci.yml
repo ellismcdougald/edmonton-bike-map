@@ -123,6 +123,7 @@ jobs:
           echo $! > frontend.pid
         env:
           VITE_API_URL: http://localhost:8080
+          API_URL: http://localhost:8080
       - name: Start backend server
         run: |
           export DATABASE_URL="postgres://testuser:testpass@localhost:5432/bikemap_test?sslmode=disable"

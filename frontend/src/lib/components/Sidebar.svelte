@@ -1,26 +1,6 @@
 <!--
   Sidebar.svelte
-
-  Purpose:
   Displays metadata and reviews for the currently selected way in a toggleable sidebar.
-
-  State:
-  - way (WayFeature | null): derived from wayState.selectedWay
-  - isVisible (boolean): tracks whether the sidebar is visible
-
-  Behavior:
-  - Toggles sidebar visibility via the "Hide/Show" button
-  - Displays route metadata (name, type, bicycle route status, surface, rating)
-  - Passes way.id to ReviewContainer for displaying reviews
-  - Uses helper functions determineRouteType and determineBicycleRoute to process tags
-
-  Notes:
-  - Depends on $lib/state.svelte for global wayState
-  - Relies on $lib/utils/route for metadata helpers
-  - Current rating is hardcoded (placeholder for future dynamic rating)
-
-  Issues:
-  - Logic for determineRouteType and determineBicycleRoute could be refactored/cleaned up
 -->
 
 <script lang="ts">
@@ -29,9 +9,9 @@
 	import type { WayFeature } from '$lib/types';
 	import { determineRouteType, determineBicycleRoute } from '$lib/utils/route';
 	import type { Review as ReviewObj } from '$lib/types';
-	import { fetchReviews, computeAverageRating } from '$lib/utils/review';
+	import { computeAverageRating } from '$lib/utils/review';
 	import { capitalizeFirstLetter } from '$lib/utils/helpers';
-	import { goto } from '$app/navigation';
+	import { fetchReviews } from '$lib/api/client/reviews';
 
 	let way: WayFeature | null = $derived(wayState.selectedWay);
 	let reviews: ReviewObj[] = $state([]);
@@ -40,11 +20,7 @@
 		try {
 			reviews = await fetchReviews(wayId);
 		} catch (error) {
-			if (error instanceof Error && error.message === 'Unauthorized') {
-				goto('/login');
-			} else {
-				throw error;
-			}
+			console.error('Error loading reviews:', error);
 		}
 	}
 
@@ -52,7 +28,6 @@
 	let isVisible: boolean = $state(true);
 	$effect(() => {
 		if (way) {
-			// sidebar becomes visible when way is selected
 			isVisible = true;
 			loadReviews(way.id);
 			sidebarLoaded = true;
