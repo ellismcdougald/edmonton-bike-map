@@ -43,7 +43,8 @@
 
 	let mapInstance: InstanceType<typeof import('$lib/map/LeafletMap').LeafletMap> | null = null;
 	let mode: MapModeState = $state({ selectStartActive: false, selectEndActive: false });
-	let ways: GeoJSON.GeoJsonObject | null = $state(null);
+
+	let { ways }: { ways: Promise<GeoJSON.GeoJsonObject> } = $props();
 
 	// URL Helpers:
 	function updateUrlWithWay(id: number) {
@@ -56,29 +57,15 @@
 	}
 
 	// Map setup:
-	async function fetchWays() {
-		try {
-			const response = await fetch('/api/all-ways');
-			if (response.status === 401) {
-				goto('/login');
-				return;
-			}
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
-			}
-			ways = await response.json();
-		} catch (err) {
-			console.error('Error fetching ways:', err);
-		}
-	}
-
 	async function initializeMap() {
 		await createMap();
-		await fetchWays();
-		if (ways) {
-			mapInstance?.loadInfoLayer(ways, { color: 'red', weight: 1, opacity: 0 }, handleWayClick);
+		try {
+			const waysData = await ways;
+			mapInstance?.loadInfoLayer(waysData, { color: 'red', weight: 1, opacity: 0 }, handleWayClick);
+			restoreSelectionFromUrl();
+		} catch (err) {
+			console.error('Error loading ways:', err);
 		}
-		restoreSelectionFromUrl();
 	}
 
 	async function createMap() {
@@ -93,28 +80,33 @@
 		mapInstance.onMapClick(onMapClick);
 	}
 
-	function restoreSelectionFromUrl() {
-		if (!ways || typeof window === 'undefined' || !window.location?.search) return;
+	async function restoreSelectionFromUrl() {
+		if (typeof window === 'undefined' || !window.location?.search) return;
 
 		const match = window.location.search.match(/[?&]way=([^&]+)/);
 		const targetId = match?.[1] ? Number(decodeURIComponent(match[1])) : null;
 		if (!targetId) return;
 
-		if (ways?.type === 'FeatureCollection') {
-			const featureCollection = ways as WayFeatureCollection;
-			const feature = featureCollection.features.find((f) => {
-				const id = f.id ?? f.properties?.id;
-				return Number(id) === targetId;
-			});
+		try {
+			const waysData = await ways;
+			if (waysData?.type === 'FeatureCollection') {
+				const featureCollection = waysData as WayFeatureCollection;
+				const feature = featureCollection.features.find((f) => {
+					const id = f.id ?? f.properties?.id;
+					return Number(id) === targetId;
+				});
 
-			if (feature) {
-				wayState.selectedWay = {
-					id: Number(feature.id ?? feature.properties.id),
-					tags: Object.fromEntries(
-						Object.entries(feature.properties || {}).map(([k, v]) => [k, String(v)])
-					)
-				};
+				if (feature) {
+					wayState.selectedWay = {
+						id: Number(feature.id ?? feature.properties.id),
+						tags: Object.fromEntries(
+							Object.entries(feature.properties || {}).map(([k, v]) => [k, String(v)])
+						)
+					};
+				}
 			}
+		} catch (err) {
+			console.error('Error restoring selection:', err);
 		}
 	}
 

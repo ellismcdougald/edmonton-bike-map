@@ -16,11 +16,13 @@
 <script lang="ts">
 	import Map from './Map.svelte';
 	import Sidebar from './Sidebar.svelte';
+
+	let { ways }: { ways: Promise<GeoJSON.GeoJsonObject> } = $props();
 </script>
 
 <div id="display-container" class="relative h-93/100">
 	<div id="map-container" class="h-full w-full relative z-0">
-		<Map />
+		<Map {ways} />
 	</div>
 	<div id="sidebar-container" class="absolute top-0 right-0 w-1/4 h-full z-10">
 		<Sidebar />
