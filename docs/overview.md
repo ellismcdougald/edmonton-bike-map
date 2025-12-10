@@ -10,7 +10,7 @@ Edmonton Bike Map is a full-stack web application providing bike-specific routin
 2. **Backend** (Go on DigitalOcean) — REST API with graph-based routing algorithm
 3. **Database** (PostgreSQL) — Nodes (intersections), ways (roads/paths), reviews, and user accounts
 
-```
+```text
 Frontend (Vercel)                  Backend (DigitalOcean)         Database (PostgreSQL)
 ┌──────────────────────────┐       ┌──────────────────────┐       ┌─────────────────┐
 │ Svelte + SvelteKit       │       │ Go HTTP Server       │       │ Nodes           │
@@ -58,7 +58,7 @@ The backend follows a clean layered architecture:
 
 ### Directory Structure
 
-```
+```text
 backend/
 ├── cmd/
 │   ├── server/           # HTTP server entrypoint
@@ -82,7 +82,7 @@ backend/
 
 ### Structure
 
-```
+```text
 src/
 ├── routes/                 # SvelteKit file-based routing
 │   ├── +layout.svelte      # Root layout wrapper
