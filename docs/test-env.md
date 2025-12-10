@@ -63,6 +63,7 @@ If this is the first time starting the development environment, the database mig
 // Ensure DATABASE_URL environment variable is set using localhost:[LOCAL_PORT]
 // Do not use db:[DOCKER_PORT]. This only works to address the database from within one of the Docker containers. It will not work on localhost, which is where this script will run
 // You can see what port the database maps to on localhost in docker-compose.test.yml
+export DATABASE_URL=postgres://test_user:test_password@localhost:5434/test_db?sslmode=disable
 cd backend/cmd/update_db
 go run main.go
 ```
