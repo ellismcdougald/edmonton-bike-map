@@ -10,7 +10,7 @@ export const load: PageServerLoad = async ({ fetch, cookies }) => {
 	if (!token) {
 		throw redirect(302, '/login');
 	}
-	const username: string | null = token ? getUsernameFromToken(token) : null;
+	const username: string | null = getUsernameFromToken(token);
 
 	// Return ways as a promise - this allows streaming
 	return {

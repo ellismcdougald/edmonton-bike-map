@@ -17,7 +17,6 @@ export const GET: RequestHandler = async ({ fetch }) => {
 };
 
 export const POST: RequestHandler = async ({ request, fetch }) => {
-	console.log('called');
 	try {
 		const body = await request.text();
 		const res = await fetch(`${API_URL}/api/settings`, {

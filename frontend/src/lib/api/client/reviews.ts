@@ -16,8 +16,6 @@ export async function createReview(wayId: number, rating: number, comment: strin
 		const text = await res.text();
 		throw new Error(text || 'Failed to submit review');
 	}
-
-	return;
 }
 
 export async function fetchReviews(wayId: number): Promise<ReviewObj[]> {
