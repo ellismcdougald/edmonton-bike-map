@@ -13,7 +13,15 @@ import (
 //   - GET /api/all-ways    : fetch all ways from the database
 //   - GET, POST /api/reviews : get or post reviews for ways
 //   - POST /api/signup     : user signup
-//   - POST /api/login      : user login
+// RegisterRoutes registers the server's API endpoints on the provided ServeMux,
+// applying CORS to all routes and authentication middleware to protected routes.
+//
+// It sets up public endpoints (e.g., /api/login, /api/signup) and protected
+// endpoints that require authentication (e.g., /api/route, /api/all-ways,
+// /api/reviews, /api/change-password, /api/settings).
+//
+// mux is the HTTP ServeMux to attach routes to.
+// handlers supplies the concrete handler implementations for each endpoint.
 func RegisterRoutes(mux *http.ServeMux, handlers handler.Handlers) {
 	// wrap handler with CORS and optionally Auth middleware
 	wrap := func(handler http.Handler, methods []string, requireAuth bool) http.Handler {

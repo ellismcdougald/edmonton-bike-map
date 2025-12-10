@@ -13,13 +13,19 @@ type contextKey string
 
 const userIDKey contextKey = "userID"
 
-// UserIDToContext is a test helper that adds a user ID to the context.
+// UserIDToContext returns a copy of ctx that contains userID stored under the package's user ID context key.
+// It is intended for use in tests to inject an authenticated user's ID into a request context.
 func UserIDToContext(ctx context.Context, userID int64) context.Context {
 	return context.WithValue(ctx, userIDKey, userID)
 }
 
 // AuthMiddleware validates the JWT token in the Authorization header
-// and stores the user ID in the request context.
+// AuthMiddleware returns an http.Handler that enforces JWT Bearer authentication and stores the user ID in the request context.
+// 
+// If the Authorization header is missing the middleware responds with HTTP 401 and the body "Missing authorization header".
+// If the header is not a Bearer token it responds with HTTP 401 and the body "Invalid authorization header format".
+// If token validation fails it responds with HTTP 401 and the body "Invalid or expired token".
+// On successful validation the middleware stores the token's UserID in the request context under userIDKey and calls the next handler.
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
