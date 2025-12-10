@@ -8,28 +8,24 @@ body:
     attributes:
       label: Summary
       description: A short description of the requested feature or enhancement
-      required: true
 
   - type: textarea
     id: motivation
     attributes:
       label: Motivation
       description: Why is this feature or enhancement useful or needed?
-      required: true
 
   - type: textarea
     id: proposal
     attributes:
       label: Proposed Solution
       description: How should this feature or enhancement work?
-      required: false
 
   - type: textarea
     id: alternatives
     attributes:
       label: Alternatives Considered
       description: Any alternative solutions or approaches?
-      required: false
 
   - type: dropdown
     id: label_choice
@@ -39,4 +35,3 @@ body:
       options:
         - feature
         - enhancement
-      required: true
