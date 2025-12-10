@@ -43,8 +43,7 @@
 
 	let mapInstance: InstanceType<typeof import('$lib/map/LeafletMap').LeafletMap> | null = null;
 	let mode: MapModeState = $state({ selectStartActive: false, selectEndActive: false });
-
-	let { ways }: { ways: GeoJSON.GeoJsonObject | null } = $props();
+	let ways: GeoJSON.GeoJsonObject | null = $state(null);
 
 	// URL Helpers:
 	function updateUrlWithWay(id: number) {
@@ -57,8 +56,25 @@
 	}
 
 	// Map setup:
+	async function fetchWays() {
+		try {
+			const response = await fetch('/api/all-ways');
+			if (response.status === 401) {
+				goto('/login');
+				return;
+			}
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+			ways = await response.json();
+		} catch (err) {
+			console.error('Error fetching ways:', err);
+		}
+	}
+
 	async function initializeMap() {
 		await createMap();
+		await fetchWays();
 		if (ways) {
 			mapInstance?.loadInfoLayer(ways, { color: 'red', weight: 1, opacity: 0 }, handleWayClick);
 		}
