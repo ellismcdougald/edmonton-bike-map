@@ -6,6 +6,7 @@ describe('findRoute', () => {
 	let mapInstance: LeafletMap;
 	let alertSpy: ReturnType<typeof vi.fn>;
 	let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+	let fetchSpy: ReturnType<typeof vi.spyOn>;
 
 	beforeEach(() => {
 		mapInstance = {
@@ -19,6 +20,7 @@ describe('findRoute', () => {
 		globalThis.alert = alertSpy;
 
 		consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		fetchSpy = vi.spyOn(globalThis, 'fetch') as unknown as ReturnType<typeof vi.spyOn>;
 	});
 
 	afterEach(() => {
@@ -26,16 +28,18 @@ describe('findRoute', () => {
 	});
 
 	it('fetches and applies route to map', async () => {
-		globalThis.localStorage?.setItem?.('token', 'jwt-abc');
 		const mockGeojson = { type: 'FeatureCollection', features: [] };
-		const mockFetch = vi.fn().mockResolvedValue({
+		fetchSpy.mockResolvedValue({
 			ok: true,
+			status: 200,
 			json: vi.fn().mockResolvedValue(mockGeojson)
 		} as unknown as Response);
 
-		await findRoute({ mapInstance, fetchFn: mockFetch });
+		await findRoute({ mapInstance });
 
-		expect(mockFetch).toHaveBeenCalled();
+		expect(fetchSpy).toHaveBeenCalledWith(
+			expect.stringContaining('/api/route?startLatitude=1&startLongitude=2')
+		);
 		expect(mapInstance.removeRouteLayer).toHaveBeenCalled();
 		expect(mapInstance.loadRouteLayer).toHaveBeenCalledWith(mockGeojson);
 	});
@@ -51,14 +55,13 @@ describe('findRoute', () => {
 	});
 
 	it('alerts and logs if fetch fails', async () => {
-		// set token so fetch is attempted
-		globalThis.localStorage?.setItem?.('token', 'jwt-abc');
-		const mockFetch = vi.fn().mockResolvedValue({
+		fetchSpy.mockResolvedValue({
 			ok: false,
+			status: 500,
 			json: vi.fn()
 		} as unknown as Response);
 
-		await findRoute({ mapInstance, fetchFn: mockFetch });
+		await findRoute({ mapInstance });
 
 		expect(alertSpy).toHaveBeenCalledWith(
 			'Error fetching or displaying route: Failed to get route data'
@@ -66,28 +69,13 @@ describe('findRoute', () => {
 		expect(consoleErrorSpy).toHaveBeenCalled();
 	});
 
-	it('errors immediately when no auth token present', async () => {
-		// ensure token is not present
-		globalThis.localStorage?.removeItem?.('token');
-
-		await expect(findRoute({ mapInstance })).rejects.toThrow('Unauthorized');
-	});
-
-	it('sends Authorization header when token exists', async () => {
-		// set token
-		globalThis.localStorage?.setItem?.('token', 'jwt-abc');
-
-		const mockFetch = vi.fn().mockResolvedValue({
-			ok: true,
-			json: vi.fn().mockResolvedValue({ type: 'FeatureCollection', features: [] })
+	it('throws on 401 Unauthorized', async () => {
+		fetchSpy.mockResolvedValue({
+			ok: false,
+			status: 401,
+			json: vi.fn()
 		} as unknown as Response);
 
-		await findRoute({ mapInstance, fetchFn: mockFetch });
-
-		expect(mockFetch).toHaveBeenCalled();
-		const calledWith = mockFetch.mock.calls[0];
-		// second arg is options
-		expect(calledWith[1]).toBeDefined();
-		expect(calledWith[1].headers.Authorization).toBe('Bearer jwt-abc');
+		await expect(findRoute({ mapInstance })).rejects.toThrow('Unauthorized');
 	});
 });
