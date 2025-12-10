@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -39,7 +43,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push Docker image
         run: docker push $IMAGE_NAME:$IMAGE_TAG
@@ -52,7 +56,7 @@ jobs:
           ssh-keyscan -H ${{ secrets.VPS_IP }} >> ~/.ssh/known_hosts
 
       - name: Run backend playbook
-        run: ansible-playbook backend.yml -i inventory.ini --private-key ~/.ssh/id_rsa -e "ghcr_pat=${{ secrets.GHCR_PAT }}"
+        run: ansible-playbook backend.yml -i inventory.ini --private-key ~/.ssh/id_rsa -e "ghcr_pat=${{ secrets.GITHUB_TOKEN }}"
         env:
           ANSIBLE_HOST_KEY_CHECKING: "False"
           LE_EMAIL: ${{ secrets.LE_EMAIL }}
