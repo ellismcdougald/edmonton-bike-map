@@ -130,23 +130,7 @@
 
 	function handleFindRouteClick() {
 		if (!mapInstance) return;
-
-		findRoute({ mapInstance }).catch((err: unknown) => {
-			if (err instanceof Error) {
-				if (err.message === 'Unauthorized') {
-					// token expired or invalid → log out user
-					localStorage.removeItem('token');
-					goto('/login');
-				} else {
-					// other fetch/display errors
-					alert('Error fetching or displaying route: ' + err.message);
-					console.error(err);
-				}
-			} else {
-				alert('Error fetching or displaying route: ' + String(err));
-				console.error(err);
-			}
-		});
+		findRoute({ mapInstance });
 	}
 
 	function handleSelectStartClick() {
