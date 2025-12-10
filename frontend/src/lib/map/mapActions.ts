@@ -28,6 +28,13 @@ interface FindRouteOptions {
 	mapInstance: LeafletMap | null;
 }
 
+/**
+ * Fetches a route between the map's selected start and end points and renders it on the provided LeafletMap.
+ *
+ * If `mapInstance` is null the function does nothing. If either start or end point is missing an alert is shown and no request is made. A thrown `Error` with message `"Unauthorized"` is rethrown; other errors cause an alert to the user and are logged to the console.
+ *
+ * @param mapInstance - The LeafletMap to read start/end points from and to render the route; may be null
+ */
 export async function findRoute({ mapInstance }: FindRouteOptions) {
 	if (!mapInstance) return;
 
@@ -57,6 +64,13 @@ export async function findRoute({ mapInstance }: FindRouteOptions) {
 	}
 }
 
+/**
+ * Create URLSearchParams containing start and end coordinates for a route query.
+ *
+ * @param startLatLng - Tuple [latitude, longitude] of the start point
+ * @param endLatLng - Tuple [latitude, longitude] of the end point
+ * @returns URLSearchParams with keys `startLatitude`, `startLongitude`, `endLatitude`, and `endLongitude` whose values are the corresponding coordinates as strings
+ */
 function buildRouteParams(
 	startLatLng: [number, number],
 	endLatLng: [number, number]
@@ -69,6 +83,15 @@ function buildRouteParams(
 	});
 }
 
+/**
+ * Fetches a route GeoJSON from the backend using the provided query parameters.
+ *
+ * @param params - URLSearchParams containing route query keys (e.g., `startLatitude`, `startLongitude`, `endLatitude`, `endLongitude`)
+ * @returns The GeoJSON FeatureCollection describing the route
+ * @throws `Error('Unauthorized')` if the server responds with HTTP 401
+ * @throws `Error('Failed to get route data')` if the response is not OK (non-2xx and not 401)
+ * @throws Any underlying network or parsing error encountered during fetch
+ */
 async function fetchRoute(params: URLSearchParams): Promise<FeatureCollection> {
 	const query = params.toString();
 	const url = query ? `/api/route?${query}` : '/api/route';
@@ -86,6 +109,12 @@ async function fetchRoute(params: URLSearchParams): Promise<FeatureCollection> {
 	}
 }
 
+/**
+ * Replace the current route layer on the given map with the provided GeoJSON route.
+ *
+ * @param mapInstance - The LeafletMap instance to update
+ * @param geojson - A GeoJSON FeatureCollection representing the route to render
+ */
 function applyRouteToMap(mapInstance: LeafletMap, geojson: FeatureCollection) {
 	mapInstance.removeRouteLayer();
 	mapInstance.loadRouteLayer(geojson);
