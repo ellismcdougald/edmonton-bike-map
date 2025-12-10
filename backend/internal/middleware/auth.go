@@ -13,6 +13,11 @@ type contextKey string
 
 const userIDKey contextKey = "userID"
 
+// UserIDToContext is a test helper that adds a user ID to the context.
+func UserIDToContext(ctx context.Context, userID int64) context.Context {
+	return context.WithValue(ctx, userIDKey, userID)
+}
+
 // AuthMiddleware validates the JWT token in the Authorization header
 // and stores the user ID in the request context.
 func AuthMiddleware(next http.Handler) http.Handler {

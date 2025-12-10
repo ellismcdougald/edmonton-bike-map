@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/ellismcdougald/edmonton-bike-map/internal/middleware"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/service"
 	"github.com/stretchr/testify/require"
@@ -92,6 +93,10 @@ func TestReviewHandler_HandlePostReview_Success(t *testing.T) {
 	b, _ := json.Marshal(body)
 
 	req := httptest.NewRequest(http.MethodPost, "/reviews", bytes.NewReader(b))
+	// Set user ID in context using middleware helper
+	ctx := middleware.UserIDToContext(req.Context(), int64(2))
+	req = req.WithContext(ctx)
+
 	rr := httptest.NewRecorder()
 
 	handler := h.HandlePostReview()
@@ -103,6 +108,24 @@ func TestReviewHandler_HandlePostReview_Success(t *testing.T) {
 	require.Equal(t, int64(1), repo.created[0].WayID)
 }
 
+func TestReviewHandler_HandlePostReview_Unauthorized(t *testing.T) {
+	repo := &mockReviewRepo{reviews: map[int64][]models.Review{}}
+	svc := service.NewReviewService(repo)
+	h := NewReviewHandler(svc)
+
+	body := models.Review{WayID: 1, UserID: 2, Rating: 5, Comment: "nice"}
+	b, _ := json.Marshal(body)
+
+	req := httptest.NewRequest(http.MethodPost, "/reviews", bytes.NewReader(b))
+	// Don't set user ID in context - should fail with 401
+	rr := httptest.NewRecorder()
+
+	handler := h.HandlePostReview()
+	handler.ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusUnauthorized, rr.Code)
+}
+
 func TestReviewHandler_HandlePostReview_BadRating(t *testing.T) {
 	repo := &mockReviewRepo{reviews: map[int64][]models.Review{}}
 	svc := service.NewReviewService(repo)
@@ -112,6 +135,10 @@ func TestReviewHandler_HandlePostReview_BadRating(t *testing.T) {
 	b, _ := json.Marshal(body)
 
 	req := httptest.NewRequest(http.MethodPost, "/reviews", bytes.NewReader(b))
+	// Set user ID in context using middleware helper
+	ctx := middleware.UserIDToContext(req.Context(), int64(2))
+	req = req.WithContext(ctx)
+
 	rr := httptest.NewRecorder()
 
 	handler := h.HandlePostReview()
