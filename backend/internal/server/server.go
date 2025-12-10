@@ -13,6 +13,7 @@ import (
 //   - GET /api/all-ways    : fetch all ways from the database
 //   - GET, POST /api/reviews : get or post reviews for ways
 //   - POST /api/signup     : user signup
+//
 // RegisterRoutes registers the server's API endpoints on the provided ServeMux,
 // applying CORS to all routes and authentication middleware to protected routes.
 //

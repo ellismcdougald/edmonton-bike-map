@@ -21,7 +21,7 @@ func UserIDToContext(ctx context.Context, userID int64) context.Context {
 
 // AuthMiddleware validates the JWT token in the Authorization header
 // AuthMiddleware returns an http.Handler that enforces JWT Bearer authentication and stores the user ID in the request context.
-// 
+//
 // If the Authorization header is missing the middleware responds with HTTP 401 and the body "Missing authorization header".
 // If the header is not a Bearer token it responds with HTTP 401 and the body "Invalid authorization header format".
 // If token validation fails it responds with HTTP 401 and the body "Invalid or expired token".
