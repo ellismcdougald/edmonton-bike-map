@@ -1,0 +1,45 @@
+name: Bug Report
+description: Report a reproducible bug
+title: "[Bug] "
+labels: bug
+body:
+  - type: markdown
+    attributes:
+      value: "Please provide as much detail as possible."
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: A short description of the bug
+      placeholder: "Example: Login fails when password contains special characters"
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Step-by-step instructions to reproduce the issue
+      placeholder: "1. Go to ...\n2. Click ...\n3. Observe ..."
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      placeholder: "What you expected to happen"
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      placeholder: "What actually happened"
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, browser, frontend version, backend version, etc.
+      placeholder: "Windows 11, Chrome 118, Frontend v0.1.0, Backend v0.1.0"
