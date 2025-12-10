@@ -28,13 +28,15 @@
 				>
 					Settings
 				</a>
-				<a
-					id="logoutButton"
-					class="block w-full px-4 py-2 text-center hover:bg-gray-100"
-					href="/logout"
-				>
-					Log out
-				</a>
+				<form method="POST" action="/logout" class="w-full">
+					<button
+						id="logoutButton"
+						type="submit"
+						class="block w-full px-4 py-2 text-center hover:bg-gray-100 border-none bg-transparent cursor-pointer text-gray-800"
+					>
+						Log out
+					</button>
+				</form>
 			</div>
 		</div>
 	</div>

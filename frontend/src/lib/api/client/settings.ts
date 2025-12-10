@@ -11,7 +11,7 @@ export async function updateCyclingSpeed(cyclingSpeed: number) {
 
 	if (!res.ok) {
 		if (res.status === 401) {
-			await fetch('/logout');
+			await fetch('/logout', { method: 'POST' });
 			goto('/login');
 		}
 		const text = await res.text();
