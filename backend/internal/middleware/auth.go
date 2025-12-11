@@ -54,6 +54,28 @@ func AuthMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// OptionalAuthMiddleware validates the JWT token in the Authorization header if present.
+// Unlike AuthMiddleware, it does not require authentication and allows requests to proceed
+// without a valid token. If a valid token is present, it stores the user ID in the context.
+// If the token is invalid or malformed, the request proceeds without user ID in context.
+func OptionalAuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader != "" {
+			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+			if tokenString != authHeader { // Valid Bearer prefix
+				claims, err := utils.ValidateJWT(tokenString)
+				if err == nil {
+					// Token is valid, store user ID in context
+					ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
+					r = r.WithContext(ctx)
+				}
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // UserIDFromContext retrieves the authenticated user ID from the context.
 // Returns the ID and true if it exists, 0 and false otherwise.
 func UserIDFromContext(ctx context.Context) (int64, bool) {
