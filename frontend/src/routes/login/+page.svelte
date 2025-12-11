@@ -39,4 +39,8 @@
 		Don't have an account?
 		<a href="/signup" id="signupLink" class="text-blue-600 hover:underline">Sign up</a>
 	</p>
+
+	<p class="mt-2 text-sm text-center">
+		<a href="/map" class="text-blue-600 hover:underline">View map as guest</a>
+	</p>
 </div>

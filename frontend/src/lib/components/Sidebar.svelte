@@ -13,6 +13,8 @@
 	import { capitalizeFirstLetter } from '$lib/utils/helpers';
 	import { fetchReviews } from '$lib/api/client/reviews';
 
+	let { username }: { username: string | null } = $props();
+
 	let way: WayFeature | null = $derived(wayState.selectedWay);
 	let reviews: ReviewObj[] = $state([]);
 
@@ -72,7 +74,12 @@
 			</h2>
 		</section>
 
-		<ReviewContainer wayId={way.id} {reviews} onReviewAdded={() => loadReviews(way.id)} />
+		<ReviewContainer
+			wayId={way.id}
+			{reviews}
+			canReview={Boolean(username)}
+			onReviewAdded={() => loadReviews(way.id)}
+		/>
 	</div>
 {/if}
 

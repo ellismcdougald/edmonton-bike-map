@@ -30,21 +30,31 @@
 	let {
 		wayId,
 		reviews,
-		onReviewAdded
-	}: { wayId: number; reviews: ReviewObj[]; onReviewAdded?: () => void } = $props();
+		onReviewAdded,
+		canReview = true
+	}: {
+		wayId: number;
+		reviews: ReviewObj[];
+		onReviewAdded?: () => void;
+		canReview?: boolean;
+	} = $props();
 	let addReviewActive: boolean = $state(false);
 </script>
 
 <div id="review-container" class="border-t">
 	<div class="flex justify-between items-center mt-1 mb-2">
 		<h1 class="text-2xl font-bold mb-2 mt-1">Reviews:</h1>
-		<button
-			id="addReviewButton"
-			class="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
-			onclick={() => {
-				addReviewActive = true;
-			}}>Add Review</button
-		>
+		{#if canReview}
+			<button
+				id="addReviewButton"
+				class="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
+				onclick={() => {
+					addReviewActive = true;
+				}}>Add Review</button
+			>
+		{:else}
+			<span class="text-sm text-gray-600">Log in to add a review.</span>
+		{/if}
 	</div>
 
 	{#if addReviewActive}
