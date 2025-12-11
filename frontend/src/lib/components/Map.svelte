@@ -43,6 +43,7 @@
 
 	let mapInstance: InstanceType<typeof import('$lib/map/LeafletMap').LeafletMap> | null = null;
 	let mode: MapModeState = $state({ selectStartActive: false, selectEndActive: false });
+	let loadError: string | null = $state(null);
 
 	let { ways }: { ways: Promise<GeoJSON.GeoJsonObject> } = $props();
 
@@ -64,6 +65,9 @@
 			mapInstance?.loadInfoLayer(waysData, { color: 'red', weight: 1, opacity: 0 }, handleWayClick);
 			restoreSelectionFromUrl();
 		} catch (err) {
+			const message =
+				err instanceof Error && err.message ? err.message : 'Unable to load ways data';
+			loadError = message;
 			console.error('Error loading ways:', err);
 		}
 	}
@@ -177,7 +181,16 @@
 </script>
 
 <div id="map-content" class="w-full h-full">
-	<div id="map" class="w-full h-9/10"></div>
+	<div id="map" class="w-full h-9/10 relative">
+		{#if loadError}
+			<div
+				role="alert"
+				class="absolute top-2 left-2 z-20 bg-red-600 text-white px-3 py-2 rounded shadow"
+			>
+				{loadError}
+			</div>
+		{/if}
+	</div>
 	<div id="controls" class="h-1/10 flex gap-4 p-2 w-6/10">
 		<button
 			type="button"

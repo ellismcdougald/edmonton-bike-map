@@ -17,18 +17,21 @@ import (
 // RegisterRoutes registers the server's API endpoints on the provided ServeMux,
 // applying CORS to all routes and authentication middleware to protected routes.
 //
-// It sets up public endpoints (e.g., /api/login, /api/signup) and protected
-// endpoints that require authentication (e.g., /api/route, /api/all-ways,
-// /api/reviews, /api/change-password, /api/settings).
+// It sets up public endpoints (e.g., /api/login, /api/signup), guest-accessible endpoints
+// (e.g., /api/route, /api/all-ways) that accept optional authentication, and protected
+// endpoints that require authentication (e.g., /api/change-password, /api/settings, POST /api/reviews).
 //
 // mux is the HTTP ServeMux to attach routes to.
 // handlers supplies the concrete handler implementations for each endpoint.
 func RegisterRoutes(mux *http.ServeMux, handlers handler.Handlers) {
 	// wrap handler with CORS and optionally Auth middleware
-	wrap := func(handler http.Handler, methods []string, requireAuth bool) http.Handler {
+	wrap := func(handler http.Handler, methods []string, authType string) http.Handler {
 		h := handler
-		if requireAuth {
+		switch authType {
+		case "required":
 			h = middleware.AuthMiddleware(h)
+		case "optional":
+			h = middleware.OptionalAuthMiddleware(h)
 		}
 		h = middleware.CorsMiddleware(methods...)(h)
 		return h
@@ -38,43 +41,54 @@ func RegisterRoutes(mux *http.ServeMux, handlers handler.Handlers) {
 	mux.Handle("/api/login", wrap(
 		http.HandlerFunc(handlers.AuthHandler.HandleLogin()),
 		[]string{"POST", "OPTIONS"},
-		false,
+		"none",
 	))
 	mux.Handle("/api/signup", wrap(
 		http.HandlerFunc(handlers.AuthHandler.HandleSignup()),
 		[]string{"POST", "OPTIONS"},
-		false,
+		"none",
 	))
 
-	// PROTECTED:
+	// GUEST-ACCESSIBLE (optional auth):
 	mux.Handle("/api/route", wrap(
 		http.HandlerFunc(handlers.RouteHandler.HandleGetRoute()),
 		[]string{"GET", "OPTIONS"},
-		true,
+		"optional",
 	))
 	mux.Handle("/api/all-ways", wrap(
 		http.HandlerFunc(handlers.WayHandler.HandleAllWays()),
 		[]string{"GET", "OPTIONS"},
-		true,
+		"optional",
 	))
+
+	// REVIEWS (GET is optional, POST requires auth):
 	mux.Handle("/api/reviews", wrap(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
 			case http.MethodGet:
+				// GET reviews is guest-accessible
 				handlers.ReviewHandler.HandleGetReviews()(w, r)
 			case http.MethodPost:
-				handlers.ReviewHandler.HandlePostReview()(w, r)
+				// POST reviews requires authentication
+				authHandler := middleware.AuthMiddleware(http.HandlerFunc(
+					func(w http.ResponseWriter, r *http.Request) {
+						handlers.ReviewHandler.HandlePostReview()(w, r)
+					},
+				))
+				authHandler.ServeHTTP(w, r)
 			default:
 				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			}
 		}),
 		[]string{"GET", "POST", "OPTIONS"},
-		true,
+		"none", // We handle auth manually per method above
 	))
+
+	// PROTECTED (require auth):
 	mux.Handle("/api/change-password", wrap(
 		http.HandlerFunc(handlers.AuthHandler.HandleChangePassword()),
 		[]string{"POST", "OPTIONS"},
-		true,
+		"required",
 	))
 	mux.Handle("/api/settings", wrap(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -88,6 +102,6 @@ func RegisterRoutes(mux *http.ServeMux, handlers handler.Handlers) {
 			}
 		}),
 		[]string{"GET", "POST", "OPTIONS"},
-		true,
+		"required",
 	))
 }

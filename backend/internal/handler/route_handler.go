@@ -6,11 +6,13 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 
+	"github.com/ellismcdougald/edmonton-bike-map/internal/middleware"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/service"
-	"github.com/ellismcdougald/edmonton-bike-map/internal/utils"
 )
+
+// DefaultCyclingSpeed is used for guest users
+const DefaultCyclingSpeed = 15
 
 type RouteHandler struct {
 	RouteService *service.RouteService
@@ -26,26 +28,6 @@ func NewRouteHandler(routeService *service.RouteService, userService *service.Us
 
 func (h *RouteHandler) HandleGetRoute() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		// Decode user id
-		authHeader := request.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(writer, "Missing authorization header", http.StatusUnauthorized)
-			return
-		}
-
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		if tokenString == authHeader {
-			http.Error(writer, "Invalid authorization header format", http.StatusUnauthorized)
-			return
-		}
-
-		claims, err := utils.ValidateJWT(tokenString)
-		if err != nil {
-			log.Printf("user_handler: token validation failed: %v", err)
-			http.Error(writer, "Invalid or expired token", http.StatusUnauthorized)
-			return
-		}
-
 		query := request.URL.Query()
 
 		getFloatParam := func(query url.Values, paramName string) (result float64, err error) {
@@ -76,7 +58,6 @@ func (h *RouteHandler) HandleGetRoute() http.HandlerFunc {
 			return
 		}
 
-		// call service
 		dist, nodes, err := h.RouteService.FindRoute(startLatitude, startLongitude, endLatitude, endLongitude)
 		if err != nil {
 			log.Printf("error finding route: %v", err)
@@ -89,7 +70,6 @@ func (h *RouteHandler) HandleGetRoute() http.HandlerFunc {
 			return
 		}
 
-		// build coordinates as [][2]float64 with [lon, lat] like the old handler
 		var coordinates = [][2]float64{}
 		for _, n := range nodes {
 			var lonLat [2]float64
@@ -98,11 +78,17 @@ func (h *RouteHandler) HandleGetRoute() http.HandlerFunc {
 			coordinates = append(coordinates, lonLat)
 		}
 
-		cyclingSpeed, err := h.UserService.GetCyclingSpeed(claims.UserID)
-		if err != nil {
-			log.Printf("error getting cycling speed: %v", err)
-			http.Error(writer, "internal server error", http.StatusInternalServerError)
-			return
+		// Get cycling speed: use user's preferred speed if authenticated, otherwise use default
+		cyclingSpeed := DefaultCyclingSpeed
+		userID, ok := middleware.UserIDFromContext(request.Context())
+		if ok {
+			userSpeed, err := h.UserService.GetCyclingSpeed(userID)
+			if err != nil {
+				log.Printf("error getting cycling speed: %v", err)
+				http.Error(writer, "internal server error", http.StatusInternalServerError)
+				return
+			}
+			cyclingSpeed = userSpeed
 		}
 		timeMinutes := dist / float64(cyclingSpeed) * 60.0
 

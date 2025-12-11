@@ -16,4 +16,14 @@ describe('MenuBar', () => {
 		expect(form?.method.toUpperCase()).toBe('POST');
 		expect(form?.action).toContain('/logout');
 	});
+
+	it('shows only login link for guests', () => {
+		const { getByText, queryByText, queryByLabelText } = render(MenuBar, { username: null });
+
+		const loginLink = getByText('Log in') as HTMLAnchorElement;
+		expect(loginLink.getAttribute('href')).toBe('/login');
+		expect(loginLink.hasAttribute('data-sveltekit-reload')).toBe(true);
+		expect(queryByText('Sign up')).toBeNull();
+		expect(queryByLabelText('Guest user')).toBeNull();
+	});
 });

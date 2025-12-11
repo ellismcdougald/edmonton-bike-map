@@ -51,9 +51,7 @@ test.describe("change password", () => {
   test("user can log in, change their password to a new password, log out, and log in with their new password", async ({
     page,
   }) => {
-    await page.goto(FRONTEND_URL);
-
-    await expect(page).toHaveURL(`${FRONTEND_URL}/login`);
+    await page.goto(`${FRONTEND_URL}/login`);
 
     await page.fill('input[name="username"]', testUsername);
     await page.fill('input[name="password"]', testPassword);
@@ -113,9 +111,7 @@ test.describe("change password", () => {
   test("changing password fails when new passwords do not match", async ({
     page,
   }) => {
-    await page.goto(FRONTEND_URL);
-
-    await expect(page).toHaveURL(`${FRONTEND_URL}/login`);
+    await page.goto(`${FRONTEND_URL}/login`);
 
     await page.fill('input[name="username"]', testUsername);
     await page.fill('input[name="password"]', testPassword);
