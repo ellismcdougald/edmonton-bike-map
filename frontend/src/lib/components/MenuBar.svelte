@@ -1,5 +1,34 @@
 <script lang="ts">
 	let { username }: { username: string | null } = $props();
+	let menuOpen: boolean = $state(false);
+
+	function toggleMenu() {
+		menuOpen = !menuOpen;
+	}
+
+	function closeMenuOnBlur(event: FocusEvent) {
+		const container = event.currentTarget as HTMLElement | null;
+		const next = event.relatedTarget as Node | null;
+		if (!container || !next || !container.contains(next)) menuOpen = false;
+	}
+
+	function openMenu() {
+		menuOpen = true;
+	}
+
+	function closeMenu() {
+		menuOpen = false;
+	}
+
+	function handleMenuKeydown(event: KeyboardEvent) {
+		if (event.key === 'Escape') {
+			menuOpen = false;
+		}
+		if (event.key === ' ' || event.key === 'Enter') {
+			event.preventDefault();
+			toggleMenu();
+		}
+	}
 </script>
 
 <div class="flex items-center justify-between px-4 py-2 w-full">
@@ -9,17 +38,25 @@
 	</div>
 	<div class="w-1/3 flex justify-end">
 		{#if username}
-			<div class="relative inline-block group">
+			<div
+				class="relative inline-block"
+				onfocusout={closeMenuOnBlur}
+				onmouseenter={openMenu}
+				onmouseleave={closeMenu}
+				role="presentation"
+			>
 				<button
 					id="usernameButton"
-					class="text-black text-center px-4 py-1 hover:underline focus:outline-none"
+					class="text-black text-center px-4 py-1 hover:underline focus-visible:outline-2 focus-visible:outline-blue-600 focus-visible:outline-offset-2"
+					aria-haspopup="menu"
+					aria-expanded={menuOpen}
+					onclick={toggleMenu}
+					onkeydown={handleMenuKeydown}
 				>
 					{username}
 				</button>
 				<div
-					class="absolute left-0 mt-2 w-full bg-white text-gray-800 rounded shadow-lg z-50
-	             opacity-0 invisible translate-y-1 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0
-	             transition-all duration-200 ease-out"
+					class={`absolute left-0 mt-2 w-full bg-white text-gray-800 rounded shadow-lg z-50 transition-all duration-200 ease-out ${menuOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-1'}`}
 				>
 					<a
 						id="settingsLink"

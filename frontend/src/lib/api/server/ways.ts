@@ -11,7 +11,11 @@ export async function fetchAllWays(fetch: typeof global.fetch) {
 	const response = await fetch(`${API_URL}/api/all-ways`);
 
 	if (!response.ok) {
-		throw new Error(`HTTP error! status: ${response.status}`);
+		if (response.status === 401) {
+			throw new Error('Unable to load ways data: authentication required');
+		}
+
+		throw new Error('Unable to load ways data');
 	}
 
 	return response.json();

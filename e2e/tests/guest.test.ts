@@ -14,12 +14,18 @@ function requireEnv(name: string): string {
   return value;
 }
 
+const portStr = process.env.POSTGRES_TEST_PORT || "5434";
+const parsedPort = Number.parseInt(portStr, 10);
+if (Number.isNaN(parsedPort)) {
+  throw new Error(`Invalid POSTGRES_TEST_PORT: ${portStr}`);
+}
+
 const dbConfig = {
   user: requireEnv("POSTGRES_TEST_USER"),
   password: requireEnv("POSTGRES_TEST_PASSWORD"),
   database: requireEnv("POSTGRES_TEST_DB"),
   host: process.env.POSTGRES_TEST_HOST || "localhost",
-  port: parseInt(requireEnv("POSTGRES_TEST_PORT") || "5434"),
+  port: parsedPort,
 };
 
 const FRONTEND_URL = `http://localhost:${process.env.FRONTEND_PORT || 3001}`;
