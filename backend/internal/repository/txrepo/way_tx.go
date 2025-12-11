@@ -206,3 +206,53 @@ func (r *TxWayRepository) GetAllWays() ([]models.Way, error) {
 
 	return ways, nil
 }
+
+// GetNearestWay retrieves the way whose nodes are closest to the given coordinates using the transaction.
+// Uses PostGIS ST_DWithin to find ways with nodes within a reasonable distance,
+// then returns the way with the minimum distance to any of its nodes.
+func (r *TxWayRepository) GetNearestWay(latitude, longitude float64) (*models.Way, error) {
+	query := `
+		SELECT DISTINCT
+			w.id,
+			w.tags,
+			ARRAY_AGG(wn.node_id ORDER BY wn.sequence_id) AS node_ids
+		FROM ways w
+		JOIN way_nodes wn ON wn.way_id = w.id
+		JOIN nodes n ON n.id = wn.node_id
+		WHERE ST_DWithin(
+			ST_SetSRID(ST_Point($1, $2), 4326)::geography,
+			ST_SetSRID(ST_Point(n.longitude, n.latitude), 4326)::geography,
+			5000  -- within 5 km
+		)
+		GROUP BY w.id, w.tags
+		ORDER BY (
+			SELECT MIN(ST_Distance(
+				ST_SetSRID(ST_Point($1, $2), 4326)::geography,
+				ST_SetSRID(ST_Point(n.longitude, n.latitude), 4326)::geography
+			))
+			FROM way_nodes wn2
+			JOIN nodes n2 ON n2.id = wn2.node_id
+			WHERE wn2.way_id = w.id
+		) ASC
+		LIMIT 1
+	`
+
+	var way models.Way
+	var tagsJson []byte
+
+	err := r.Tx.QueryRow(query, longitude, latitude).Scan(&way.ID, &tagsJson, pq.Array(&way.NodeIDs))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("no ways found near coordinates")
+		}
+		return nil, err
+	}
+
+	way.Tags = make(map[string]string)
+	err = json.Unmarshal(tagsJson, &way.Tags)
+	if err != nil {
+		return nil, err
+	}
+
+	return &way, nil
+}

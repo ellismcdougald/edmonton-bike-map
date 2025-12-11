@@ -26,3 +26,8 @@ func (s *WayService) InsertWay(way models.Way) error {
 func (s *WayService) GetAllWays() ([]models.Way, error) {
 	return s.WayRepository.GetAllWays()
 }
+
+// GetNearestWay retrieves the nearest way to the given coordinates using the WayRepository.
+func (s *WayService) GetNearestWay(latitude, longitude float64) (*models.Way, error) {
+	return s.WayRepository.GetNearestWay(latitude, longitude)
+}

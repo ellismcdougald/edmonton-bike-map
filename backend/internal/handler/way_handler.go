@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/ellismcdougald/edmonton-bike-map/internal/domain/geo"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
@@ -55,6 +56,53 @@ func (h *WayHandler) HandleAllWays() http.HandlerFunc {
 
 		writer.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(writer).Encode(featureCollection); err != nil {
+			log.Printf("Error encoding JSON: %v", err)
+		}
+	}
+}
+
+// HandleNearestWay returns an HTTP handler that finds the nearest way to given coordinates.
+// Expects query parameters 'lat' and 'lng' (as floats).
+// Responds with a simple JSON object containing the way ID and tags.
+// Responds with HTTP 400 Bad Request if coordinates are invalid or missing.
+// Responds with HTTP 404 Not Found if no ways are found nearby.
+// Responds with HTTP 500 Internal Server Error if the database query fails.
+func (h *WayHandler) HandleNearestWay() http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		latStr := request.URL.Query().Get("lat")
+		lngStr := request.URL.Query().Get("lng")
+
+		if latStr == "" || lngStr == "" {
+			http.Error(writer, "Missing required parameters: lat and lng", http.StatusBadRequest)
+			return
+		}
+
+		lat, err := strconv.ParseFloat(latStr, 64)
+		if err != nil {
+			http.Error(writer, "Invalid latitude value", http.StatusBadRequest)
+			return
+		}
+
+		lng, err := strconv.ParseFloat(lngStr, 64)
+		if err != nil {
+			http.Error(writer, "Invalid longitude value", http.StatusBadRequest)
+			return
+		}
+
+		way, err := h.WayService.GetNearestWay(lat, lng)
+		if err != nil {
+			log.Printf("Could not get nearest way: %v", err)
+			http.Error(writer, "No ways found nearby", http.StatusNotFound)
+			return
+		}
+
+		response := map[string]interface{}{
+			"id":   way.ID,
+			"tags": way.Tags,
+		}
+
+		writer.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(writer).Encode(response); err != nil {
 			log.Printf("Error encoding JSON: %v", err)
 		}
 	}
