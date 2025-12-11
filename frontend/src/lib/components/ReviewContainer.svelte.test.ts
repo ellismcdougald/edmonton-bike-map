@@ -12,7 +12,7 @@ describe('ReviewContainer.svelte', () => {
 			rating: 8,
 			comment: 'Nice ride',
 			createdAt: '2025-08-18T00:00:00Z',
-			wayID: 1
+			wayId: 1
 		}
 	];
 
@@ -42,5 +42,18 @@ describe('ReviewContainer.svelte', () => {
 			const popup = container.querySelector('#addReviewPopup');
 			expect(popup).toBeInTheDocument();
 		});
+	});
+
+	it('hides Add Review for guests and shows prompt', async () => {
+		const { container, getByText } = render(ReviewContainer, {
+			props: { wayId, reviews: mockReviews, canReview: false }
+		});
+
+		await waitFor(() => {
+			expect(getByText('Log in to add a review.')).toBeTruthy();
+		});
+
+		const addButton = container.querySelector('#addReviewButton');
+		expect(addButton).toBeNull();
 	});
 });
