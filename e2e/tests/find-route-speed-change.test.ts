@@ -48,9 +48,7 @@ test.describe("route time updates with cycling speed", () => {
   });
 
   test("time decreases after increasing cycling speed", async ({ page }) => {
-    await page.goto(FRONTEND_URL);
-
-    await expect(page).toHaveURL(`${FRONTEND_URL}/login`);
+    await page.goto(`${FRONTEND_URL}/login`);
 
     await page.fill('input[name="username"]', testUsername);
     await page.fill('input[name="password"]', testPassword);

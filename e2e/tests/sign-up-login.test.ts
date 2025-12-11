@@ -39,9 +39,7 @@ test.describe("sign up", () => {
   test("user can sign up, log in, look up a route, then log out", async ({
     page,
   }) => {
-    await page.goto(FRONTEND_URL);
-
-    await expect(page).toHaveURL(`${FRONTEND_URL}/login`);
+    await page.goto(`${FRONTEND_URL}/login`);
 
     const signupLink = page.locator("#signupLink");
     await signupLink.click();

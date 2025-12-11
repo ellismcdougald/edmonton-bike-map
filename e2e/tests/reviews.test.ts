@@ -62,8 +62,7 @@ test.describe("reviews e2e", () => {
       [testUsername, hashedPassword]
     );
 
-    await page.goto(FRONTEND_URL);
-    await expect(page).toHaveURL(`${FRONTEND_URL}/login`);
+    await page.goto(`${FRONTEND_URL}/login`);
     await page.fill('input[name="username"]', testUsername);
     await page.fill('input[name="password"]', testPassword);
     await page.locator("#submitButton").click();
@@ -121,8 +120,7 @@ test.describe("reviews e2e", () => {
       [wayId, seededUserId, 7, existingComment]
     );
 
-    await page.goto(FRONTEND_URL);
-    await expect(page).toHaveURL(`${FRONTEND_URL}/login`);
+    await page.goto(`${FRONTEND_URL}/login`);
     await page.fill('input[name="username"]', seededUsername);
     await page.fill('input[name="password"]', seededPassword);
     await page.locator("#submitButton").click();

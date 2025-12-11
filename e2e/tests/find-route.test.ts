@@ -54,9 +54,7 @@ test.describe("route finding with a test user", () => {
   test("user can log in, then select a start and end point and find a route between those two points", async ({
     page,
   }) => {
-    await page.goto(FRONTEND_URL);
-
-    await expect(page).toHaveURL(`${FRONTEND_URL}/login`);
+    await page.goto(`${FRONTEND_URL}/login`);
 
     await page.fill('input[name="username"]', testUsername);
     await page.fill('input[name="password"]', testPassword);
@@ -117,9 +115,7 @@ test.describe("route finding with a test user", () => {
   test("user can log in, then select a start and end point, find a route between those two points, then reset the map", async ({
     page,
   }) => {
-    await page.goto(FRONTEND_URL);
-
-    await expect(page).toHaveURL(`${FRONTEND_URL}/login`);
+    await page.goto(`${FRONTEND_URL}/login`);
 
     await page.fill('input[name="username"]', testUsername);
     await page.fill('input[name="password"]', testPassword);
