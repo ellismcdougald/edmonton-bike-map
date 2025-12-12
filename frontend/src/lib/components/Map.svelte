@@ -14,27 +14,29 @@
 
   Behavior:
   - Initializes Leaflet map on mount with OpenStreetMap tiles
-  - Loads all ways from backend (`/api/all-ways`) into an info layer
-  - On map click:
-    - If selectStartActive → places start marker, toggles mode, shows info layer
-    - If selectEndActive → places end marker, toggles mode, shows info layer
+  - On map click (when not selecting start/end markers):
+    - Queries the backend for the nearest way to the clicked coordinates
+    - Updates the sidebar with the way information
+  - On map click (when selecting markers):
+    - If selectStartActive → places start marker, toggles mode
+    - If selectEndActive → places end marker, toggles mode
   - Control buttons:
     - "Select Start Location": toggles start selection mode
     - "Select End Location": toggles end selection mode
     - "Find Route": calls findRoute() with current mapInstance
-    - "Reset": (placeholder — reset behavior not yet implemented)
+    - "Reset": clears markers and selections
 
   Notes:
   - Depends on $lib/map/loadLeaflet (LeafletMap wrapper)
   - Depends on $lib/map/mapModes for mode toggling
   - Depends on $lib/map/mapActions for route finding
+  - Uses /api/nearest-way to find ways by coordinates
   - Updates global wayState.selectedWay when a way is clicked
 -->
 
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { goto } from '$app/navigation';
-	import type { WayFeature, WayFeatureCollection } from '$lib/types';
 	import type { MapModeState } from '$lib/map/mapModes';
 	import { toggleSelectStart, toggleSelectEnd } from '$lib/map/mapModes';
 	import { wayState } from '$lib/state.svelte';
@@ -44,8 +46,8 @@
 	let mapInstance: InstanceType<typeof import('$lib/map/LeafletMap').LeafletMap> | null = null;
 	let mode: MapModeState = $state({ selectStartActive: false, selectEndActive: false });
 	let loadError: string | null = $state(null);
-
-	let { ways }: { ways: Promise<GeoJSON.GeoJsonObject> } = $props();
+	let isLoadingWay: boolean = $state(false);
+	let nearestWayAbortController: AbortController | null = null;
 
 	// URL Helpers:
 	function updateUrlWithWay(id: number) {
@@ -60,16 +62,7 @@
 	// Map setup:
 	async function initializeMap() {
 		await createMap();
-		try {
-			const waysData = await ways;
-			mapInstance?.loadInfoLayer(waysData, { color: 'red', weight: 1, opacity: 0 }, handleWayClick);
-			restoreSelectionFromUrl();
-		} catch (err) {
-			const message =
-				err instanceof Error && err.message ? err.message : 'Unable to load ways data';
-			loadError = message;
-			console.error('Error loading ways:', err);
-		}
+		await restoreSelectionFromUrl();
 	}
 
 	async function createMap() {
@@ -84,6 +77,7 @@
 		mapInstance.onMapClick(onMapClick);
 	}
 
+	// Restore way selection from URL parameter
 	async function restoreSelectionFromUrl() {
 		if (typeof window === 'undefined' || !window.location?.search) return;
 
@@ -92,30 +86,73 @@
 		if (!targetId) return;
 
 		try {
-			const waysData = await ways;
-			if (waysData?.type === 'FeatureCollection') {
-				const featureCollection = waysData as WayFeatureCollection;
-				const feature = featureCollection.features.find((f) => {
-					const id = f.id ?? f.properties?.id;
-					return Number(id) === targetId;
-				});
-
-				if (feature) {
-					wayState.selectedWay = {
-						id: Number(feature.id ?? feature.properties.id),
-						tags: Object.fromEntries(
-							Object.entries(feature.properties || {}).map(([k, v]) => [k, String(v)])
-						)
-					};
-				}
+			const response = await fetch(`/api/way?id=${targetId}`);
+			if (!response.ok) {
+				console.error('Failed to load way from URL');
+				return;
 			}
+
+			const wayData = await response.json();
+			wayState.selectedWay = {
+				id: wayData.id,
+				tags: wayData.tags
+			};
 		} catch (err) {
-			console.error('Error restoring selection:', err);
+			console.error('Error restoring selection from URL:', err);
+		}
+	}
+
+	// API call to get nearest way
+	async function fetchNearestWay(lat: number, lng: number, signal?: AbortSignal) {
+		isLoadingWay = true;
+		try {
+			const response = await fetch(`/api/nearest-way?lat=${lat}&lng=${lng}`.toString(), {
+				signal
+			});
+			if (!response.ok) {
+				if (response.status === 404) {
+					loadError = 'No ways found at this location';
+				} else {
+					loadError = 'Failed to find nearby way';
+				}
+				return null;
+			}
+
+			const data = await response.json();
+			if (
+				!data ||
+				typeof data !== 'object' ||
+				typeof (data as { id?: unknown }).id !== 'number' ||
+				typeof (data as { tags?: unknown }).tags !== 'object' ||
+				(data as { tags?: unknown }).tags === null ||
+				Array.isArray((data as { tags?: unknown }).tags)
+			) {
+				loadError = 'Unexpected response from server';
+				return null;
+			}
+
+			loadError = null;
+			return {
+				id: (data as { id: number }).id,
+				tags: (data as { tags: Record<string, string> }).tags
+			};
+		} catch (err) {
+			if (err instanceof DOMException && err.name === 'AbortError') {
+				return null;
+			}
+
+			const message =
+				err instanceof Error && err.message ? err.message : 'Error fetching nearest way';
+			loadError = message;
+			console.error('Error fetching nearest way:', err);
+			return null;
+		} finally {
+			isLoadingWay = false;
 		}
 	}
 
 	// Map interactions:
-	function onMapClick(latlng: [number, number]): void {
+	async function onMapClick(latlng: [number, number]): Promise<void> {
 		const [lat, lng] = latlng;
 		if (!mapInstance) return;
 
@@ -123,12 +160,29 @@
 			mapInstance.removeStartMarker();
 			mapInstance.addStartMarker([lat, lng]);
 			mode = toggleSelectStart(mode);
-			mapInstance.showInfoLayer();
 		} else if (mode.selectEndActive) {
 			mapInstance.removeEndMarker();
 			mapInstance.addEndMarker([lat, lng]);
 			mode = toggleSelectEnd(mode);
-			mapInstance.showInfoLayer();
+		} else {
+			// Normal map click - find nearest way
+			if (nearestWayAbortController) {
+				nearestWayAbortController.abort();
+			}
+
+			const controller = new AbortController();
+			nearestWayAbortController = controller;
+			const wayData = await fetchNearestWay(lat, lng, controller.signal);
+			if (controller !== nearestWayAbortController) {
+				return;
+			}
+			if (wayData) {
+				wayState.selectedWay = {
+					id: wayData.id,
+					tags: wayData.tags
+				};
+				updateUrlWithWay(wayData.id);
+			}
 		}
 	}
 
@@ -146,12 +200,10 @@
 
 	function handleSelectStartClick() {
 		mode = toggleSelectStart(mode);
-		mapInstance?.[mode.selectStartActive ? 'hideInfoLayer' : 'showInfoLayer']();
 	}
 
 	function handleSelectEndClick() {
 		mode = toggleSelectEnd(mode);
-		mapInstance?.[mode.selectEndActive ? 'hideInfoLayer' : 'showInfoLayer']();
 	}
 
 	function resetMap() {
@@ -159,12 +211,6 @@
 			mapInstance.reset();
 			mode = { selectStartActive: false, selectEndActive: false };
 		}
-	}
-
-	function handleWayClick(way: WayFeature) {
-		way.id = Number(way.id);
-		wayState.selectedWay = way;
-		updateUrlWithWay(way.id);
 	}
 
 	onMount(async () => {
@@ -188,6 +234,15 @@
 				class="absolute top-2 left-2 z-20 bg-red-600 text-white px-3 py-2 rounded shadow"
 			>
 				{loadError}
+			</div>
+		{/if}
+
+		{#if isLoadingWay}
+			<div
+				role="status"
+				class="absolute top-2 right-2 z-20 bg-blue-600 text-white px-3 py-2 rounded shadow"
+			>
+				Finding nearest way...
 			</div>
 		{/if}
 	</div>

@@ -59,9 +59,15 @@ function makeFakeL() {
 		const root = document.getElementById('map') || document.body;
 		const m: any = {
 			_rootEl: root,
+			_eventHandlers: {} as any,
 			createPane: (_name: string) => {},
 			getPane: (_name: string) => ({ style: {} }),
 			fitBounds: (_b: any) => {},
+			getContainer: () => root,
+			on: (event: string, handler: any) => {
+				if (!m._eventHandlers[event]) m._eventHandlers[event] = [];
+				m._eventHandlers[event].push(handler);
+			},
 			// setView should return the map object so chaining works
 			setView: (_v: any, _z: any) => m
 		};

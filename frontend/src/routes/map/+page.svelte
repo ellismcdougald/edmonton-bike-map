@@ -7,4 +7,4 @@
 </script>
 
 <MenuBar username={data.username} />
-<Display ways={data.ways} username={data.username} />
+<Display username={data.username} />

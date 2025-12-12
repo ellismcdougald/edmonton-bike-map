@@ -39,9 +39,6 @@ vi.mock('$lib/map/mapActions', () => ({
 const mockMapInstance: any = {
 	addTileLayer: vi.fn(),
 	onMapClick: vi.fn(),
-	loadInfoLayer: vi.fn(),
-	showInfoLayer: vi.fn(),
-	hideInfoLayer: vi.fn(),
 	map: { remove: vi.fn() },
 	addStartMarker: vi.fn(),
 	removeStartMarker: vi.fn(),
@@ -61,9 +58,10 @@ describe('Map.svelte', () => {
 		vi.clearAllMocks();
 	});
 
-	it('loads info layer on mount', async () => {
+	it('loads the map on mount', async () => {
 		render(Map);
 		await waitFor(() => expect(mockMapInstance.addTileLayer).toHaveBeenCalled());
+		await waitFor(() => expect(mockMapInstance.onMapClick).toHaveBeenCalled());
 	});
 
 	it('places a start marker when map is clicked in start mode', async () => {
@@ -76,11 +74,10 @@ describe('Map.svelte', () => {
 
 		// trigger the stored click handler
 		const clickHandler = mockMapInstance.onMapClick.mock.calls[0][0];
-		clickHandler([51, -0.1]);
+		await clickHandler([51, -0.1]);
 
 		expect(mockMapInstance.removeStartMarker).toHaveBeenCalled();
 		expect(mockMapInstance.addStartMarker).toHaveBeenCalledWith([51, -0.1]);
-		expect(mockMapInstance.showInfoLayer).toHaveBeenCalled();
 	});
 
 	it('places an end marker when map is clicked in end mode', async () => {
@@ -93,11 +90,10 @@ describe('Map.svelte', () => {
 
 		// trigger the stored click handler
 		const clickHandler = mockMapInstance.onMapClick.mock.calls[0][0];
-		clickHandler([51, -0.1]);
+		await clickHandler([51, -0.1]);
 
 		expect(mockMapInstance.removeEndMarker).toHaveBeenCalled();
 		expect(mockMapInstance.addEndMarker).toHaveBeenCalledWith([51, -0.1]);
-		expect(mockMapInstance.showInfoLayer).toHaveBeenCalled();
 	});
 
 	it('calls findRoute with the map instance when Find Route button is clicked', async () => {
@@ -123,17 +119,21 @@ describe('Map.svelte', () => {
 		expect(startButton.classList.contains('active')).toBe(false);
 		expect(endButton.classList.contains('active')).toBe(false);
 
+		// Click start button once to activate
 		await fireEvent.click(startButton);
-		expect(mockMapInstance.hideInfoLayer).toHaveBeenCalled();
+		expect(startButton.classList.contains('active')).toBe(true);
 
+		// Click start button again to deactivate
 		await fireEvent.click(startButton);
-		expect(mockMapInstance.showInfoLayer).toHaveBeenCalled();
+		expect(startButton.classList.contains('active')).toBe(false);
 
+		// Click end button once to activate
 		await fireEvent.click(endButton);
-		expect(mockMapInstance.hideInfoLayer).toHaveBeenCalled();
+		expect(endButton.classList.contains('active')).toBe(true);
 
+		// Click end button again to deactivate
 		await fireEvent.click(endButton);
-		expect(mockMapInstance.showInfoLayer).toHaveBeenCalled();
+		expect(endButton.classList.contains('active')).toBe(false);
 	});
 
 	it('resets the map when Reset button is clicked', async () => {
@@ -145,5 +145,28 @@ describe('Map.svelte', () => {
 		await fireEvent.click(resetButton);
 
 		expect(mockMapInstance.reset).toHaveBeenCalled();
+	});
+
+	it('fetches nearest way when map is clicked in normal mode', async () => {
+		const mockFetch = vi.fn().mockResolvedValue({
+			ok: true,
+			json: () => Promise.resolve({ id: 12345, tags: { name: 'Test Street' } })
+		});
+		vi.stubGlobal('fetch', mockFetch);
+
+		render(Map);
+
+		await waitFor(() => expect(mockMapInstance.addTileLayer).toHaveBeenCalled());
+
+		// trigger the stored click handler in normal mode (not selecting markers)
+		const clickHandler = mockMapInstance.onMapClick.mock.calls[0][0];
+		await clickHandler([53.5461, -113.4938]);
+
+		await waitFor(() => {
+			expect(mockFetch).toHaveBeenCalledWith(
+				expect.stringContaining('/api/nearest-way?lat=53.5461&lng=-113.4938'),
+				expect.objectContaining({ signal: expect.any(AbortSignal) })
+			);
+		});
 	});
 });

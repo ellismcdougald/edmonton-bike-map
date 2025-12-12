@@ -1,6 +1,7 @@
 package sqlrepo
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"regexp"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
+	"github.com/ellismcdougald/edmonton-bike-map/internal/repository"
 	"github.com/stretchr/testify/require"
 )
 
@@ -133,6 +135,59 @@ func TestSQLWayRepository_GetAllWays(t *testing.T) {
 	require.Len(t, ways, 2)
 
 	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestSQLWayRepository_GetNearestWay(t *testing.T) {
+	// Query matcher anchors: ensure key fragments appear in order with flexible whitespace.
+	// (?s) enables dot to match newlines so multi-line SQL is matched reliably.
+	const queryAnchors = "WITH distances(?s).*JOIN nodes(?s).*LIMIT 1(?s).*ARRAY_AGG"
+
+	t.Run("returns nearest way", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer func() {
+			mock.ExpectClose()
+			_ = db.Close()
+		}()
+
+		tags := map[string]string{"highway": "cycleway"}
+		tagsJSON, _ := json.Marshal(tags)
+
+		mock.ExpectQuery(queryAnchors).
+			WithArgs(53.5, -113.5).
+			WillReturnRows(sqlmock.NewRows([]string{"id", "tags", "node_ids"}).AddRow(int64(42), tagsJSON, "{1,2,3}"))
+
+		repo := NewSQLWayRepository(db)
+		way, err := repo.GetNearestWay(53.5, -113.5)
+		require.NoError(t, err)
+		require.NotNil(t, way)
+		require.Equal(t, int64(42), way.ID)
+		require.Equal(t, tags, way.Tags)
+		require.Equal(t, []int64{1, 2, 3}, way.NodeIDs)
+
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("returns not found sentinel", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer func() {
+			mock.ExpectClose()
+			_ = db.Close()
+		}()
+
+		mock.ExpectQuery(queryAnchors).
+			WithArgs(0.0, 0.0).
+			WillReturnError(sql.ErrNoRows)
+
+		repo := NewSQLWayRepository(db)
+		way, err := repo.GetNearestWay(0.0, 0.0)
+		require.Error(t, err)
+		require.Nil(t, way)
+		require.ErrorIs(t, err, repository.ErrWayNotFound)
+
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
 }
 
 // (removed) pqArrayInt64 helper was unused and created a linter warning; tests use string array format instead.

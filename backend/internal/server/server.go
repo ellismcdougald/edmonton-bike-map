@@ -11,6 +11,7 @@ import (
 // Routes registered:
 //   - GET /api/route       : compute bike routes between coordinates
 //   - GET /api/all-ways    : fetch all ways from the database
+//   - GET /api/nearest-way : find the nearest way to given coordinates
 //   - GET, POST /api/reviews : get or post reviews for ways
 //   - POST /api/signup     : user signup
 //
@@ -57,6 +58,16 @@ func RegisterRoutes(mux *http.ServeMux, handlers handler.Handlers) {
 	))
 	mux.Handle("/api/all-ways", wrap(
 		http.HandlerFunc(handlers.WayHandler.HandleAllWays()),
+		[]string{"GET", "OPTIONS"},
+		"optional",
+	))
+	mux.Handle("/api/nearest-way", wrap(
+		http.HandlerFunc(handlers.WayHandler.HandleNearestWay()),
+		[]string{"GET", "OPTIONS"},
+		"optional",
+	))
+	mux.Handle("/api/way", wrap(
+		http.HandlerFunc(handlers.WayHandler.HandleGetWay()),
 		[]string{"GET", "OPTIONS"},
 		"optional",
 	))

@@ -51,6 +51,9 @@ func (m *mockWayRepo) GetAllWays() ([]models.Way, error) {
 	}
 	return m.ways, nil
 }
+func (m *mockWayRepo) GetNearestWay(latitude, longitude float64) (*models.Way, error) {
+	return nil, nil
+}
 
 func TestWayHandler_HandleAllWays_Success(t *testing.T) {
 	nodes := map[int64]models.Node{

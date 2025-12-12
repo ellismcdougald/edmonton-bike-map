@@ -166,7 +166,7 @@ func (r *SQLWayRepository) GetWay(id int64) (*models.Way, error) {
 		Scan(&way.ID, &tagsJson)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("way with ID %d not found", id)
+			return nil, repository.ErrWayNotFound
 		}
 		return nil, err
 	}
@@ -240,4 +240,55 @@ func (r *SQLWayRepository) GetAllWays() ([]models.Way, error) {
 	}
 
 	return ways, nil
+}
+
+// GetNearestWay retrieves the way whose nodes are closest to the given coordinates.
+// Uses a simple distance calculation based on latitude/longitude differences.
+// This avoids requiring PostGIS extensions.
+func (r *SQLWayRepository) GetNearestWay(latitude, longitude float64) (*models.Way, error) {
+	query := `
+		WITH distances AS (
+			SELECT DISTINCT
+				w.id,
+				w.tags,
+				MIN(
+					SQRT(
+						POW(n.latitude - $1, 2) + POW(n.longitude - $2, 2)
+					)
+				) as min_distance
+			FROM ways w
+			JOIN way_nodes wn ON wn.way_id = w.id
+			JOIN nodes n ON n.id = wn.node_id
+			GROUP BY w.id, w.tags
+			ORDER BY min_distance ASC
+			LIMIT 1
+		)
+		SELECT 
+			w.id,
+			w.tags,
+			ARRAY_AGG(wn.node_id ORDER BY wn.sequence_id) AS node_ids
+		FROM distances d
+		JOIN ways w ON w.id = d.id
+		JOIN way_nodes wn ON wn.way_id = w.id
+		GROUP BY w.id, w.tags
+	`
+
+	var way models.Way
+	var tagsJson []byte
+
+	err := r.DB.QueryRow(query, latitude, longitude).Scan(&way.ID, &tagsJson, pq.Array(&way.NodeIDs))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, repository.ErrWayNotFound
+		}
+		return nil, err
+	}
+
+	way.Tags = make(map[string]string)
+	err = json.Unmarshal(tagsJson, &way.Tags)
+	if err != nil {
+		return nil, err
+	}
+
+	return &way, nil
 }
