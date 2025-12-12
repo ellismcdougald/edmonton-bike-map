@@ -77,7 +77,8 @@ test.describe("reviews e2e", () => {
     const addButton = page.locator("#addReviewButton");
     await expect(addButton).toBeVisible({ timeout: 5000 });
     await addButton.click();
-    await expect(page.locator("#addReviewPopup")).toBeVisible({
+    // Inline form replaces reviews; header changes to "Add Review"
+    await expect(page.locator("text=Add Review")).toBeVisible({
       timeout: 2000,
     });
 
@@ -86,7 +87,8 @@ test.describe("reviews e2e", () => {
     await page.fill("#comment", uniqueComment);
     await page.locator("#submitButton").click();
 
-    await expect(page.locator("#addReviewPopup")).toHaveCount(0, {
+    // After submit, inline form closes and header returns to "Reviews"
+    await expect(page.locator("text=Reviews")).toBeVisible({
       timeout: 5000,
     });
     await expect(page.locator(`text=${uniqueComment}`)).toBeVisible({

@@ -1,31 +1,30 @@
 <!--
-  Reviews.svelte
+	Reviews.svelte
 
-  Purpose:
-  Container for displaying and managing reviews for a specific wayId.
+	Purpose:
+	Container for displaying and managing reviews for a specific wayId.
 
-  Props:
-  - wayId (number): The ID of the way/route to fetch and display reviews for
+	Props:
+	- wayId (number): The ID of the way/route to fetch and display reviews for
 
-  State:
-  - addReviewActive (boolean): Tracks whether the AddReviewPopup is open
-  - reviews (Review[]): Array of reviews for the given wayId
+	State:
+	- reviews (Review[]): Array of reviews for the given wayId
+	- Inline add-review form state (rating, comment, error, isSubmitting)
 
-  Behavior:
-  - On mount and whenever wayId changes, fetches reviews from backend
-  - Displays "Add Review" button that toggles AddReviewPopup
-  - After a new review is added, reloads reviews list
-  - Renders each review using Review.svelte
+	Behavior:
+	- Displays reviews list
+	- Shows inline form (instead of popup) for adding a review when allowed
+	- Calls onReviewAdded after successful submit so parent can refresh reviews
 
-  Notes:
-  - Relies on fetchReviews from $lib/utils/review
-  - Uses review.createdAt + review.rating as key in {#each} loop
+	Notes:
+	- Relies on createReview from $lib/api/client/reviews
+	- Uses review.createdAt + review.rating as key in {#each} loop
 -->
 
 <script lang="ts">
-	import Review from './Review.svelte';
-	import AddReviewPopup from './AddReviewPopup.svelte';
 	import type { Review as ReviewObj } from '$lib/types';
+	import AddReview from './AddReview.svelte';
+	import ViewReviews from './ViewReviews.svelte';
 
 	let {
 		wayId,
@@ -38,42 +37,55 @@
 		onReviewAdded?: () => void;
 		canReview?: boolean;
 	} = $props();
-	let addReviewActive: boolean = $state(false);
+
+	let showForm: boolean = $state(false);
+
+	// selectedWay is consumed within AddReview; no local binding needed here
+
+	function resetForm() {
+		showForm = false;
+	}
+
+	function handleSubmitted() {
+		if (onReviewAdded && typeof onReviewAdded === 'function') onReviewAdded();
+		showForm = false;
+	}
 </script>
 
 <div id="review-container" class="border-t">
+	<!-- Header at the top: title + action button -->
 	<div class="flex justify-between items-center mt-1 mb-2">
-		<h1 class="text-2xl font-bold mb-2 mt-1">Reviews:</h1>
+		<h1 class="text-2xl font-bold mb-2 mt-1">{showForm ? 'Add Review' : 'Reviews'}</h1>
 		{#if canReview}
-			<button
-				id="addReviewButton"
-				class="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
-				onclick={() => {
-					addReviewActive = true;
-				}}>Add Review</button
-			>
+			{#if showForm}
+				<button
+					type="button"
+					id="cancelAddReviewButton"
+					class="px-3 py-1 rounded border"
+					onclick={resetForm}
+				>
+					Back to reviews
+				</button>
+			{:else}
+				<button
+					type="button"
+					id="addReviewButton"
+					class="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
+					onclick={() => {
+						showForm = true;
+					}}
+				>
+					Add Review
+				</button>
+			{/if}
 		{:else}
 			<span class="text-sm text-gray-600">Log in to add a review.</span>
 		{/if}
 	</div>
 
-	{#if addReviewActive}
-		<AddReviewPopup
-			closePopup={() => {
-				addReviewActive = false;
-			}}
-			{wayId}
-			onReviewAdded={() => {
-				if (onReviewAdded && typeof onReviewAdded === 'function') onReviewAdded();
-			}}
-		/>
-	{/if}
-
-	{#if reviews}
-		<div>
-			{#each reviews as review (review.createdAt + review.rating)}
-				<Review {review} />
-			{/each}
-		</div>
+	{#if showForm}
+		<AddReview {wayId} onSubmitted={handleSubmitted} />
+	{:else}
+		<ViewReviews {reviews} />
 	{/if}
 </div>

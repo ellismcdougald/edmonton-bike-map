@@ -2,6 +2,7 @@ import { render, fireEvent, waitFor } from '@testing-library/svelte';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ReviewContainer from './ReviewContainer.svelte';
 import type { Review } from '$lib/types';
+import * as reviewsApi from '$lib/api/client/reviews';
 
 describe('ReviewContainer.svelte', () => {
 	const wayId = 1;
@@ -30,17 +31,33 @@ describe('ReviewContainer.svelte', () => {
 		});
 	});
 
-	it('opens AddReviewPopup when Add Review button is clicked', async () => {
-		const { container } = render(ReviewContainer, { props: { wayId, reviews: mockReviews } });
+	it('shows form when Add Review is clicked and submits', async () => {
+		const createReviewSpy = vi.spyOn(reviewsApi, 'createReview').mockResolvedValue();
+		const onReviewAdded = vi.fn();
+
+		const { container } = render(ReviewContainer, {
+			props: { wayId, reviews: mockReviews, onReviewAdded }
+		});
 
 		const addButton = container.querySelector<HTMLButtonElement>('#addReviewButton')!;
 		expect(addButton).toBeInTheDocument();
 
 		await fireEvent.click(addButton);
 
+		const ratingInput = container.querySelector<HTMLInputElement>('#rating')!;
+		const commentInput = container.querySelector<HTMLTextAreaElement>('#comment')!;
+		const submitButton = container.querySelector<HTMLButtonElement>('#submitButton')!;
+
+		ratingInput.value = '7';
+		await fireEvent.input(ratingInput);
+		commentInput.value = 'Great route!';
+		await fireEvent.input(commentInput);
+
+		await fireEvent.click(submitButton);
+
 		await waitFor(() => {
-			const popup = container.querySelector('#addReviewPopup');
-			expect(popup).toBeInTheDocument();
+			expect(createReviewSpy).toHaveBeenCalledWith(wayId, 7, 'Great route!');
+			expect(onReviewAdded).toHaveBeenCalled();
 		});
 	});
 
