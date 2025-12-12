@@ -76,6 +76,18 @@ export class LeafletMap {
 		this.map.getPane('routePane')!.style.zIndex = '650';
 		this.map.createPane('infoPane');
 		this.map.getPane('infoPane')!.style.zIndex = '600';
+
+		// Set up cursor behavior: default normally, grabbing when dragging
+		const mapContainer = this.map.getContainer();
+		mapContainer.style.cursor = 'default';
+
+		this.map.on('mousedown', () => {
+			mapContainer.style.cursor = 'grabbing';
+		});
+
+		this.map.on('mouseup', () => {
+			mapContainer.style.cursor = 'default';
+		});
 	}
 
 	addTileLayer(tileUrl: string, maxZoom: number, minZoom: number, attribution: string): TileLayer {

@@ -243,39 +243,40 @@ func (r *SQLWayRepository) GetAllWays() ([]models.Way, error) {
 }
 
 // GetNearestWay retrieves the way whose nodes are closest to the given coordinates.
-// Uses PostGIS ST_DWithin to find ways with nodes within a reasonable distance,
-// then returns the way with the minimum distance to any of its nodes.
+// Uses a simple distance calculation based on latitude/longitude differences.
+// This avoids requiring PostGIS extensions.
 func (r *SQLWayRepository) GetNearestWay(latitude, longitude float64) (*models.Way, error) {
 	query := `
-		SELECT DISTINCT
+		WITH distances AS (
+			SELECT DISTINCT
+				w.id,
+				w.tags,
+				MIN(
+					SQRT(
+						POW(n.latitude - $1, 2) + POW(n.longitude - $2, 2)
+					)
+				) as min_distance
+			FROM ways w
+			JOIN way_nodes wn ON wn.way_id = w.id
+			JOIN nodes n ON n.id = wn.node_id
+			GROUP BY w.id, w.tags
+			ORDER BY min_distance ASC
+			LIMIT 1
+		)
+		SELECT 
 			w.id,
 			w.tags,
 			ARRAY_AGG(wn.node_id ORDER BY wn.sequence_id) AS node_ids
-		FROM ways w
+		FROM distances d
+		JOIN ways w ON w.id = d.id
 		JOIN way_nodes wn ON wn.way_id = w.id
-		JOIN nodes n ON n.id = wn.node_id
-		WHERE ST_DWithin(
-			ST_SetSRID(ST_Point($1, $2), 4326)::geography,
-			ST_SetSRID(ST_Point(n.longitude, n.latitude), 4326)::geography,
-			5000  -- within 5 km
-		)
 		GROUP BY w.id, w.tags
-		ORDER BY (
-			SELECT MIN(ST_Distance(
-				ST_SetSRID(ST_Point($1, $2), 4326)::geography,
-				ST_SetSRID(ST_Point(n.longitude, n.latitude), 4326)::geography
-			))
-			FROM way_nodes wn2
-			JOIN nodes n2 ON n2.id = wn2.node_id
-			WHERE wn2.way_id = w.id
-		) ASC
-		LIMIT 1
 	`
 
 	var way models.Way
 	var tagsJson []byte
 
-	err := r.DB.QueryRow(query, longitude, latitude).Scan(&way.ID, &tagsJson, pq.Array(&way.NodeIDs))
+	err := r.DB.QueryRow(query, latitude, longitude).Scan(&way.ID, &tagsJson, pq.Array(&way.NodeIDs))
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("no ways found near coordinates")

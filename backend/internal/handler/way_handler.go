@@ -107,3 +107,43 @@ func (h *WayHandler) HandleNearestWay() http.HandlerFunc {
 		}
 	}
 }
+
+// HandleGetWay returns an HTTP handler that fetches a single way by ID.
+// Expects query parameter 'id' (as int64).
+// Responds with a simple JSON object containing the way ID and tags.
+// Responds with HTTP 400 Bad Request if ID is invalid or missing.
+// Responds with HTTP 404 Not Found if the way is not found.
+// Responds with HTTP 500 Internal Server Error if the database query fails.
+func (h *WayHandler) HandleGetWay() http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		idStr := request.URL.Query().Get("id")
+
+		if idStr == "" {
+			http.Error(writer, "Missing required parameter: id", http.StatusBadRequest)
+			return
+		}
+
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil {
+			http.Error(writer, "Invalid id value", http.StatusBadRequest)
+			return
+		}
+
+		way, err := h.WayService.GetWay(id)
+		if err != nil {
+			log.Printf("Could not get way: %v", err)
+			http.Error(writer, "Way not found", http.StatusNotFound)
+			return
+		}
+
+		response := map[string]interface{}{
+			"id":   way.ID,
+			"tags": way.Tags,
+		}
+
+		writer.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(writer).Encode(response); err != nil {
+			log.Printf("Error encoding JSON: %v", err)
+		}
+	}
+}

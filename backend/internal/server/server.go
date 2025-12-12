@@ -66,6 +66,11 @@ func RegisterRoutes(mux *http.ServeMux, handlers handler.Handlers) {
 		[]string{"GET", "OPTIONS"},
 		"optional",
 	))
+	mux.Handle("/api/way", wrap(
+		http.HandlerFunc(handlers.WayHandler.HandleGetWay()),
+		[]string{"GET", "OPTIONS"},
+		"optional",
+	))
 
 	// REVIEWS (GET is optional, POST requires auth):
 	mux.Handle("/api/reviews", wrap(

@@ -27,6 +27,11 @@ func (s *WayService) GetAllWays() ([]models.Way, error) {
 	return s.WayRepository.GetAllWays()
 }
 
+// GetWay retrieves a way by ID using the WayRepository.
+func (s *WayService) GetWay(id int64) (*models.Way, error) {
+	return s.WayRepository.GetWay(id)
+}
+
 // GetNearestWay retrieves the nearest way to the given coordinates using the WayRepository.
 func (s *WayService) GetNearestWay(latitude, longitude float64) (*models.Way, error) {
 	return s.WayRepository.GetNearestWay(latitude, longitude)
