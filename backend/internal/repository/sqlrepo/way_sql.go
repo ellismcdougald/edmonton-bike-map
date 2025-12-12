@@ -166,7 +166,7 @@ func (r *SQLWayRepository) GetWay(id int64) (*models.Way, error) {
 		Scan(&way.ID, &tagsJson)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("way with ID %d not found", id)
+			return nil, repository.ErrWayNotFound
 		}
 		return nil, err
 	}
@@ -279,7 +279,7 @@ func (r *SQLWayRepository) GetNearestWay(latitude, longitude float64) (*models.W
 	err := r.DB.QueryRow(query, latitude, longitude).Scan(&way.ID, &tagsJson, pq.Array(&way.NodeIDs))
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("no ways found near coordinates")
+			return nil, repository.ErrWayNotFound
 		}
 		return nil, err
 	}

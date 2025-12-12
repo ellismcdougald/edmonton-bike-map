@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -91,8 +92,13 @@ func (h *WayHandler) HandleNearestWay() http.HandlerFunc {
 
 		way, err := h.WayService.GetNearestWay(lat, lng)
 		if err != nil {
+			if errors.Is(err, service.ErrWayNotFound) {
+				http.Error(writer, "No ways found nearby", http.StatusNotFound)
+				return
+			}
+
 			log.Printf("Could not get nearest way: %v", err)
-			http.Error(writer, "No ways found nearby", http.StatusNotFound)
+			http.Error(writer, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 
@@ -131,8 +137,13 @@ func (h *WayHandler) HandleGetWay() http.HandlerFunc {
 
 		way, err := h.WayService.GetWay(id)
 		if err != nil {
+			if errors.Is(err, service.ErrWayNotFound) {
+				http.Error(writer, "Way not found", http.StatusNotFound)
+				return
+			}
+
 			log.Printf("Could not get way: %v", err)
-			http.Error(writer, "Way not found", http.StatusNotFound)
+			http.Error(writer, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 
