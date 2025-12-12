@@ -42,12 +42,14 @@
 	import { wayState } from '$lib/state.svelte';
 	import { loadLeaflet } from '$lib/map/loadLeaflet';
 	import { findRoute } from '$lib/map/mapActions';
+	import type { WayFeatureGeoJSON } from '$lib/types';
 
 	let mapInstance: InstanceType<typeof import('$lib/map/LeafletMap').LeafletMap> | null = null;
 	let mode: MapModeState = $state({ selectStartActive: false, selectEndActive: false });
 	let loadError: string | null = $state(null);
 	let isLoadingWay: boolean = $state(false);
 	let nearestWayAbortController: AbortController | null = null;
+	let selectedWayAbortController: AbortController | null = null;
 
 	// URL Helpers:
 	function updateUrlWithWay(id: number) {
@@ -92,13 +94,52 @@
 				return;
 			}
 
-			const wayData = await response.json();
-			wayState.selectedWay = {
-				id: wayData.id,
-				tags: wayData.tags
-			};
+			const wayFeature = (await response.json()) as WayFeatureGeoJSON;
+			if (typeof wayFeature?.properties?.id !== 'undefined') {
+				const idNum = Number(wayFeature.properties.id);
+				wayState.selectedWay = {
+					id: idNum,
+					tags: wayFeature.properties as Record<string, string>
+				};
+				await loadSelectedWayHighlight(idNum);
+			}
 		} catch (err) {
 			console.error('Error restoring selection from URL:', err);
+		}
+	}
+
+	async function fetchWayGeojson(
+		id: number,
+		signal?: AbortSignal
+	): Promise<WayFeatureGeoJSON | null> {
+		try {
+			const res = await fetch(`/api/way?id=${id}`, { signal });
+			if (!res.ok) {
+				return null;
+			}
+			const data = (await res.json()) as WayFeatureGeoJSON;
+			if (!data || data.type !== 'Feature' || !data.geometry) return null;
+			return data;
+		} catch (err) {
+			if (err instanceof DOMException && err.name === 'AbortError') return null;
+			console.error('Error fetching way GeoJSON:', err);
+			return null;
+		}
+	}
+
+	async function loadSelectedWayHighlight(id: number) {
+		if (!mapInstance) return;
+
+		if (selectedWayAbortController) {
+			selectedWayAbortController.abort();
+		}
+
+		const controller = new AbortController();
+		selectedWayAbortController = controller;
+		const feature = await fetchWayGeojson(id, controller.signal);
+		if (controller !== selectedWayAbortController) return;
+		if (feature) {
+			mapInstance.loadSelectedWayLayer(feature);
 		}
 	}
 
@@ -181,6 +222,7 @@
 					id: wayData.id,
 					tags: wayData.tags
 				};
+				await loadSelectedWayHighlight(wayData.id);
 				updateUrlWithWay(wayData.id);
 			}
 		}
@@ -210,6 +252,7 @@
 		if (mapInstance) {
 			mapInstance.reset();
 			mode = { selectStartActive: false, selectEndActive: false };
+			mapInstance.removeSelectedWayLayer();
 		}
 	}
 

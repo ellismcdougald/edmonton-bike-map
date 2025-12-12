@@ -44,7 +44,9 @@ const mockMapInstance: any = {
 	removeStartMarker: vi.fn(),
 	addEndMarker: vi.fn(),
 	removeEndMarker: vi.fn(),
-	reset: vi.fn()
+	reset: vi.fn(),
+	loadSelectedWayLayer: vi.fn(),
+	removeSelectedWayLayer: vi.fn()
 };
 const MockLeafletMap = vi.fn(() => mockMapInstance);
 vi.mock('$lib/map/loadLeaflet', () => ({

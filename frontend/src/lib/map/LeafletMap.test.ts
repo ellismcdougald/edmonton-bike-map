@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { LeafletMap } from './LeafletMap';
 
@@ -36,21 +36,25 @@ function makeFakeL() {
 		}
 	};
 
-	const geoJSON = (geojson: any, _options: any) => {
-		return {
+	const geoJsonCalls: any[] = [];
+	const geoJSON = (geojson: any, options: any) => {
+		const layer: any = {
+			_options: options,
 			addTo(map: any) {
-				// simple object representing a GeoJSON layer
+				if (!map._layers) map._layers = [];
+				map._layers.push(layer);
+				return layer;
+			},
+			getBounds() {
 				return {
-					getBounds() {
-						return {
-							isValid() {
-								return true;
-							}
-						};
+					isValid() {
+						return true;
 					}
 				};
 			}
 		};
+		geoJsonCalls.push({ geojson, options, layer });
+		return layer;
 	};
 
 	const tileLayer = (_url: string, _opts: any) => ({ addTo: (_map: any) => ({}) });
@@ -60,6 +64,7 @@ function makeFakeL() {
 		const m: any = {
 			_rootEl: root,
 			_eventHandlers: {} as any,
+			_layers: [] as any[],
 			createPane: (_name: string) => {},
 			getPane: (_name: string) => ({ style: {} }),
 			fitBounds: (_b: any) => {},
@@ -67,6 +72,9 @@ function makeFakeL() {
 			on: (event: string, handler: any) => {
 				if (!m._eventHandlers[event]) m._eventHandlers[event] = [];
 				m._eventHandlers[event].push(handler);
+			},
+			removeLayer: (layer: any) => {
+				m._layers = m._layers.filter((l: any) => l !== layer);
 			},
 			// setView should return the map object so chaining works
 			setView: (_v: any, _z: any) => m
@@ -79,7 +87,8 @@ function makeFakeL() {
 		Control,
 		geoJSON,
 		tileLayer,
-		map: mapFactory
+		map: mapFactory,
+		_geoJsonCalls: geoJsonCalls
 	} as any;
 }
 
@@ -138,5 +147,41 @@ describe('LeafletMap.loadRouteLayer', () => {
 		expect(tc._el).toBeInstanceOf(HTMLElement);
 		// default avg speed used in fallback is 20 km/h -> 10km = 30min
 		expect(tc._el.innerHTML).toContain('Estimated time: 30 min');
+	});
+});
+
+describe('LeafletMap.loadSelectedWayLayer', () => {
+	beforeEach(() => {
+		let el = document.getElementById('map');
+		if (!el) {
+			el = document.createElement('div');
+			el.id = 'map';
+			document.body.appendChild(el);
+		}
+	});
+
+	it('renders highlight with visible style and replaces existing layer', () => {
+		const L: any = makeFakeL();
+		const lm = new LeafletMap(L);
+
+		const featureA: any = {
+			type: 'Feature',
+			properties: {},
+			geometry: { type: 'LineString', coordinates: [] }
+		};
+		const featureB: any = {
+			type: 'Feature',
+			properties: {},
+			geometry: { type: 'LineString', coordinates: [] }
+		};
+
+		lm.loadSelectedWayLayer(featureA);
+		lm.loadSelectedWayLayer(featureB);
+
+		const calls = (L as any)._geoJsonCalls;
+		expect(calls.length).toBe(2);
+		expect(calls[1].options.style.color).toBe('#00e5ff');
+		expect(calls[1].options.style.weight).toBe(6);
+		expect(calls[1].options.style.opacity).toBe(0.9);
 	});
 });

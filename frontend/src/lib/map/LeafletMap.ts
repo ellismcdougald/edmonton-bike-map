@@ -61,6 +61,7 @@ export class LeafletMap {
 	private endMarker: Marker | null = null;
 	private routeLayer: GeoJSON | null = null;
 	private infoLayer: GeoJSON | null = null;
+	private selectedWayLayer: GeoJSON | null = null;
 	private distanceControl: L.Control | null = null;
 	private timeControl: L.Control | null = null;
 
@@ -262,6 +263,25 @@ export class LeafletMap {
 		}
 	}
 
+	loadSelectedWayLayer(geojson: GeoJSON.GeoJsonObject): void {
+		if (this.selectedWayLayer) {
+			this.map.removeLayer(this.selectedWayLayer);
+			this.selectedWayLayer = null;
+		}
+
+		this.selectedWayLayer = this.L.geoJSON(geojson, {
+			pane: 'routePane',
+			style: { color: '#00e5ff', weight: 6, opacity: 0.9 }
+		}).addTo(this.map);
+	}
+
+	removeSelectedWayLayer(): void {
+		if (this.selectedWayLayer) {
+			this.map.removeLayer(this.selectedWayLayer);
+			this.selectedWayLayer = null;
+		}
+	}
+
 	onMapClick(handler: (latlng: [number, number]) => void): void {
 		this.map.on('click', (e: LeafletMouseEvent) => {
 			handler([e.latlng.lat, e.latlng.lng]);
@@ -272,6 +292,7 @@ export class LeafletMap {
 		this.removeStartMarker();
 		this.removeEndMarker();
 		this.removeRouteLayer();
+		this.removeSelectedWayLayer();
 		this.showInfoLayer();
 	}
 }

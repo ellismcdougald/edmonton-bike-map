@@ -116,7 +116,7 @@ func (h *WayHandler) HandleNearestWay() http.HandlerFunc {
 
 // HandleGetWay returns an HTTP handler that fetches a single way by ID.
 // Expects query parameter 'id' (as int64).
-// Responds with a simple JSON object containing the way ID and tags.
+// Responds with a GeoJSON Feature containing the way geometry and tags.
 // Responds with HTTP 400 Bad Request if ID is invalid or missing.
 // Responds with HTTP 404 Not Found if the way is not found.
 // Responds with HTTP 500 Internal Server Error if the database query fails.
@@ -147,13 +147,26 @@ func (h *WayHandler) HandleGetWay() http.HandlerFunc {
 			return
 		}
 
-		response := map[string]interface{}{
-			"id":   way.ID,
-			"tags": way.Tags,
+		nodes, err := h.NodeService.GetAllNodes()
+		if err != nil {
+			log.Printf("Could not get nodes from db: %v", err)
+			http.Error(writer, "Could not get nodes from database", http.StatusInternalServerError)
+			return
+		}
+
+		features, err := geo.MapWaysToFeatures([]models.Way{*way}, nodes)
+		if err != nil {
+			log.Printf("Error mapping way to feature: %v", err)
+			http.Error(writer, "Error mapping way to feature: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if len(features) == 0 {
+			http.Error(writer, "Way mapping produced no features", http.StatusInternalServerError)
+			return
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(writer).Encode(response); err != nil {
+		if err := json.NewEncoder(writer).Encode(features[0]); err != nil {
 			log.Printf("Error encoding JSON: %v", err)
 		}
 	}
