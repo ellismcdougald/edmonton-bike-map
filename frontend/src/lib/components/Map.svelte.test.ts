@@ -164,7 +164,8 @@ describe('Map.svelte', () => {
 
 		await waitFor(() => {
 			expect(mockFetch).toHaveBeenCalledWith(
-				expect.stringContaining('/api/nearest-way?lat=53.5461&lng=-113.4938')
+				expect.stringContaining('/api/nearest-way?lat=53.5461&lng=-113.4938'),
+				expect.objectContaining({ signal: expect.any(AbortSignal) })
 			);
 		});
 	});
