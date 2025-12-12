@@ -45,6 +45,9 @@ func (m *mockWayRepo) GetAllWays() ([]models.Way, error) { return m.ways, m.err 
 func (m *mockWayRepo) GetNearestWay(latitude, longitude float64) (*models.Way, error) {
 	return nil, nil
 }
+func (m *mockWayRepo) GetWaysByNodeIDs(nodeIDs []int64) ([]models.Way, error) {
+	return nil, nil
+}
 
 type mockReviewRepo struct {
 	revs map[int64][]models.Review

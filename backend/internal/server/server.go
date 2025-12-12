@@ -9,11 +9,16 @@ import (
 
 // RegisterRoutes registers HTTP handlers for all API endpoints on the given ServeMux.
 // Routes registered:
-//   - GET /api/route       : compute bike routes between coordinates
-//   - GET /api/all-ways    : fetch all ways from the database
-//   - GET /api/nearest-way : find the nearest way to given coordinates
-//   - GET, POST /api/reviews : get or post reviews for ways
-//   - POST /api/signup     : user signup
+//   - POST /api/login            : user login
+//   - POST /api/signup           : user signup
+//   - GET /api/route             : compute bike routes between coordinates
+//   - GET /api/all-ways          : fetch all ways from the database
+//   - GET /api/nearest-way       : find the nearest way to given coordinates
+//   - GET /api/way               : get way details by ID
+//   - GET /api/adjacent-ways     : get ways adjacent to a given way
+//   - GET, POST /api/reviews     : get or post reviews for ways
+//   - POST /api/change-password  : change user password (auth required)
+//   - GET, POST /api/settings    : get or update user settings (auth required)
 //
 // RegisterRoutes registers the server's API endpoints on the provided ServeMux,
 // applying CORS to all routes and authentication middleware to protected routes.
@@ -68,6 +73,11 @@ func RegisterRoutes(mux *http.ServeMux, handlers handler.Handlers) {
 	))
 	mux.Handle("/api/way", wrap(
 		http.HandlerFunc(handlers.WayHandler.HandleGetWay()),
+		[]string{"GET", "OPTIONS"},
+		"optional",
+	))
+	mux.Handle("/api/adjacent-ways", wrap(
+		http.HandlerFunc(handlers.WayHandler.HandleGetAdjacentWays()),
 		[]string{"GET", "OPTIONS"},
 		"optional",
 	))

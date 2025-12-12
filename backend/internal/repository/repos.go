@@ -17,6 +17,7 @@ type WayRepository interface {
 	GetWay(id int64) (*models.Way, error)
 	GetAllWays() ([]models.Way, error)
 	GetNearestWay(latitude, longitude float64) (*models.Way, error)
+	GetWaysByNodeIDs(nodeIDs []int64) ([]models.Way, error)
 }
 
 // ReviewRepository defines methods to interact with Review data.

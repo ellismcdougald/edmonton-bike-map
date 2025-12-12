@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
+	"github.com/ellismcdougald/edmonton-bike-map/internal/repository"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/service"
 	"github.com/stretchr/testify/require"
 )
@@ -54,6 +55,9 @@ func (m *mockWayRepo) GetAllWays() ([]models.Way, error) {
 func (m *mockWayRepo) GetNearestWay(latitude, longitude float64) (*models.Way, error) {
 	return nil, nil
 }
+func (m *mockWayRepo) GetWaysByNodeIDs(nodeIDs []int64) ([]models.Way, error) {
+	return nil, nil
+}
 
 func TestWayHandler_HandleAllWays_Success(t *testing.T) {
 	nodes := map[int64]models.Node{
@@ -97,4 +101,162 @@ func TestWayHandler_HandleAllWays_NodeMissing_MapsError(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	require.Equal(t, http.StatusInternalServerError, rr.Code)
+}
+
+func TestWayHandler_HandleGetAdjacentWays(t *testing.T) {
+	nodes := map[int64]models.Node{
+		1: {ID: 1, Latitude: 50.0, Longitude: -113.0},
+		2: {ID: 2, Latitude: 50.1, Longitude: -113.1},
+		3: {ID: 3, Latitude: 50.2, Longitude: -113.2},
+	}
+
+	t.Run("returns adjacent ways as GeoJSON FeatureCollection", func(t *testing.T) {
+		// Way 10 has nodes [1, 2]
+		// Way 20 shares node 2 and has nodes [2, 3]
+		// Way 30 shares node 3 and has nodes [3]
+		targetWay := models.Way{ID: 10, Tags: map[string]string{"name": "Main"}, NodeIDs: []int64{1, 2}}
+		adjacentWays := []models.Way{
+			{ID: 20, Tags: map[string]string{"name": "Side"}, NodeIDs: []int64{2, 3}},
+			{ID: 30, Tags: map[string]string{"name": "Connector"}, NodeIDs: []int64{3}},
+		}
+
+		mockRepo := &mockWayRepoWithAdjacent{
+			targetWay:    &targetWay,
+			adjacentWays: adjacentWays,
+		}
+
+		nodeService := service.NewNodeService(&mockNodeRepo{nodes: nodes})
+		wayService := service.NewWayService(mockRepo)
+		h := NewWayHandler(nodeService, wayService)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/adjacent-ways?id=10", nil)
+		rr := httptest.NewRecorder()
+
+		handler := h.HandleGetAdjacentWays()
+		handler.ServeHTTP(rr, req)
+
+		require.Equal(t, http.StatusOK, rr.Code)
+		require.Equal(t, "application/json", rr.Header().Get("Content-Type"))
+
+		var fc models.FeatureCollection
+		require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &fc))
+		require.Equal(t, "FeatureCollection", fc.Type)
+		require.Len(t, fc.Features, 2)
+		require.Equal(t, "20", fc.Features[0].Properties["id"])
+		require.Equal(t, "30", fc.Features[1].Properties["id"])
+	})
+
+	t.Run("returns 400 when id parameter missing", func(t *testing.T) {
+		mockRepo := &mockWayRepoWithAdjacent{}
+		nodeService := service.NewNodeService(&mockNodeRepo{nodes: nodes})
+		wayService := service.NewWayService(mockRepo)
+		h := NewWayHandler(nodeService, wayService)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/adjacent-ways", nil)
+		rr := httptest.NewRecorder()
+
+		handler := h.HandleGetAdjacentWays()
+		handler.ServeHTTP(rr, req)
+
+		require.Equal(t, http.StatusBadRequest, rr.Code)
+		require.Contains(t, rr.Body.String(), "Missing required parameter")
+	})
+
+	t.Run("returns 400 when id parameter invalid", func(t *testing.T) {
+		mockRepo := &mockWayRepoWithAdjacent{}
+		nodeService := service.NewNodeService(&mockNodeRepo{nodes: nodes})
+		wayService := service.NewWayService(mockRepo)
+		h := NewWayHandler(nodeService, wayService)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/adjacent-ways?id=invalid", nil)
+		rr := httptest.NewRecorder()
+
+		handler := h.HandleGetAdjacentWays()
+		handler.ServeHTTP(rr, req)
+
+		require.Equal(t, http.StatusBadRequest, rr.Code)
+		require.Contains(t, rr.Body.String(), "Invalid id")
+	})
+
+	t.Run("returns 404 when way not found", func(t *testing.T) {
+		mockRepo := &mockWayRepoWithAdjacent{
+			notFound: true,
+		}
+		nodeService := service.NewNodeService(&mockNodeRepo{nodes: nodes})
+		wayService := service.NewWayService(mockRepo)
+		h := NewWayHandler(nodeService, wayService)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/adjacent-ways?id=999", nil)
+		rr := httptest.NewRecorder()
+
+		handler := h.HandleGetAdjacentWays()
+		handler.ServeHTTP(rr, req)
+
+		require.Equal(t, http.StatusNotFound, rr.Code)
+	})
+
+	t.Run("returns empty FeatureCollection when no adjacent ways", func(t *testing.T) {
+		targetWay := models.Way{ID: 10, Tags: map[string]string{}, NodeIDs: []int64{1}}
+		mockRepo := &mockWayRepoWithAdjacent{
+			targetWay:    &targetWay,
+			adjacentWays: []models.Way{},
+		}
+
+		nodeService := service.NewNodeService(&mockNodeRepo{nodes: nodes})
+		wayService := service.NewWayService(mockRepo)
+		h := NewWayHandler(nodeService, wayService)
+
+		req := httptest.NewRequest(http.MethodGet, "/api/adjacent-ways?id=10", nil)
+		rr := httptest.NewRecorder()
+
+		handler := h.HandleGetAdjacentWays()
+		handler.ServeHTTP(rr, req)
+
+		require.Equal(t, http.StatusOK, rr.Code)
+
+		var fc models.FeatureCollection
+		require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &fc))
+		require.Equal(t, "FeatureCollection", fc.Type)
+		require.Empty(t, fc.Features)
+	})
+}
+
+// mockWayRepoWithAdjacent provides controlled responses for adjacent way testing
+type mockWayRepoWithAdjacent struct {
+	targetWay    *models.Way
+	adjacentWays []models.Way
+	notFound     bool
+	err          error
+}
+
+func (m *mockWayRepoWithAdjacent) Insert(way models.Way) error { return nil }
+func (m *mockWayRepoWithAdjacent) InsertBatches(ways []models.Way, batchSize int) error {
+	return nil
+}
+func (m *mockWayRepoWithAdjacent) GetWay(id int64) (*models.Way, error) {
+	if m.notFound {
+		return nil, repository.ErrWayNotFound
+	}
+	if m.err != nil {
+		return nil, m.err
+	}
+	return m.targetWay, nil
+}
+func (m *mockWayRepoWithAdjacent) GetAllWays() ([]models.Way, error) {
+	return nil, nil
+}
+func (m *mockWayRepoWithAdjacent) GetNearestWay(latitude, longitude float64) (*models.Way, error) {
+	return nil, nil
+}
+func (m *mockWayRepoWithAdjacent) GetWaysByNodeIDs(nodeIDs []int64) ([]models.Way, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	// Return target way + adjacent ways, simulating database behavior
+	allWays := []models.Way{}
+	if m.targetWay != nil {
+		allWays = append(allWays, *m.targetWay)
+	}
+	allWays = append(allWays, m.adjacentWays...)
+	return allWays, nil
 }
