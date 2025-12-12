@@ -10,7 +10,17 @@ export const GET: RequestHandler = async ({ url, fetch }) => {
 			return new Response('Missing lat or lng query parameters', { status: 400 });
 		}
 
-		const res = await fetch(`${API_URL}/api/nearest-way?lat=${lat}&lng=${lng}`, {
+		const latNum = parseFloat(lat);
+		const lngNum = parseFloat(lng);
+		const isValidLat = Number.isFinite(latNum) && latNum >= -90 && latNum <= 90;
+		const isValidLng = Number.isFinite(lngNum) && lngNum >= -180 && lngNum <= 180;
+
+		if (!isValidLat || !isValidLng) {
+			return new Response('Invalid numeric lat or lng', { status: 400 });
+		}
+
+		const params = new URLSearchParams({ lat: latNum.toString(), lng: lngNum.toString() });
+		const res = await fetch(`${API_URL}/api/nearest-way?${params.toString()}`, {
 			method: 'GET',
 			headers: {
 				'Content-Type': 'application/json'

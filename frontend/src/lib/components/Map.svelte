@@ -46,6 +46,8 @@
 	let mapInstance: InstanceType<typeof import('$lib/map/LeafletMap').LeafletMap> | null = null;
 	let mode: MapModeState = $state({ selectStartActive: false, selectEndActive: false });
 	let loadError: string | null = $state(null);
+	let isLoadingWay: boolean = $state(false);
+	let nearestWayAbortController: AbortController | null = null;
 
 	// URL Helpers:
 	function updateUrlWithWay(id: number) {
@@ -101,9 +103,12 @@
 	}
 
 	// API call to get nearest way
-	async function fetchNearestWay(lat: number, lng: number) {
+	async function fetchNearestWay(lat: number, lng: number, signal?: AbortSignal) {
+		isLoadingWay = true;
 		try {
-			const response = await fetch(`/api/nearest-way?lat=${lat}&lng=${lng}`);
+			const response = await fetch(`/api/nearest-way?lat=${lat}&lng=${lng}`.toString(), {
+				signal
+			});
 			if (!response.ok) {
 				if (response.status === 404) {
 					loadError = 'No ways found at this location';
@@ -114,14 +119,35 @@
 			}
 
 			const data = await response.json();
+			if (
+				!data ||
+				typeof data !== 'object' ||
+				typeof (data as { id?: unknown }).id !== 'number' ||
+				typeof (data as { tags?: unknown }).tags !== 'object' ||
+				(data as { tags?: unknown }).tags === null ||
+				Array.isArray((data as { tags?: unknown }).tags)
+			) {
+				loadError = 'Unexpected response from server';
+				return null;
+			}
+
 			loadError = null;
-			return data as { id: number; tags: Record<string, string> };
+			return {
+				id: (data as { id: number }).id,
+				tags: (data as { tags: Record<string, string> }).tags
+			};
 		} catch (err) {
+			if (err instanceof DOMException && err.name === 'AbortError') {
+				return null;
+			}
+
 			const message =
 				err instanceof Error && err.message ? err.message : 'Error fetching nearest way';
 			loadError = message;
 			console.error('Error fetching nearest way:', err);
 			return null;
+		} finally {
+			isLoadingWay = false;
 		}
 	}
 
@@ -140,7 +166,16 @@
 			mode = toggleSelectEnd(mode);
 		} else {
 			// Normal map click - find nearest way
-			const wayData = await fetchNearestWay(lat, lng);
+			if (nearestWayAbortController) {
+				nearestWayAbortController.abort();
+			}
+
+			const controller = new AbortController();
+			nearestWayAbortController = controller;
+			const wayData = await fetchNearestWay(lat, lng, controller.signal);
+			if (controller !== nearestWayAbortController) {
+				return;
+			}
 			if (wayData) {
 				wayState.selectedWay = {
 					id: wayData.id,
@@ -199,6 +234,15 @@
 				class="absolute top-2 left-2 z-20 bg-red-600 text-white px-3 py-2 rounded shadow"
 			>
 				{loadError}
+			</div>
+		{/if}
+
+		{#if isLoadingWay}
+			<div
+				role="status"
+				class="absolute top-2 right-2 z-20 bg-blue-600 text-white px-3 py-2 rounded shadow"
+			>
+				Finding nearest way...
 			</div>
 		{/if}
 	</div>

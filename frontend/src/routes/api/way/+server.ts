@@ -3,13 +3,15 @@ import { API_URL } from '$env/static/private';
 
 export const GET: RequestHandler = async ({ url, fetch }) => {
 	try {
-		const id = url.searchParams.get('id');
+		const idParam = url.searchParams.get('id');
+		const id = idParam ? Number(idParam) : NaN;
 
-		if (!id) {
-			return new Response('Missing id query parameter', { status: 400 });
+		if (!idParam || Number.isNaN(id)) {
+			return new Response('Missing or invalid id query parameter', { status: 400 });
 		}
 
-		const res = await fetch(`${API_URL}/api/way?id=${id}`, {
+		const params = new URLSearchParams({ id: id.toString() });
+		const res = await fetch(`${API_URL}/api/way?${params.toString()}`, {
 			method: 'GET',
 			headers: {
 				'Content-Type': 'application/json'
