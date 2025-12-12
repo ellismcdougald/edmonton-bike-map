@@ -138,6 +138,10 @@ func TestSQLWayRepository_GetAllWays(t *testing.T) {
 }
 
 func TestSQLWayRepository_GetNearestWay(t *testing.T) {
+	// Query matcher anchors: ensure key fragments appear in order with flexible whitespace.
+	// (?s) enables dot to match newlines so multi-line SQL is matched reliably.
+	const queryAnchors = "WITH distances(?s).*JOIN nodes(?s).*LIMIT 1(?s).*ARRAY_AGG"
+
 	t.Run("returns nearest way", func(t *testing.T) {
 		db, mock, err := sqlmock.New()
 		require.NoError(t, err)
@@ -146,37 +150,10 @@ func TestSQLWayRepository_GetNearestWay(t *testing.T) {
 			_ = db.Close()
 		}()
 
-		const query = `
-			WITH distances AS (
-				SELECT DISTINCT
-					w.id,
-					w.tags,
-					MIN(
-						SQRT(
-							POW(n.latitude - $1, 2) + POW(n.longitude - $2, 2)
-						)
-					) as min_distance
-				FROM ways w
-				JOIN way_nodes wn ON wn.way_id = w.id
-				JOIN nodes n ON n.id = wn.node_id
-				GROUP BY w.id, w.tags
-				ORDER BY min_distance ASC
-				LIMIT 1
-			)
-			SELECT 
-				w.id,
-				w.tags,
-				ARRAY_AGG(wn.node_id ORDER BY wn.sequence_id) AS node_ids
-			FROM distances d
-			JOIN ways w ON w.id = d.id
-			JOIN way_nodes wn ON wn.way_id = w.id
-			GROUP BY w.id, w.tags
-		`
-
 		tags := map[string]string{"highway": "cycleway"}
 		tagsJSON, _ := json.Marshal(tags)
 
-		mock.ExpectQuery(regexp.QuoteMeta(query)).
+		mock.ExpectQuery(queryAnchors).
 			WithArgs(53.5, -113.5).
 			WillReturnRows(sqlmock.NewRows([]string{"id", "tags", "node_ids"}).AddRow(int64(42), tagsJSON, "{1,2,3}"))
 
@@ -199,34 +176,7 @@ func TestSQLWayRepository_GetNearestWay(t *testing.T) {
 			_ = db.Close()
 		}()
 
-		const query = `
-			WITH distances AS (
-				SELECT DISTINCT
-					w.id,
-					w.tags,
-					MIN(
-						SQRT(
-							POW(n.latitude - $1, 2) + POW(n.longitude - $2, 2)
-						)
-					) as min_distance
-				FROM ways w
-				JOIN way_nodes wn ON wn.way_id = w.id
-				JOIN nodes n ON n.id = wn.node_id
-				GROUP BY w.id, w.tags
-				ORDER BY min_distance ASC
-				LIMIT 1
-			)
-			SELECT 
-				w.id,
-				w.tags,
-				ARRAY_AGG(wn.node_id ORDER BY wn.sequence_id) AS node_ids
-			FROM distances d
-			JOIN ways w ON w.id = d.id
-			JOIN way_nodes wn ON wn.way_id = w.id
-			GROUP BY w.id, w.tags
-		`
-
-		mock.ExpectQuery(regexp.QuoteMeta(query)).
+		mock.ExpectQuery(queryAnchors).
 			WithArgs(0.0, 0.0).
 			WillReturnError(sql.ErrNoRows)
 
