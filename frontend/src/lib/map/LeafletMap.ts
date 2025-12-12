@@ -62,6 +62,7 @@ export class LeafletMap {
 	private routeLayer: GeoJSON | null = null;
 	private infoLayer: GeoJSON | null = null;
 	private selectedWayLayer: GeoJSON | null = null;
+	private adjacentWaysLayer: GeoJSON | null = null;
 	private distanceControl: L.Control | null = null;
 	private timeControl: L.Control | null = null;
 
@@ -282,6 +283,25 @@ export class LeafletMap {
 		}
 	}
 
+	loadAdjacentWaysLayer(geojson: GeoJSON.GeoJsonObject): void {
+		if (this.adjacentWaysLayer) {
+			this.map.removeLayer(this.adjacentWaysLayer);
+			this.adjacentWaysLayer = null;
+		}
+
+		this.adjacentWaysLayer = this.L.geoJSON(geojson, {
+			pane: 'routePane',
+			style: { color: '#ff8c00', weight: 4, opacity: 0.7 }
+		}).addTo(this.map);
+	}
+
+	removeAdjacentWaysLayer(): void {
+		if (this.adjacentWaysLayer) {
+			this.map.removeLayer(this.adjacentWaysLayer);
+			this.adjacentWaysLayer = null;
+		}
+	}
+
 	onMapClick(handler: (latlng: [number, number]) => void): void {
 		this.map.on('click', (e: LeafletMouseEvent) => {
 			handler([e.latlng.lat, e.latlng.lng]);
@@ -293,6 +313,7 @@ export class LeafletMap {
 		this.removeEndMarker();
 		this.removeRouteLayer();
 		this.removeSelectedWayLayer();
+		this.removeAdjacentWaysLayer();
 		this.showInfoLayer();
 	}
 }

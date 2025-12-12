@@ -256,6 +256,24 @@
 		}
 	}
 
+	$effect(() => {
+		// Explicitly track mapInstance so effect re-runs when it's initialized
+		const map = mapInstance;
+		const adjacentWays = wayState.adjacentWays;
+
+		if (!map) return;
+
+		if (adjacentWays.length > 0) {
+			const featureCollection: GeoJSON.FeatureCollection = {
+				type: 'FeatureCollection',
+				features: adjacentWays
+			};
+			map.loadAdjacentWaysLayer(featureCollection);
+		} else {
+			map.removeAdjacentWaysLayer();
+		}
+	});
+
 	onMount(async () => {
 		try {
 			await initializeMap();

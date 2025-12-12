@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { createReview } from '$lib/api/client/reviews';
+	import { getAdjacentWays } from '$lib/api/client/ways';
 	import { wayState } from '$lib/state.svelte';
-	import type { WayFeature } from '$lib/types';
+	import type { WayFeature, WayFeatureGeoJSON } from '$lib/types';
+	import { onDestroy } from 'svelte';
 
 	let { wayId, onSubmitted }: { wayId: number; onSubmitted?: () => void } = $props();
 
@@ -9,8 +11,30 @@
 	let comment: string | null = $state(null);
 	let errorMsg: string = $state('');
 	let isSubmitting: boolean = $state(false);
+	let adjacentWays: WayFeatureGeoJSON[] = $state([]);
 
 	let selectedWay: WayFeature | null = $derived(wayState.selectedWay);
+
+	$effect(() => {
+		// Re-load adjacent ways whenever wayId changes
+		loadAdjacentWays();
+	});
+
+	onDestroy(() => {
+		wayState.adjacentWays = [];
+	});
+
+	async function loadAdjacentWays() {
+		try {
+			const featureCollection = await getAdjacentWays(wayId);
+			adjacentWays = featureCollection.features;
+			wayState.adjacentWays = adjacentWays;
+		} catch (err) {
+			console.error('Failed to load adjacent ways:', err);
+			adjacentWays = [];
+			wayState.adjacentWays = [];
+		}
+	}
 
 	async function handleSubmit(event: Event) {
 		event.preventDefault();

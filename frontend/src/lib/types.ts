@@ -22,3 +22,5 @@ export type WayFeatureCollection = GeoJSON.FeatureCollection<
 	GeoJSON.Geometry,
 	WayFeatureProperties
 >;
+
+export type FeatureCollection = GeoJSON.FeatureCollection<GeoJSON.Geometry, WayFeatureProperties>;

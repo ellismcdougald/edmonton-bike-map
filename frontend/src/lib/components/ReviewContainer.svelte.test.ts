@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import ReviewContainer from './ReviewContainer.svelte';
 import type { Review } from '$lib/types';
 import * as reviewsApi from '$lib/api/client/reviews';
+import * as waysApi from '$lib/api/client/ways';
 
 describe('ReviewContainer.svelte', () => {
 	const wayId = 1;
@@ -19,6 +20,11 @@ describe('ReviewContainer.svelte', () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		// Mock getAdjacentWays to prevent fetch errors in tests
+		vi.spyOn(waysApi, 'getAdjacentWays').mockResolvedValue({
+			type: 'FeatureCollection',
+			features: []
+		});
 	});
 
 	it('displays passed-in reviews', async () => {
