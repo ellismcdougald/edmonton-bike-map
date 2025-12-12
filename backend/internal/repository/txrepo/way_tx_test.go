@@ -1,12 +1,14 @@
 package txrepo
 
 import (
+	"database/sql"
 	"encoding/json"
 	"regexp"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
+	"github.com/ellismcdougald/edmonton-bike-map/internal/repository"
 	"github.com/stretchr/testify/require"
 )
 
@@ -138,4 +140,111 @@ func TestTxWayRepository_InsertBatches(t *testing.T) {
 	mock.ExpectCommit()
 	require.NoError(t, tx.Commit())
 	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestTxWayRepository_GetNearestWay(t *testing.T) {
+	t.Run("returns nearest way", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer func() { mock.ExpectClose(); _ = db.Close() }()
+
+		mock.ExpectBegin()
+		tx, err := db.Begin()
+		require.NoError(t, err)
+
+		repo := NewTxWayRepository(tx)
+
+		tags := map[string]string{"highway": "cycleway"}
+		tagsJSON, _ := json.Marshal(tags)
+
+		mock.ExpectQuery(regexp.QuoteMeta(`
+			WITH distances AS (
+				SELECT DISTINCT
+					w.id,
+					w.tags,
+					MIN(
+						SQRT(
+							POW(n.latitude - $1, 2) + POW(n.longitude - $2, 2)
+						)
+					) as min_distance
+				FROM ways w
+				JOIN way_nodes wn ON wn.way_id = w.id
+				JOIN nodes n ON n.id = wn.node_id
+				GROUP BY w.id, w.tags
+				ORDER BY min_distance ASC
+				LIMIT 1
+			)
+			SELECT 
+				w.id,
+				w.tags,
+				ARRAY_AGG(wn.node_id ORDER BY wn.sequence_id) AS node_ids
+			FROM distances d
+			JOIN ways w ON w.id = d.id
+			JOIN way_nodes wn ON wn.way_id = w.id
+			GROUP BY w.id, w.tags
+		`)).
+			WithArgs(53.5, -113.5).
+			WillReturnRows(sqlmock.NewRows([]string{"id", "tags", "node_ids"}).AddRow(int64(7), tagsJSON, "{11,22}"))
+
+		way, err := repo.GetNearestWay(53.5, -113.5)
+		require.NoError(t, err)
+		require.NotNil(t, way)
+		require.Equal(t, int64(7), way.ID)
+		require.Equal(t, tags, way.Tags)
+		require.Equal(t, []int64{11, 22}, way.NodeIDs)
+
+		mock.ExpectCommit()
+		require.NoError(t, tx.Commit())
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("returns not found sentinel", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer func() { mock.ExpectClose(); _ = db.Close() }()
+
+		mock.ExpectBegin()
+		tx, err := db.Begin()
+		require.NoError(t, err)
+
+		repo := NewTxWayRepository(tx)
+
+		mock.ExpectQuery(regexp.QuoteMeta(`
+			WITH distances AS (
+				SELECT DISTINCT
+					w.id,
+					w.tags,
+					MIN(
+						SQRT(
+							POW(n.latitude - $1, 2) + POW(n.longitude - $2, 2)
+						)
+					) as min_distance
+				FROM ways w
+				JOIN way_nodes wn ON wn.way_id = w.id
+				JOIN nodes n ON n.id = wn.node_id
+				GROUP BY w.id, w.tags
+				ORDER BY min_distance ASC
+				LIMIT 1
+			)
+			SELECT 
+				w.id,
+				w.tags,
+				ARRAY_AGG(wn.node_id ORDER BY wn.sequence_id) AS node_ids
+			FROM distances d
+			JOIN ways w ON w.id = d.id
+			JOIN way_nodes wn ON wn.way_id = w.id
+			GROUP BY w.id, w.tags
+		`)).
+			WithArgs(0.0, 0.0).
+			WillReturnError(sql.ErrNoRows)
+
+		way, err := repo.GetNearestWay(0.0, 0.0)
+		require.Error(t, err)
+		require.Nil(t, way)
+		require.ErrorIs(t, err, repository.ErrWayNotFound)
+
+		mock.ExpectCommit()
+		require.NoError(t, tx.Commit())
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
 }
