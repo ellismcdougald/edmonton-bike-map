@@ -41,17 +41,18 @@
 	}
 </script>
 
-{#if sidebarLoaded}
+{#if sidebarLoaded && way}
 	<div id="sidebar-wrapper" class="relative h-full">
 		<div id="hide-sidebar-button-container" class="absolute top-2 right-2 z-20">
 			<button
 				id="hide-sidebar-button"
 				class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-3 py-1 rounded shadow"
+				type="button"
 				onclick={toggleSidebar}>{isVisible ? 'Hide' : 'Show'}</button
 			>
 		</div>
 
-		{#if isVisible && way}
+		{#if isVisible}
 			<div id="sidebar-content" class="w-full p-2 h-full bg-white shadow-2xl pb-12">
 				<h1 class="text-xl font-bold">{way.tags?.name ? way?.tags?.name : 'Unnamed Route'}</h1>
 
