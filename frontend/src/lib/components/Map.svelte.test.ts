@@ -48,7 +48,10 @@ const mockMapInstance: any = {
 	loadSelectedWayLayer: vi.fn(),
 	removeSelectedWayLayer: vi.fn(),
 	loadAdjacentWaysLayer: vi.fn(),
-	removeAdjacentWaysLayer: vi.fn()
+	removeAdjacentWaysLayer: vi.fn(),
+	// New layer for multi-way selection
+	loadAdditionalSelectedWaysLayer: vi.fn(),
+	removeAdditionalSelectedWaysLayer: vi.fn()
 };
 const MockLeafletMap = vi.fn(() => mockMapInstance);
 vi.mock('$lib/map/loadLeaflet', () => ({
