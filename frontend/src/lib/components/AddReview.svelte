@@ -14,6 +14,7 @@
 	let isSubmitting: boolean = $state(false);
 	let adjacentWays: WayFeatureGeoJSON[] = $state([]);
 	let selectedWayIds: number[] = $state([wayId]);
+	let adjacentLoadSeq = 0;
 
 	let selectedWay: WayFeature | null = $derived(wayState.selectedWay);
 
@@ -43,10 +44,12 @@
 	});
 
 	async function loadAdjacentWays() {
+		const seq = ++adjacentLoadSeq;
 		try {
 			// Fetch adjacent ways for all selected ways
 			const allAdjacentWaysPromises = selectedWayIds.map((id) => getAdjacentWays(id));
 			const allFeatureCollections = await Promise.all(allAdjacentWaysPromises);
+			if (seq !== adjacentLoadSeq) return;
 
 			// Combine all features and deduplicate by way ID
 			const seenIds = new SvelteSet<number>();
@@ -65,6 +68,7 @@
 			adjacentWays = uniqueFeatures;
 			wayState.adjacentWays = adjacentWays;
 		} catch (err) {
+			if (seq !== adjacentLoadSeq) return;
 			console.error('Failed to load adjacent ways:', err);
 			adjacentWays = [];
 			wayState.adjacentWays = [];
