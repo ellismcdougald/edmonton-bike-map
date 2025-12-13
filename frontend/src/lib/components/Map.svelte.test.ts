@@ -234,7 +234,13 @@ describe('Map.svelte', () => {
 		wayState.adjacentWays = [
 			{
 				type: 'Feature' as const,
-				geometry: { type: 'LineString' as const, coordinates: [[1, 2]] },
+				geometry: {
+					type: 'LineString' as const,
+					coordinates: [
+						[1, 2],
+						[3, 4]
+					]
+				},
 				properties: { id: 10 }
 			}
 		];
