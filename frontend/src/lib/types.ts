@@ -13,7 +13,8 @@ export interface Review {
 
 export interface WayFeatureProperties {
 	id?: number;
-	[key: string]: string | number | boolean | undefined;
+	tags?: Record<string, string | number | boolean>;
+	[key: string]: string | number | boolean | Record<string, string | number | boolean> | undefined;
 }
 
 export type WayFeatureGeoJSON = GeoJSON.Feature<GeoJSON.Geometry, WayFeatureProperties>;
@@ -22,3 +23,5 @@ export type WayFeatureCollection = GeoJSON.FeatureCollection<
 	GeoJSON.Geometry,
 	WayFeatureProperties
 >;
+
+export type FeatureCollection = GeoJSON.FeatureCollection<GeoJSON.Geometry, WayFeatureProperties>;

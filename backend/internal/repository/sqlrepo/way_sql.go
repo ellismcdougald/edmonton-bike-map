@@ -292,3 +292,59 @@ func (r *SQLWayRepository) GetNearestWay(latitude, longitude float64) (*models.W
 
 	return &way, nil
 }
+
+// GetWaysByNodeIDs retrieves all ways that contain any of the given node IDs.
+// Returns a slice of Ways that share at least one node with the provided node IDs.
+func (r *SQLWayRepository) GetWaysByNodeIDs(nodeIDs []int64) ([]models.Way, error) {
+	if len(nodeIDs) == 0 {
+		return []models.Way{}, nil
+	}
+
+	query := `
+		SELECT DISTINCT
+			w.id,
+			w.tags,
+			ARRAY_AGG(wn.node_id ORDER BY wn.sequence_id) AS node_ids
+		FROM ways w
+		JOIN way_nodes wn ON wn.way_id = w.id
+		WHERE w.id IN (
+			SELECT DISTINCT way_id 
+			FROM way_nodes 
+			WHERE node_id = ANY($1)
+		)
+		GROUP BY w.id, w.tags
+	`
+
+	rows, err := r.DB.Query(query, pq.Array(nodeIDs))
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("Error closing rows: %v", err)
+		}
+	}()
+
+	var ways []models.Way
+	for rows.Next() {
+		var way models.Way
+		var tagsJson []byte
+
+		err := rows.Scan(&way.ID, &tagsJson, pq.Array(&way.NodeIDs))
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(tagsJson, &way.Tags)
+		if err != nil {
+			return nil, err
+		}
+
+		ways = append(ways, way)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return ways, nil
+}

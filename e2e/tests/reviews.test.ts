@@ -50,7 +50,8 @@ test.describe("reviews e2e", () => {
     await client.query("TRUNCATE TABLE reviews RESTART IDENTITY CASCADE");
   });
 
-  test("view a way, create new review, and it appears in the sidebar", async ({
+  // View a way, create new review with just one way, and it appears in the sidebar
+  test("view a way, create new review (single way), and it appears in the sidebar", async ({
     page,
   }) => {
     const hashedPassword = await bcrypt.hash(
@@ -77,7 +78,8 @@ test.describe("reviews e2e", () => {
     const addButton = page.locator("#addReviewButton");
     await expect(addButton).toBeVisible({ timeout: 5000 });
     await addButton.click();
-    await expect(page.locator("#addReviewPopup")).toBeVisible({
+    // Inline form replaces reviews; header changes to "Add Review"
+    await expect(page.locator("text=Add Review")).toBeVisible({
       timeout: 2000,
     });
 
@@ -86,7 +88,8 @@ test.describe("reviews e2e", () => {
     await page.fill("#comment", uniqueComment);
     await page.locator("#submitButton").click();
 
-    await expect(page.locator("#addReviewPopup")).toHaveCount(0, {
+    // After submit, inline form closes and header returns to "Reviews"
+    await expect(page.locator("text=Reviews")).toBeVisible({
       timeout: 5000,
     });
     await expect(page.locator(`text=${uniqueComment}`)).toBeVisible({
@@ -97,6 +100,104 @@ test.describe("reviews e2e", () => {
     });
   });
 
+  // View a way, create new review with multiple ways, and it appears in the sidebar for each of the ways
+  test("create new review with multiple ways and it appears for each way", async ({
+    page,
+  }) => {
+    // Seed user
+    const hashedPassword = await bcrypt.hash(
+      testPassword,
+      bcrypt.genSaltSync()
+    );
+    await client.query(
+      "INSERT INTO users (username, password) VALUES ($1, $2)",
+      [testUsername, hashedPassword]
+    );
+
+    // Login
+    await page.goto(`${FRONTEND_URL}/login`);
+    await page.fill('input[name="username"]', testUsername);
+    await page.fill('input[name="password"]', testPassword);
+    await page.locator("#submitButton").click();
+
+    const baseWayId = 20948648;
+    await page.goto(`${FRONTEND_URL}/map?way=${baseWayId}`);
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("#sidebar-content", {
+      state: "attached",
+      timeout: 20000,
+    });
+
+    // Enter Add Review mode
+    const addButton = page.locator("#addReviewButton");
+    await expect(addButton).toBeVisible({ timeout: 5000 });
+    await addButton.click();
+    await expect(page.locator("text=Add Review")).toBeVisible({
+      timeout: 2000,
+    });
+
+    // Click an adjacent orange way (skip the original selected blue way)
+    // Target by class added to adjacent ways layer
+    await page.waitForSelector(".adjacent-way.leaflet-interactive", {
+      timeout: 5000,
+    });
+    await page.evaluate(() => {
+      const path = document.querySelector(
+        "svg path.adjacent-way.leaflet-interactive"
+      );
+      if (!path) throw new Error("Adjacent path not found");
+      path.dispatchEvent(
+        new MouseEvent("click", {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+        })
+      );
+    });
+
+    // Confirm that another way chip was added in the included ways list
+    const removeButtons = page.locator(
+      '#includedWays button[aria-label^="Remove way "]'
+    );
+    await expect(removeButtons).toHaveCount(1, { timeout: 5000 });
+    const ariaLabel = await removeButtons.first().getAttribute("aria-label");
+    const match = ariaLabel?.match(/Remove way (\d+)/);
+    const additionalWayId = match ? parseInt(match[1], 10) : null;
+    expect(additionalWayId).toBeTruthy();
+
+    // Fill and submit review
+    const uniqueComment = `e2e multi-way comment ${Date.now()}`;
+    await page.fill("#rating", "8");
+    await page.fill("#comment", uniqueComment);
+    await page.locator("#submitButton").click();
+
+    // Verify appears on base way page
+    await expect(page.locator("text=Reviews")).toBeVisible({ timeout: 5000 });
+    await expect(page.locator(`text=${uniqueComment}`)).toBeVisible({
+      timeout: 5000,
+    });
+    await expect(page.locator(`text=User: ${testUsername}`)).toBeVisible({
+      timeout: 5000,
+    });
+
+    // Navigate to the additional way and verify the same review appears
+    if (additionalWayId) {
+      await page.goto(`${FRONTEND_URL}/map?way=${additionalWayId}`);
+      await page.waitForLoadState("networkidle");
+      await page.waitForSelector("#sidebar-content", {
+        state: "attached",
+        timeout: 20000,
+      });
+      await expect(page.locator(`text=${uniqueComment}`)).toBeVisible({
+        timeout: 5000,
+      });
+      await expect(page.locator(`text=User: ${testUsername}`)).toBeVisible({
+        timeout: 5000,
+      });
+    }
+  });
+
+  // View the sidebar for the way and assert that the existing review is shown
   test("view a way with pre-existing reviews and assert they appear", async ({
     page,
   }) => {
@@ -115,9 +216,15 @@ test.describe("reviews e2e", () => {
     const wayId = 20948648;
 
     const existingComment = `preexisting review ${Date.now()}`;
+    // Insert review (without way_id) and link it via review_ways
+    const insertRes = await client.query(
+      "INSERT INTO reviews (user_id, rating, comment, created_at) VALUES ($1, $2, $3, now()) RETURNING id",
+      [seededUserId, 7, existingComment]
+    );
+    const reviewId = insertRes.rows[0].id as number;
     await client.query(
-      "INSERT INTO reviews (way_id, user_id, rating, comment, created_at) VALUES ($1, $2, $3, $4, now())",
-      [wayId, seededUserId, 7, existingComment]
+      "INSERT INTO review_ways (review_id, way_id) VALUES ($1, $2)",
+      [reviewId, wayId]
     );
 
     await page.goto(`${FRONTEND_URL}/login`);

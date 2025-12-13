@@ -190,4 +190,80 @@ func TestSQLWayRepository_GetNearestWay(t *testing.T) {
 	})
 }
 
+func TestSQLWayRepository_GetWaysByNodeIDs(t *testing.T) {
+	t.Run("returns ways sharing nodes", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer func() {
+			mock.ExpectClose()
+			_ = db.Close()
+		}()
+
+		tags1 := map[string]string{"highway": "cycleway"}
+		tags2 := map[string]string{"highway": "path"}
+		tagsJSON1, _ := json.Marshal(tags1)
+		tagsJSON2, _ := json.Marshal(tags2)
+
+		// Query should match the subquery pattern with ANY($1)
+		queryPattern := "(?s)SELECT DISTINCT.*ARRAY_AGG.*WHERE w.id IN.*SELECT DISTINCT way_id.*WHERE node_id = ANY\\(\\$1\\)"
+
+		rows := sqlmock.NewRows([]string{"id", "tags", "node_ids"}).
+			AddRow(int64(10), tagsJSON1, "{1,2,3}").
+			AddRow(int64(20), tagsJSON2, "{2,3,4}")
+
+		mock.ExpectQuery(queryPattern).
+			WithArgs(sqlmock.AnyArg()).
+			WillReturnRows(rows)
+
+		repo := NewSQLWayRepository(db)
+		ways, err := repo.GetWaysByNodeIDs([]int64{2, 3})
+		require.NoError(t, err)
+		require.Len(t, ways, 2)
+		require.Equal(t, int64(10), ways[0].ID)
+		require.Equal(t, int64(20), ways[1].ID)
+		require.Equal(t, []int64{1, 2, 3}, ways[0].NodeIDs)
+		require.Equal(t, []int64{2, 3, 4}, ways[1].NodeIDs)
+
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("returns empty slice for empty input", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer func() {
+			mock.ExpectClose()
+			_ = db.Close()
+		}()
+
+		repo := NewSQLWayRepository(db)
+		ways, err := repo.GetWaysByNodeIDs([]int64{})
+		require.NoError(t, err)
+		require.Empty(t, ways)
+
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("handles query error", func(t *testing.T) {
+		db, mock, err := sqlmock.New()
+		require.NoError(t, err)
+		defer func() {
+			mock.ExpectClose()
+			_ = db.Close()
+		}()
+
+		queryPattern := "(?s)SELECT DISTINCT.*ARRAY_AGG.*WHERE w.id IN.*SELECT DISTINCT way_id.*WHERE node_id = ANY\\(\\$1\\)"
+
+		mock.ExpectQuery(queryPattern).
+			WithArgs(sqlmock.AnyArg()).
+			WillReturnError(errors.New("database error"))
+
+		repo := NewSQLWayRepository(db)
+		ways, err := repo.GetWaysByNodeIDs([]int64{1, 2})
+		require.Error(t, err)
+		require.Nil(t, ways)
+
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+}
+
 // (removed) pqArrayInt64 helper was unused and created a linter warning; tests use string array format instead.

@@ -53,7 +53,7 @@ func TestBuildGraph_RespectsReviewMultiplier(t *testing.T) {
 	ways := []models.Way{{ID: 21, Tags: map[string]string{}, NodeIDs: []int64{1, 2}}}
 	// one review with rating 5 -> review multiplier ~0.97
 	reviews := map[int64][]models.Review{
-		21: {{WayID: 21, Rating: 5}},
+		21: {{WayIDs: []int64{21}, Rating: 5}},
 	}
 
 	net, err := buildGraph(nodes, ways, reviews)

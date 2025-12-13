@@ -52,3 +52,33 @@ func (s *WayService) GetNearestWay(latitude, longitude float64) (*models.Way, er
 	}
 	return way, nil
 }
+
+// GetAdjacentWays retrieves all ways that share at least one node with the given way.
+// Excludes the original way from the results.
+func (s *WayService) GetAdjacentWays(wayID int64) ([]models.Way, error) {
+	// Get the original way to obtain its node IDs
+	way, err := s.GetWay(wayID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(way.NodeIDs) == 0 {
+		return []models.Way{}, nil
+	}
+
+	// Get all ways that share any of these nodes
+	ways, err := s.WayRepository.GetWaysByNodeIDs(way.NodeIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter out the original way
+	adjacent := []models.Way{}
+	for _, w := range ways {
+		if w.ID != wayID {
+			adjacent = append(adjacent, w)
+		}
+	}
+
+	return adjacent, nil
+}

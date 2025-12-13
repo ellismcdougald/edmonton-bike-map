@@ -61,6 +61,9 @@ export class LeafletMap {
 	private endMarker: Marker | null = null;
 	private routeLayer: GeoJSON | null = null;
 	private infoLayer: GeoJSON | null = null;
+	private selectedWayLayer: GeoJSON | null = null;
+	private adjacentWaysLayer: GeoJSON | null = null;
+	private additionalSelectedWaysLayer: GeoJSON | null = null;
 	private distanceControl: L.Control | null = null;
 	private timeControl: L.Control | null = null;
 
@@ -262,6 +265,74 @@ export class LeafletMap {
 		}
 	}
 
+	loadSelectedWayLayer(geojson: GeoJSON.GeoJsonObject): void {
+		if (this.selectedWayLayer) {
+			this.map.removeLayer(this.selectedWayLayer);
+			this.selectedWayLayer = null;
+		}
+
+		this.selectedWayLayer = this.L.geoJSON(geojson, {
+			pane: 'routePane',
+			style: { color: '#00e5ff', weight: 6, opacity: 0.9 }
+		}).addTo(this.map);
+	}
+
+	removeSelectedWayLayer(): void {
+		if (this.selectedWayLayer) {
+			this.map.removeLayer(this.selectedWayLayer);
+			this.selectedWayLayer = null;
+		}
+	}
+
+	loadAdjacentWaysLayer(
+		geojson: GeoJSON.GeoJsonObject,
+		onWayClick?: (wayId: number) => void
+	): void {
+		if (this.adjacentWaysLayer) {
+			this.map.removeLayer(this.adjacentWaysLayer);
+			this.adjacentWaysLayer = null;
+		}
+
+		this.adjacentWaysLayer = this.L.geoJSON(geojson, {
+			pane: 'routePane',
+			style: { color: '#ff8c00', weight: 4, opacity: 0.7, className: 'adjacent-way' },
+			onEachFeature: (feature, layer) => {
+				if (onWayClick && feature.properties?.id) {
+					layer.on('click', (e) => {
+						this.L.DomEvent.stopPropagation(e);
+						onWayClick(Number(feature.properties.id));
+					});
+				}
+			}
+		}).addTo(this.map);
+	}
+
+	removeAdjacentWaysLayer(): void {
+		if (this.adjacentWaysLayer) {
+			this.map.removeLayer(this.adjacentWaysLayer);
+			this.adjacentWaysLayer = null;
+		}
+	}
+
+	loadAdditionalSelectedWaysLayer(geojson: GeoJSON.GeoJsonObject): void {
+		if (this.additionalSelectedWaysLayer) {
+			this.map.removeLayer(this.additionalSelectedWaysLayer);
+			this.additionalSelectedWaysLayer = null;
+		}
+
+		this.additionalSelectedWaysLayer = this.L.geoJSON(geojson, {
+			pane: 'routePane',
+			style: { color: '#22c55e', weight: 4, opacity: 0.8, className: 'additional-selected-way' }
+		}).addTo(this.map);
+	}
+
+	removeAdditionalSelectedWaysLayer(): void {
+		if (this.additionalSelectedWaysLayer) {
+			this.map.removeLayer(this.additionalSelectedWaysLayer);
+			this.additionalSelectedWaysLayer = null;
+		}
+	}
+
 	onMapClick(handler: (latlng: [number, number]) => void): void {
 		this.map.on('click', (e: LeafletMouseEvent) => {
 			handler([e.latlng.lat, e.latlng.lng]);
@@ -272,6 +343,8 @@ export class LeafletMap {
 		this.removeStartMarker();
 		this.removeEndMarker();
 		this.removeRouteLayer();
+		this.removeSelectedWayLayer();
+		this.removeAdjacentWaysLayer();
 		this.showInfoLayer();
 	}
 }

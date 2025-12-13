@@ -44,7 +44,14 @@ const mockMapInstance: any = {
 	removeStartMarker: vi.fn(),
 	addEndMarker: vi.fn(),
 	removeEndMarker: vi.fn(),
-	reset: vi.fn()
+	reset: vi.fn(),
+	loadSelectedWayLayer: vi.fn(),
+	removeSelectedWayLayer: vi.fn(),
+	loadAdjacentWaysLayer: vi.fn(),
+	removeAdjacentWaysLayer: vi.fn(),
+	// New layer for multi-way selection
+	loadAdditionalSelectedWaysLayer: vi.fn(),
+	removeAdditionalSelectedWaysLayer: vi.fn()
 };
 const MockLeafletMap = vi.fn(() => mockMapInstance);
 vi.mock('$lib/map/loadLeaflet', () => ({
@@ -167,6 +174,88 @@ describe('Map.svelte', () => {
 				expect.stringContaining('/api/nearest-way?lat=53.5461&lng=-113.4938'),
 				expect.objectContaining({ signal: expect.any(AbortSignal) })
 			);
+		});
+	});
+
+	it('loads adjacent ways layer when wayState.adjacentWays is populated', async () => {
+		const { wayState } = await import('$lib/state.svelte');
+
+		render(Map);
+
+		await waitFor(() => expect(mockMapInstance.addTileLayer).toHaveBeenCalled());
+
+		// Set adjacent ways in state
+		wayState.adjacentWays = [
+			{
+				type: 'Feature' as const,
+				geometry: {
+					type: 'LineString' as const,
+					coordinates: [
+						[1, 2],
+						[3, 4]
+					]
+				},
+				properties: { id: 10, name: 'Adjacent Way 1' }
+			},
+			{
+				type: 'Feature' as const,
+				geometry: {
+					type: 'LineString' as const,
+					coordinates: [
+						[5, 6],
+						[7, 8]
+					]
+				},
+				properties: { id: 11, name: 'Adjacent Way 2' }
+			}
+		];
+
+		await waitFor(() => {
+			expect(mockMapInstance.loadAdjacentWaysLayer).toHaveBeenCalled();
+			const callArg = mockMapInstance.loadAdjacentWaysLayer.mock.calls[0][0];
+			expect(callArg.type).toBe('FeatureCollection');
+			expect(callArg.features).toHaveLength(2);
+			expect(callArg.features[0].properties.id).toBe(10);
+			expect(callArg.features[1].properties.id).toBe(11);
+		});
+
+		// Cleanup
+		wayState.adjacentWays = [];
+	});
+
+	it('removes adjacent ways layer when wayState.adjacentWays is cleared', async () => {
+		const { wayState } = await import('$lib/state.svelte');
+
+		render(Map);
+
+		await waitFor(() => expect(mockMapInstance.addTileLayer).toHaveBeenCalled());
+
+		// Set adjacent ways
+		wayState.adjacentWays = [
+			{
+				type: 'Feature' as const,
+				geometry: {
+					type: 'LineString' as const,
+					coordinates: [
+						[1, 2],
+						[3, 4]
+					]
+				},
+				properties: { id: 10 }
+			}
+		];
+
+		await waitFor(() => {
+			expect(mockMapInstance.loadAdjacentWaysLayer).toHaveBeenCalled();
+		});
+
+		vi.clearAllMocks();
+
+		// Clear adjacent ways
+		wayState.adjacentWays = [];
+
+		await waitFor(() => {
+			expect(mockMapInstance.removeAdjacentWaysLayer).toHaveBeenCalled();
 		});
 	});
 });

@@ -19,34 +19,51 @@ func NewTxReviewRepository(tx *sql.Tx) repository.ReviewRepository {
 	return &TxReviewRepository{Tx: tx}
 }
 
-// CreateReview inserts a review using the transaction.
+// CreateReview inserts a review and links it to ways within the transaction.
 func (r *TxReviewRepository) CreateReview(review *models.Review) error {
-	query := `
-    INSERT INTO reviews (
-        way_id,
-        user_id,
-        rating,
-        comment
-    ) VALUES ($1, $2, $3, $4)
-    `
-	_, err := r.Tx.Exec(query, review.WayID, review.UserID, review.Rating, review.Comment)
-	return err
+	if review == nil {
+		return fmt.Errorf("nil review")
+	}
+	if len(review.WayIDs) == 0 {
+		return fmt.Errorf("review must include at least one way ID")
+	}
+
+	insertReview := `
+		INSERT INTO reviews (
+			user_id,
+			rating,
+			comment
+		) VALUES ($1, $2, $3)
+		RETURNING id
+	`
+	var reviewID int64
+	if err := r.Tx.QueryRow(insertReview, review.UserID, review.Rating, review.Comment).Scan(&reviewID); err != nil {
+		return err
+	}
+
+	linkStmt := `INSERT INTO review_ways (review_id, way_id) VALUES ($1, $2)`
+	for _, wayID := range review.WayIDs {
+		if _, err := r.Tx.Exec(linkStmt, reviewID, wayID); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-// GetReviews returns reviews for a specific way.
+// GetReviews returns reviews associated with a specific way.
 func (r *TxReviewRepository) GetReviews(wayID int64) ([]models.Review, error) {
 	query := `
-        SELECT
-            r.way_id,
-            r.user_id,
-            r.rating,
-            r.comment,
-            r.created_at,
-            u.username
-        FROM reviews r
-        LEFT JOIN users u ON r.user_id = u.id
-        WHERE r.way_id = $1;
-    `
+		SELECT
+			r.user_id,
+			r.rating,
+			r.comment,
+			r.created_at,
+			u.username
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		LEFT JOIN users u ON r.user_id = u.id
+		WHERE rw.way_id = $1;
+	`
 
 	rows, err := r.Tx.Query(query, wayID)
 	if err != nil {
@@ -61,7 +78,7 @@ func (r *TxReviewRepository) GetReviews(wayID int64) ([]models.Review, error) {
 	var reviews []models.Review
 	for rows.Next() {
 		var rev models.Review
-		if err := rows.Scan(&rev.WayID, &rev.UserID, &rev.Rating, &rev.Comment, &rev.CreatedAt, &rev.Username); err != nil {
+		if err := rows.Scan(&rev.UserID, &rev.Rating, &rev.Comment, &rev.CreatedAt, &rev.Username); err != nil {
 			return nil, err
 		}
 		reviews = append(reviews, rev)
@@ -78,19 +95,20 @@ func (r *TxReviewRepository) GetReviews(wayID int64) ([]models.Review, error) {
 	return reviews, nil
 }
 
-// GetAllReviews returns all reviews grouped by way ID.
+// GetAllReviews returns all reviews grouped by way ID via review_ways.
 func (r *TxReviewRepository) GetAllReviews() (map[int64][]models.Review, error) {
 	query := `
-        SELECT
-            r.way_id,
-            r.user_id,
-            r.rating,
-            r.comment,
-            r.created_at,
-            u.username
-        FROM reviews r
-        LEFT JOIN users u ON r.user_id = u.id;
-    `
+		SELECT
+			rw.way_id,
+			r.user_id,
+			r.rating,
+			r.comment,
+			r.created_at,
+			u.username
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		LEFT JOIN users u ON r.user_id = u.id;
+	`
 
 	rows, err := r.Tx.Query(query)
 	if err != nil {
@@ -104,11 +122,12 @@ func (r *TxReviewRepository) GetAllReviews() (map[int64][]models.Review, error) 
 
 	result := make(map[int64][]models.Review)
 	for rows.Next() {
+		var wayID int64
 		var rev models.Review
-		if err := rows.Scan(&rev.WayID, &rev.UserID, &rev.Rating, &rev.Comment, &rev.CreatedAt, &rev.Username); err != nil {
+		if err := rows.Scan(&wayID, &rev.UserID, &rev.Rating, &rev.Comment, &rev.CreatedAt, &rev.Username); err != nil {
 			return nil, err
 		}
-		result[rev.WayID] = append(result[rev.WayID], rev)
+		result[wayID] = append(result[wayID], rev)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -124,19 +143,12 @@ func (r *TxReviewRepository) insertBatch(reviews []models.Review) error {
 		return nil
 	}
 
-	query := "INSERT INTO reviews (way_id, user_id, rating, comment) VALUES "
-	args := []interface{}{}
-	for i, rev := range reviews {
-		if i > 0 {
-			query += ", "
+	// Re-implement batch insert via repeated CreateReview calls for clarity.
+	for i := range reviews {
+		rev := reviews[i]
+		if err := r.CreateReview(&rev); err != nil {
+			return err
 		}
-		base := i*4 + 1
-		query += fmt.Sprintf("($%d, $%d, $%d, $%d)", base, base+1, base+2, base+3)
-		args = append(args, rev.WayID, rev.UserID, rev.Rating, rev.Comment)
-	}
-
-	if _, err := r.Tx.Exec(query, args...); err != nil {
-		return err
 	}
 	return nil
 }

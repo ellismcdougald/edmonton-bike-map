@@ -42,12 +42,14 @@
 	import { wayState } from '$lib/state.svelte';
 	import { loadLeaflet } from '$lib/map/loadLeaflet';
 	import { findRoute } from '$lib/map/mapActions';
+	import type { WayFeatureGeoJSON } from '$lib/types';
 
 	let mapInstance: InstanceType<typeof import('$lib/map/LeafletMap').LeafletMap> | null = null;
 	let mode: MapModeState = $state({ selectStartActive: false, selectEndActive: false });
 	let loadError: string | null = $state(null);
 	let isLoadingWay: boolean = $state(false);
 	let nearestWayAbortController: AbortController | null = null;
+	let selectedWayAbortController: AbortController | null = null;
 
 	// URL Helpers:
 	function updateUrlWithWay(id: number) {
@@ -92,13 +94,52 @@
 				return;
 			}
 
-			const wayData = await response.json();
-			wayState.selectedWay = {
-				id: wayData.id,
-				tags: wayData.tags
-			};
+			const wayFeature = (await response.json()) as WayFeatureGeoJSON;
+			if (typeof wayFeature?.properties?.id !== 'undefined') {
+				const idNum = Number(wayFeature.properties.id);
+				wayState.selectedWay = {
+					id: idNum,
+					tags: wayFeature.properties as Record<string, string>
+				};
+				await loadSelectedWayHighlight(idNum);
+			}
 		} catch (err) {
 			console.error('Error restoring selection from URL:', err);
+		}
+	}
+
+	async function fetchWayGeojson(
+		id: number,
+		signal?: AbortSignal
+	): Promise<WayFeatureGeoJSON | null> {
+		try {
+			const res = await fetch(`/api/way?id=${id}`, { signal });
+			if (!res.ok) {
+				return null;
+			}
+			const data = (await res.json()) as WayFeatureGeoJSON;
+			if (!data || data.type !== 'Feature' || !data.geometry) return null;
+			return data;
+		} catch (err) {
+			if (err instanceof DOMException && err.name === 'AbortError') return null;
+			console.error('Error fetching way GeoJSON:', err);
+			return null;
+		}
+	}
+
+	async function loadSelectedWayHighlight(id: number) {
+		if (!mapInstance) return;
+
+		if (selectedWayAbortController) {
+			selectedWayAbortController.abort();
+		}
+
+		const controller = new AbortController();
+		selectedWayAbortController = controller;
+		const feature = await fetchWayGeojson(id, controller.signal);
+		if (controller !== selectedWayAbortController) return;
+		if (feature) {
+			mapInstance.loadSelectedWayLayer(feature);
 		}
 	}
 
@@ -156,6 +197,11 @@
 		const [lat, lng] = latlng;
 		if (!mapInstance) return;
 
+		// Disable normal map click behavior while Add Review is active
+		if (wayState.isAddReviewActive) {
+			return;
+		}
+
 		if (mode.selectStartActive) {
 			mapInstance.removeStartMarker();
 			mapInstance.addStartMarker([lat, lng]);
@@ -181,6 +227,7 @@
 					id: wayData.id,
 					tags: wayData.tags
 				};
+				await loadSelectedWayHighlight(wayData.id);
 				updateUrlWithWay(wayData.id);
 			}
 		}
@@ -210,8 +257,64 @@
 		if (mapInstance) {
 			mapInstance.reset();
 			mode = { selectStartActive: false, selectEndActive: false };
+			mapInstance.removeSelectedWayLayer();
 		}
 	}
+
+	$effect(() => {
+		// Explicitly track mapInstance so effect re-runs when it's initialized
+		const map = mapInstance;
+		const adjacentWays = wayState.adjacentWays;
+		const additionalSelectedWayIds = wayState.additionalSelectedWayIds;
+		const selectedWay = wayState.selectedWay;
+		const clickHandler = wayState.onAdjacentWayClick;
+
+		if (!map) return;
+
+		const selectedWayId = selectedWay?.id;
+
+		// Filter out ways that have been selected (convert IDs to numbers for comparison)
+		// Also exclude the original selected way (shown in blue)
+		const unselectedAdjacentWays = adjacentWays.filter((way) => {
+			const wayId = way.properties?.id;
+			if (wayId === undefined) return true;
+			const numWayId = Number(wayId);
+			// Exclude if it's in additional selected or is the original selected way
+			return !additionalSelectedWayIds.includes(numWayId) && numWayId !== selectedWayId;
+		});
+
+		if (unselectedAdjacentWays.length > 0) {
+			const featureCollection: GeoJSON.FeatureCollection = {
+				type: 'FeatureCollection',
+				features: unselectedAdjacentWays
+			};
+			map.loadAdjacentWaysLayer(featureCollection, clickHandler ?? undefined);
+		} else {
+			map.removeAdjacentWaysLayer();
+		}
+
+		// Show selected adjacent ways in green (but NOT the original selected way)
+		if (additionalSelectedWayIds.length > 0) {
+			const selectedAdjacentWays = adjacentWays.filter((way) => {
+				const wayId = way.properties?.id;
+				if (wayId === undefined) return false;
+				const numWayId = Number(wayId);
+				// Include only if in additional selected AND not the original selected way
+				return additionalSelectedWayIds.includes(numWayId) && numWayId !== selectedWayId;
+			});
+			if (selectedAdjacentWays.length > 0) {
+				const selectedFeatureCollection: GeoJSON.FeatureCollection = {
+					type: 'FeatureCollection',
+					features: selectedAdjacentWays
+				};
+				map.loadAdditionalSelectedWaysLayer(selectedFeatureCollection);
+			} else {
+				map.removeAdditionalSelectedWaysLayer();
+			}
+		} else {
+			map.removeAdditionalSelectedWaysLayer();
+		}
+	});
 
 	onMount(async () => {
 		try {
