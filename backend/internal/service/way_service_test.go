@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
@@ -121,6 +122,7 @@ func TestWayService_GetAdjacentWays(t *testing.T) {
 		adjacent, err := svc.GetAdjacentWays(10)
 
 		require.Error(t, err)
+		require.True(t, errors.Is(err, dbErr))
 		require.Nil(t, adjacent)
 	})
 }
