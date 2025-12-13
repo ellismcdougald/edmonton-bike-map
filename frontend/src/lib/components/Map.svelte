@@ -260,6 +260,7 @@
 		// Explicitly track mapInstance so effect re-runs when it's initialized
 		const map = mapInstance;
 		const adjacentWays = wayState.adjacentWays;
+		const clickHandler = wayState.onAdjacentWayClick;
 
 		if (!map) return;
 
@@ -268,7 +269,7 @@
 				type: 'FeatureCollection',
 				features: adjacentWays
 			};
-			map.loadAdjacentWaysLayer(featureCollection);
+			map.loadAdjacentWaysLayer(featureCollection, clickHandler ?? undefined);
 		} else {
 			map.removeAdjacentWaysLayer();
 		}

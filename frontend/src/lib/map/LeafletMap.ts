@@ -283,7 +283,10 @@ export class LeafletMap {
 		}
 	}
 
-	loadAdjacentWaysLayer(geojson: GeoJSON.GeoJsonObject): void {
+	loadAdjacentWaysLayer(
+		geojson: GeoJSON.GeoJsonObject,
+		onWayClick?: (wayId: number) => void
+	): void {
 		if (this.adjacentWaysLayer) {
 			this.map.removeLayer(this.adjacentWaysLayer);
 			this.adjacentWaysLayer = null;
@@ -291,7 +294,15 @@ export class LeafletMap {
 
 		this.adjacentWaysLayer = this.L.geoJSON(geojson, {
 			pane: 'routePane',
-			style: { color: '#ff8c00', weight: 4, opacity: 0.7 }
+			style: { color: '#ff8c00', weight: 4, opacity: 0.7 },
+			onEachFeature: (feature, layer) => {
+				if (onWayClick && feature.properties?.id) {
+					layer.on('click', (e) => {
+						this.L.DomEvent.stopPropagation(e);
+						onWayClick(Number(feature.properties.id));
+					});
+				}
+			}
 		}).addTo(this.map);
 	}
 

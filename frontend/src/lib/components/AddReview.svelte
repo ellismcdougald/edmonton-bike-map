@@ -12,16 +12,22 @@
 	let errorMsg: string = $state('');
 	let isSubmitting: boolean = $state(false);
 	let adjacentWays: WayFeatureGeoJSON[] = $state([]);
+	let selectedWayIds: number[] = $state([wayId]);
 
 	let selectedWay: WayFeature | null = $derived(wayState.selectedWay);
 
 	$effect(() => {
-		// Re-load adjacent ways whenever wayId changes
+		// Reset selection to just the initial wayId when it changes
+		selectedWayIds = [wayId];
 		loadAdjacentWays();
+
+		// Set up click handler for adjacent ways
+		wayState.onAdjacentWayClick = toggleWaySelection;
 	});
 
 	onDestroy(() => {
 		wayState.adjacentWays = [];
+		wayState.onAdjacentWayClick = null;
 	});
 
 	async function loadAdjacentWays() {
@@ -34,6 +40,25 @@
 			adjacentWays = [];
 			wayState.adjacentWays = [];
 		}
+	}
+
+	function toggleWaySelection(id: number) {
+		if (selectedWayIds.includes(id)) {
+			selectedWayIds = selectedWayIds.filter((wid) => wid !== id);
+		} else {
+			selectedWayIds = [...selectedWayIds, id];
+		}
+	}
+
+	function getWayName(id: number): string {
+		if (id === wayId && selectedWay?.tags?.name) {
+			return String(selectedWay.tags.name);
+		}
+		const adjacent = adjacentWays.find((w) => w.properties?.id === id);
+		if (adjacent?.properties?.tags?.name) {
+			return String(adjacent.properties.tags.name);
+		}
+		return `Way #${id}`;
 	}
 
 	async function handleSubmit(event: Event) {
@@ -49,10 +74,15 @@
 			return;
 		}
 
+		if (selectedWayIds.length === 0) {
+			errorMsg = 'Please select at least one way to review!';
+			return;
+		}
+
 		isSubmitting = true;
 		errorMsg = '';
 		try {
-			await createReview(wayId, ratingNum, comment);
+			await createReview(selectedWayIds, ratingNum, comment);
 			rating = null;
 			comment = null;
 			if (onSubmitted) onSubmitted();
@@ -67,15 +97,30 @@
 <form class="space-y-3 mb-4" onsubmit={handleSubmit}>
 	<div>
 		<label class="block mb-1 font-semibold" for="includedWays">Included Ways</label>
+		<p class="text-xs text-gray-600 mb-2">
+			Click orange adjacent ways on the map to include them in your review.
+		</p>
 		<div id="includedWays" class="border border-gray-300 rounded px-3 py-2">
-			{#if selectedWay}
+			{#if selectedWayIds.length > 0}
 				<ul class="flex flex-wrap gap-2">
-					<li class="px-2 py-1 rounded-full bg-gray-200 text-sm">
-						{selectedWay.tags?.name ? selectedWay.tags.name : `Way #${selectedWay.id}`}
-					</li>
+					{#each selectedWayIds as wid (wid)}
+						<li class="px-2 py-1 rounded-full bg-blue-200 text-sm flex items-center gap-1">
+							<span>{getWayName(wid)}</span>
+							{#if wid !== wayId}
+								<button
+									type="button"
+									class="text-red-600 hover:text-red-800 ml-1"
+									onclick={() => toggleWaySelection(wid)}
+									aria-label="Remove way {wid}"
+								>
+									×
+								</button>
+							{/if}
+						</li>
+					{/each}
 				</ul>
 			{:else}
-				<p class="text-sm text-gray-600">No way selected yet.</p>
+				<p class="text-sm text-gray-600">No ways selected.</p>
 			{/if}
 		</div>
 	</div>

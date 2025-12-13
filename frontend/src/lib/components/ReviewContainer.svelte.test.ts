@@ -62,7 +62,7 @@ describe('ReviewContainer.svelte', () => {
 		await fireEvent.click(submitButton);
 
 		await waitFor(() => {
-			expect(createReviewSpy).toHaveBeenCalledWith(wayId, 7, 'Great route!');
+			expect(createReviewSpy).toHaveBeenCalledWith([wayId], 7, 'Great route!');
 			expect(onReviewAdded).toHaveBeenCalled();
 		});
 	});

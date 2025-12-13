@@ -7,9 +7,14 @@ import type { WayFeature } from '$lib/types';
 
 // Provide a hoisted mock for wayState without referencing test-scoped vars
 vi.mock('$lib/state.svelte', () => {
-	const wayState: { selectedWay: WayFeature | null; adjacentWays: unknown[] } = {
+	const wayState: {
+		selectedWay: WayFeature | null;
+		adjacentWays: unknown[];
+		onAdjacentWayClick: ((wayId: number) => void) | null;
+	} = {
 		selectedWay: null,
-		adjacentWays: []
+		adjacentWays: [],
+		onAdjacentWayClick: null
 	};
 	return { wayState };
 });
@@ -60,7 +65,7 @@ describe('AddReview.svelte', () => {
 		await fireEvent.click(submitButton);
 
 		await waitFor(() => {
-			expect(createReviewSpy).toHaveBeenCalledWith(wayId, 9, 'Love this way!');
+			expect(createReviewSpy).toHaveBeenCalledWith([wayId], 9, 'Love this way!');
 			expect(onSubmitted).toHaveBeenCalled();
 		});
 	});
