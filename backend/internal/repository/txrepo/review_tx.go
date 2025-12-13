@@ -24,9 +24,6 @@ func (r *TxReviewRepository) CreateReview(review *models.Review) error {
 	if review == nil {
 		return fmt.Errorf("nil review")
 	}
-	if len(review.WayIDs) == 0 && review.WayID != 0 {
-		review.WayIDs = []int64{review.WayID}
-	}
 	if len(review.WayIDs) == 0 {
 		return fmt.Errorf("review must include at least one way ID")
 	}

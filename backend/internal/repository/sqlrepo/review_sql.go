@@ -24,8 +24,9 @@ func (r *SQLReviewRepository) CreateReview(review *models.Review) error {
 	if review == nil {
 		return fmt.Errorf("nil review")
 	}
-	if len(review.WayIDs) == 0 && review.WayID != 0 {
-		review.WayIDs = []int64{review.WayID}
+	// Require WayIDs to be provided (multi-way schema)
+	if len(review.WayIDs) == 0 {
+		return fmt.Errorf("review must include at least one way ID")
 	}
 	if len(review.WayIDs) == 0 {
 		return fmt.Errorf("review must include at least one way ID")
