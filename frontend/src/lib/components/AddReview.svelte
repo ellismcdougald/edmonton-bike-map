@@ -19,14 +19,21 @@
 	$effect(() => {
 		// Reset selection to just the initial wayId when it changes
 		selectedWayIds = [wayId];
+		wayState.additionalSelectedWayIds = [];
 		loadAdjacentWays();
 
 		// Set up click handler for adjacent ways
 		wayState.onAdjacentWayClick = toggleWaySelection;
 	});
 
+	$effect(() => {
+		// Sync additional selected way IDs to state (excluding the original wayId)
+		wayState.additionalSelectedWayIds = selectedWayIds.filter((id) => id !== wayId);
+	});
+
 	onDestroy(() => {
 		wayState.adjacentWays = [];
+		wayState.additionalSelectedWayIds = [];
 		wayState.onAdjacentWayClick = null;
 	});
 

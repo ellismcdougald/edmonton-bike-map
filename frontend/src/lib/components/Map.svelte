@@ -260,18 +260,46 @@
 		// Explicitly track mapInstance so effect re-runs when it's initialized
 		const map = mapInstance;
 		const adjacentWays = wayState.adjacentWays;
+		const additionalSelectedWayIds = wayState.additionalSelectedWayIds;
 		const clickHandler = wayState.onAdjacentWayClick;
 
 		if (!map) return;
 
-		if (adjacentWays.length > 0) {
+		// Filter out ways that have been selected (convert IDs to numbers for comparison)
+		const unselectedAdjacentWays = adjacentWays.filter((way) => {
+			const wayId = way.properties?.id;
+			if (wayId === undefined) return true;
+			return !additionalSelectedWayIds.includes(Number(wayId));
+		});
+
+		if (unselectedAdjacentWays.length > 0) {
 			const featureCollection: GeoJSON.FeatureCollection = {
 				type: 'FeatureCollection',
-				features: adjacentWays
+				features: unselectedAdjacentWays
 			};
 			map.loadAdjacentWaysLayer(featureCollection, clickHandler ?? undefined);
 		} else {
 			map.removeAdjacentWaysLayer();
+		}
+
+		// Show selected adjacent ways in green
+		if (additionalSelectedWayIds.length > 0) {
+			const selectedAdjacentWays = adjacentWays.filter((way) => {
+				const wayId = way.properties?.id;
+				if (wayId === undefined) return false;
+				return additionalSelectedWayIds.includes(Number(wayId));
+			});
+			if (selectedAdjacentWays.length > 0) {
+				const selectedFeatureCollection: GeoJSON.FeatureCollection = {
+					type: 'FeatureCollection',
+					features: selectedAdjacentWays
+				};
+				map.loadAdditionalSelectedWaysLayer(selectedFeatureCollection);
+			} else {
+				map.removeAdditionalSelectedWaysLayer();
+			}
+		} else {
+			map.removeAdditionalSelectedWaysLayer();
 		}
 	});
 

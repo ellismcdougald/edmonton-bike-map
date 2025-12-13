@@ -63,6 +63,7 @@ export class LeafletMap {
 	private infoLayer: GeoJSON | null = null;
 	private selectedWayLayer: GeoJSON | null = null;
 	private adjacentWaysLayer: GeoJSON | null = null;
+	private additionalSelectedWaysLayer: GeoJSON | null = null;
 	private distanceControl: L.Control | null = null;
 	private timeControl: L.Control | null = null;
 
@@ -310,6 +311,25 @@ export class LeafletMap {
 		if (this.adjacentWaysLayer) {
 			this.map.removeLayer(this.adjacentWaysLayer);
 			this.adjacentWaysLayer = null;
+		}
+	}
+
+	loadAdditionalSelectedWaysLayer(geojson: GeoJSON.GeoJsonObject): void {
+		if (this.additionalSelectedWaysLayer) {
+			this.map.removeLayer(this.additionalSelectedWaysLayer);
+			this.additionalSelectedWaysLayer = null;
+		}
+
+		this.additionalSelectedWaysLayer = this.L.geoJSON(geojson, {
+			pane: 'routePane',
+			style: { color: '#22c55e', weight: 4, opacity: 0.8 }
+		}).addTo(this.map);
+	}
+
+	removeAdditionalSelectedWaysLayer(): void {
+		if (this.additionalSelectedWaysLayer) {
+			this.map.removeLayer(this.additionalSelectedWaysLayer);
+			this.additionalSelectedWaysLayer = null;
 		}
 	}
 
