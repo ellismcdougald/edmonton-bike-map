@@ -25,7 +25,14 @@ func (m *mockReviewRepo) CreateReview(review *models.Review) error {
 		return m.err
 	}
 	m.created = append(m.created, review)
-	m.reviews[review.WayID] = append(m.reviews[review.WayID], *review)
+	// support multi-way by adding review to each way ID
+	wayIDs := review.WayIDs
+	if len(wayIDs) == 0 && review.WayID != 0 {
+		wayIDs = []int64{review.WayID}
+	}
+	for _, wid := range wayIDs {
+		m.reviews[wid] = append(m.reviews[wid], *review)
+	}
 	return nil
 }
 func (m *mockReviewRepo) GetReviews(wayID int64) ([]models.Review, error) {
@@ -89,8 +96,9 @@ func TestReviewHandler_HandlePostReview_Success(t *testing.T) {
 	svc := service.NewReviewService(repo)
 	h := NewReviewHandler(svc)
 
-	body := models.Review{WayID: 1, UserID: 2, Rating: 5, Comment: "nice"}
-	b, _ := json.Marshal(body)
+	// new payload uses wayId and omits userId (taken from context)
+	payload := map[string]interface{}{"wayId": 1, "rating": 5, "comment": "nice"}
+	b, _ := json.Marshal(payload)
 
 	req := httptest.NewRequest(http.MethodPost, "/reviews", bytes.NewReader(b))
 	// Set user ID in context using middleware helper
@@ -105,7 +113,7 @@ func TestReviewHandler_HandlePostReview_Success(t *testing.T) {
 	require.Equal(t, http.StatusCreated, rr.Code)
 	// Ensure repo received the review
 	require.Len(t, repo.created, 1)
-	require.Equal(t, int64(1), repo.created[0].WayID)
+	require.Equal(t, []int64{1}, repo.created[0].WayIDs)
 }
 
 func TestReviewHandler_HandlePostReview_Unauthorized(t *testing.T) {
@@ -113,8 +121,8 @@ func TestReviewHandler_HandlePostReview_Unauthorized(t *testing.T) {
 	svc := service.NewReviewService(repo)
 	h := NewReviewHandler(svc)
 
-	body := models.Review{WayID: 1, UserID: 2, Rating: 5, Comment: "nice"}
-	b, _ := json.Marshal(body)
+	payload := map[string]interface{}{"wayId": 1, "rating": 5, "comment": "nice"}
+	b, _ := json.Marshal(payload)
 
 	req := httptest.NewRequest(http.MethodPost, "/reviews", bytes.NewReader(b))
 	// Don't set user ID in context - should fail with 401
@@ -131,8 +139,8 @@ func TestReviewHandler_HandlePostReview_BadRating(t *testing.T) {
 	svc := service.NewReviewService(repo)
 	h := NewReviewHandler(svc)
 
-	body := models.Review{WayID: 1, UserID: 2, Rating: 0, Comment: "bad"}
-	b, _ := json.Marshal(body)
+	payload := map[string]interface{}{"wayId": 1, "rating": 0, "comment": "bad"}
+	b, _ := json.Marshal(payload)
 
 	req := httptest.NewRequest(http.MethodPost, "/reviews", bytes.NewReader(b))
 	// Set user ID in context using middleware helper

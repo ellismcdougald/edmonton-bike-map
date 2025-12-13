@@ -19,34 +19,56 @@ func NewSQLReviewRepository(db *sql.DB) repository.ReviewRepository {
 	return &SQLReviewRepository{DB: db}
 }
 
-// CreateReview inserts a new review into the reviews table.
+// CreateReview inserts a new review and its way links (review_ways).
 func (r *SQLReviewRepository) CreateReview(review *models.Review) error {
-	query := `
-        INSERT INTO reviews (
-            way_id,
-            user_id,
-            rating,
-            comment
-        ) VALUES ($1, $2, $3, $4)
-    `
-	_, err := r.DB.Exec(query, review.WayID, review.UserID, review.Rating, review.Comment)
-	return err
+	if review == nil {
+		return fmt.Errorf("nil review")
+	}
+	if len(review.WayIDs) == 0 && review.WayID != 0 {
+		review.WayIDs = []int64{review.WayID}
+	}
+	if len(review.WayIDs) == 0 {
+		return fmt.Errorf("review must include at least one way ID")
+	}
+
+	// Insert the review and get its ID
+	insertReview := `
+		INSERT INTO reviews (
+			user_id,
+			rating,
+			comment
+		) VALUES ($1, $2, $3)
+		RETURNING id
+	`
+	var reviewID int64
+	if err := r.DB.QueryRow(insertReview, review.UserID, review.Rating, review.Comment).Scan(&reviewID); err != nil {
+		return err
+	}
+
+	// Link the review to its ways
+	linkStmt := `INSERT INTO review_ways (review_id, way_id) VALUES ($1, $2)`
+	for _, wayID := range review.WayIDs {
+		if _, err := r.DB.Exec(linkStmt, reviewID, wayID); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-// GetReviews returns reviews for a specific way, including the reviewer's username.
+// GetReviews returns reviews associated with a specific way, including the reviewer's username.
 func (r *SQLReviewRepository) GetReviews(wayID int64) ([]models.Review, error) {
 	query := `
-        SELECT
-            r.way_id,
-            r.user_id,
-            r.rating,
-            r.comment,
-            r.created_at,
-            u.username
-        FROM reviews r
-        LEFT JOIN users u ON r.user_id = u.id
-        WHERE r.way_id = $1;
-    `
+		SELECT
+			r.user_id,
+			r.rating,
+			r.comment,
+			r.created_at,
+			u.username
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		LEFT JOIN users u ON r.user_id = u.id
+		WHERE rw.way_id = $1;
+	`
 
 	rows, err := r.DB.Query(query, wayID)
 	if err != nil {
@@ -61,7 +83,7 @@ func (r *SQLReviewRepository) GetReviews(wayID int64) ([]models.Review, error) {
 	var reviews []models.Review
 	for rows.Next() {
 		var rev models.Review
-		if err := rows.Scan(&rev.WayID, &rev.UserID, &rev.Rating, &rev.Comment, &rev.CreatedAt, &rev.Username); err != nil {
+		if err := rows.Scan(&rev.UserID, &rev.Rating, &rev.Comment, &rev.CreatedAt, &rev.Username); err != nil {
 			return nil, err
 		}
 		reviews = append(reviews, rev)
@@ -78,19 +100,20 @@ func (r *SQLReviewRepository) GetReviews(wayID int64) ([]models.Review, error) {
 	return reviews, nil
 }
 
-// GetAllReviews retrieves all reviews grouped by way ID. Returns a map[wayID] -> []Review.
+// GetAllReviews retrieves all reviews grouped by way ID via review_ways.
 func (r *SQLReviewRepository) GetAllReviews() (map[int64][]models.Review, error) {
 	query := `
-        SELECT
-            r.way_id,
-            r.user_id,
-            r.rating,
-            r.comment,
-            r.created_at,
-            u.username
-        FROM reviews r
-        LEFT JOIN users u ON r.user_id = u.id;
-    `
+		SELECT
+			rw.way_id,
+			r.user_id,
+			r.rating,
+			r.comment,
+			r.created_at,
+			u.username
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		LEFT JOIN users u ON r.user_id = u.id;
+	`
 
 	rows, err := r.DB.Query(query)
 	if err != nil {
@@ -104,11 +127,12 @@ func (r *SQLReviewRepository) GetAllReviews() (map[int64][]models.Review, error)
 
 	result := make(map[int64][]models.Review)
 	for rows.Next() {
+		var wayID int64
 		var rev models.Review
-		if err := rows.Scan(&rev.WayID, &rev.UserID, &rev.Rating, &rev.Comment, &rev.CreatedAt, &rev.Username); err != nil {
+		if err := rows.Scan(&wayID, &rev.UserID, &rev.Rating, &rev.Comment, &rev.CreatedAt, &rev.Username); err != nil {
 			return nil, err
 		}
-		result[rev.WayID] = append(result[rev.WayID], rev)
+		result[wayID] = append(result[wayID], rev)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -118,25 +142,15 @@ func (r *SQLReviewRepository) GetAllReviews() (map[int64][]models.Review, error)
 	return result, nil
 }
 
-// insertBatch inserts multiple reviews in a single multi-row statement.
+// insertBatch inserts multiple reviews and their links; implemented as a simple loop for clarity.
 func (r *SQLReviewRepository) insertBatch(reviews []models.Review) error {
-	if len(reviews) == 0 {
-		return nil
-	}
-
-	query := "INSERT INTO reviews (way_id, user_id, rating, comment) VALUES "
-	args := []interface{}{}
-	for i, rev := range reviews {
-		if i > 0 {
-			query += ", "
+	for i := range reviews {
+		rev := reviews[i]
+		if err := r.CreateReview(&rev); err != nil {
+			return err
 		}
-		base := i*4 + 1
-		query += fmt.Sprintf("($%d, $%d, $%d, $%d)", base, base+1, base+2, base+3)
-		args = append(args, rev.WayID, rev.UserID, rev.Rating, rev.Comment)
 	}
-
-	_, err := r.DB.Exec(query, args...)
-	return err
+	return nil
 }
 
 // InsertBatches inserts reviews in batches of the specified size.

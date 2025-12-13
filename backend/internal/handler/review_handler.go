@@ -58,8 +58,15 @@ func (h *ReviewHandler) HandleGetReviews() http.HandlerFunc {
 // and HTTP 500 Internal Server Error if saving the review fails.
 func (h *ReviewHandler) HandlePostReview() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var review models.Review
-		if err := json.NewDecoder(r.Body).Decode(&review); err != nil {
+		// Accept either legacy single wayId or new wayIds array
+		type postReviewRequest struct {
+			WayIDs  []int64 `json:"wayIds"`
+			WayID   *int64  `json:"wayId"`
+			Rating  int     `json:"rating"`
+			Comment string  `json:"comment"`
+		}
+		var req postReviewRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			log.Printf("Invalid request body: %v", err)
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
@@ -72,11 +79,26 @@ func (h *ReviewHandler) HandlePostReview() http.HandlerFunc {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
+		// Build models.Review from request, mapping legacy field if needed
+		var review models.Review
 		review.UserID = userID
+		review.Rating = req.Rating
+		review.Comment = req.Comment
+		if len(req.WayIDs) > 0 {
+			review.WayIDs = req.WayIDs
+		} else if req.WayID != nil {
+			review.WayIDs = []int64{*req.WayID}
+		}
 
 		if review.Rating < 1 || review.Rating > 10 {
 			log.Printf("Invalid rating: %d", review.Rating)
 			http.Error(w, "Rating must be between 1 and 10", http.StatusBadRequest)
+			return
+		}
+
+		if len(review.WayIDs) == 0 {
+			log.Printf("Missing wayIds")
+			http.Error(w, "At least one wayId is required", http.StatusBadRequest)
 			return
 		}
 
