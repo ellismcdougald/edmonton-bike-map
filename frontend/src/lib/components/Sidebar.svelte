@@ -41,44 +41,47 @@
 	}
 </script>
 
-{#if isVisible && way}
-	<div id="sidebar-content" class="relative w-full p-2 h-full bg-white shadow-2xl pb-16 pr-16">
-		{#if sidebarLoaded}
-			<div id="hide-sidebar-button-container" class="absolute bottom-2 right-2">
-				<button
-					id="hide-sidebar-button"
-					class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-3 py-1 rounded z-20"
-					onclick={toggleSidebar}>{isVisible ? 'Hide' : 'Show'}</button
-				>
+{#if sidebarLoaded}
+	<div id="sidebar-wrapper" class="relative h-full">
+		<div id="hide-sidebar-button-container" class="absolute top-2 right-2 z-20">
+			<button
+				id="hide-sidebar-button"
+				class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-3 py-1 rounded shadow"
+				onclick={toggleSidebar}>{isVisible ? 'Hide' : 'Show'}</button
+			>
+		</div>
+
+		{#if isVisible && way}
+			<div id="sidebar-content" class="w-full p-2 h-full bg-white shadow-2xl pb-12">
+				<h1 class="text-xl font-bold">{way.tags?.name ? way?.tags?.name : 'Unnamed Route'}</h1>
+
+				<section class="mb-2">
+					<h2 class="font-semibold">
+						Type: <span class="font-normal">{determineRouteType(way.tags)}</span>
+					</h2>
+					<h2 class="font-semibold">
+						Bicycle Route: <span class="font-normal">{determineBicycleRoute(way.tags)}</span>
+					</h2>
+					<h2 class="font-semibold">
+						Surface: <span class="font-normal"
+							>{way.tags.surface ? capitalizeFirstLetter(way.tags.surface) : 'Unknown'}</span
+						>
+					</h2>
+					<h2 class="font-semibold">
+						Average Rating: <span class="font-normal"
+							>{reviews.length > 0 ? `${computeAverageRating(reviews)} / 10` : 'TBD'}</span
+						>
+					</h2>
+				</section>
+
+				<ReviewContainer
+					wayId={way.id}
+					{reviews}
+					canReview={Boolean(username)}
+					onReviewAdded={() => loadReviews(way.id)}
+				/>
 			</div>
 		{/if}
-		<h1 class="text-xl font-bold">{way.tags?.name ? way?.tags?.name : 'Unnamed Route'}</h1>
-
-		<section class="mb-2">
-			<h2 class="font-semibold">
-				Type: <span class="font-normal">{determineRouteType(way.tags)}</span>
-			</h2>
-			<h2 class="font-semibold">
-				Bicycle Route: <span class="font-normal">{determineBicycleRoute(way.tags)}</span>
-			</h2>
-			<h2 class="font-semibold">
-				Surface: <span class="font-normal"
-					>{way.tags.surface ? capitalizeFirstLetter(way.tags.surface) : 'Unknown'}</span
-				>
-			</h2>
-			<h2 class="font-semibold">
-				Average Rating: <span class="font-normal"
-					>{reviews.length > 0 ? `${computeAverageRating(reviews)} / 10` : 'TBD'}</span
-				>
-			</h2>
-		</section>
-
-		<ReviewContainer
-			wayId={way.id}
-			{reviews}
-			canReview={Boolean(username)}
-			onReviewAdded={() => loadReviews(way.id)}
-		/>
 	</div>
 {/if}
 
