@@ -138,9 +138,14 @@ test.describe("guest flows", () => {
     const seededUserId = res.rows[0].id;
 
     const existingComment = `guest-visible review ${Date.now()}`;
+    const insertRes = await client.query(
+      "INSERT INTO reviews (user_id, rating, comment, created_at) VALUES ($1, $2, $3, now()) RETURNING id",
+      [seededUserId, 7, existingComment]
+    );
+    const reviewId = insertRes.rows[0].id as number;
     await client.query(
-      "INSERT INTO reviews (way_id, user_id, rating, comment, created_at) VALUES ($1, $2, $3, $4, now())",
-      [wayIdWithReviews, seededUserId, 7, existingComment]
+      "INSERT INTO review_ways (review_id, way_id) VALUES ($1, $2)",
+      [reviewId, wayIdWithReviews]
     );
 
     await page.goto(`${FRONTEND_URL}/map?way=${wayIdWithReviews}`);
