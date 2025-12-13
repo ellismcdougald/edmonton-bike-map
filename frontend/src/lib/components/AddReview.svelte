@@ -76,6 +76,7 @@
 	}
 
 	function toggleWaySelection(id: number) {
+		if (id === wayId) return; // keep the base way always selected
 		if (selectedWayIds.includes(id)) {
 			selectedWayIds = selectedWayIds.filter((wid) => wid !== id);
 		} else {
