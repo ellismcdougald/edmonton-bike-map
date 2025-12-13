@@ -21,6 +21,7 @@
 		// Reset selection to just the initial wayId when it changes
 		selectedWayIds = [wayId];
 		wayState.additionalSelectedWayIds = [];
+		wayState.isAddReviewActive = true;
 
 		// Set up click handler for adjacent ways
 		wayState.onAdjacentWayClick = toggleWaySelection;
@@ -38,6 +39,7 @@
 		wayState.adjacentWays = [];
 		wayState.additionalSelectedWayIds = [];
 		wayState.onAdjacentWayClick = null;
+		wayState.isAddReviewActive = false;
 	});
 
 	async function loadAdjacentWays() {

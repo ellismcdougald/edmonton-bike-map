@@ -5,9 +5,11 @@ export const wayState = $state<{
 	adjacentWays: WayFeatureGeoJSON[];
 	additionalSelectedWayIds: number[];
 	onAdjacentWayClick: ((wayId: number) => void) | null;
+	isAddReviewActive: boolean;
 }>({
 	selectedWay: null,
 	adjacentWays: [],
 	additionalSelectedWayIds: [],
-	onAdjacentWayClick: null
+	onAdjacentWayClick: null,
+	isAddReviewActive: false
 });

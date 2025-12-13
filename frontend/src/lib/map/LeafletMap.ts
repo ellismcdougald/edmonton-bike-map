@@ -295,7 +295,7 @@ export class LeafletMap {
 
 		this.adjacentWaysLayer = this.L.geoJSON(geojson, {
 			pane: 'routePane',
-			style: { color: '#ff8c00', weight: 4, opacity: 0.7 },
+			style: { color: '#ff8c00', weight: 4, opacity: 0.7, className: 'adjacent-way' },
 			onEachFeature: (feature, layer) => {
 				if (onWayClick && feature.properties?.id) {
 					layer.on('click', (e) => {
@@ -322,7 +322,7 @@ export class LeafletMap {
 
 		this.additionalSelectedWaysLayer = this.L.geoJSON(geojson, {
 			pane: 'routePane',
-			style: { color: '#22c55e', weight: 4, opacity: 0.8 }
+			style: { color: '#22c55e', weight: 4, opacity: 0.8, className: 'additional-selected-way' }
 		}).addTo(this.map);
 	}
 

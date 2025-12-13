@@ -197,6 +197,11 @@
 		const [lat, lng] = latlng;
 		if (!mapInstance) return;
 
+		// Disable normal map click behavior while Add Review is active
+		if (wayState.isAddReviewActive) {
+			return;
+		}
+
 		if (mode.selectStartActive) {
 			mapInstance.removeStartMarker();
 			mapInstance.addStartMarker([lat, lng]);
