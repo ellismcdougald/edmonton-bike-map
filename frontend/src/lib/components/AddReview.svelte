@@ -4,6 +4,7 @@
 	import { wayState } from '$lib/state.svelte';
 	import type { WayFeature, WayFeatureGeoJSON } from '$lib/types';
 	import { onDestroy } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	let { wayId, onSubmitted }: { wayId: number; onSubmitted?: () => void } = $props();
 
@@ -20,7 +21,6 @@
 		// Reset selection to just the initial wayId when it changes
 		selectedWayIds = [wayId];
 		wayState.additionalSelectedWayIds = [];
-		loadAdjacentWays();
 
 		// Set up click handler for adjacent ways
 		wayState.onAdjacentWayClick = toggleWaySelection;
@@ -29,6 +29,9 @@
 	$effect(() => {
 		// Sync additional selected way IDs to state (excluding the original wayId)
 		wayState.additionalSelectedWayIds = selectedWayIds.filter((id) => id !== wayId);
+
+		// Load adjacent ways for all selected ways
+		loadAdjacentWays();
 	});
 
 	onDestroy(() => {
@@ -39,8 +42,25 @@
 
 	async function loadAdjacentWays() {
 		try {
-			const featureCollection = await getAdjacentWays(wayId);
-			adjacentWays = featureCollection.features;
+			// Fetch adjacent ways for all selected ways
+			const allAdjacentWaysPromises = selectedWayIds.map((id) => getAdjacentWays(id));
+			const allFeatureCollections = await Promise.all(allAdjacentWaysPromises);
+
+			// Combine all features and deduplicate by way ID
+			const seenIds = new SvelteSet<number>();
+			const uniqueFeatures: WayFeatureGeoJSON[] = [];
+
+			for (const featureCollection of allFeatureCollections) {
+				for (const feature of featureCollection.features) {
+					const featureId = feature.properties?.id;
+					if (featureId !== undefined && !seenIds.has(Number(featureId))) {
+						seenIds.add(Number(featureId));
+						uniqueFeatures.push(feature);
+					}
+				}
+			}
+
+			adjacentWays = uniqueFeatures;
 			wayState.adjacentWays = adjacentWays;
 		} catch (err) {
 			console.error('Failed to load adjacent ways:', err);

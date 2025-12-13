@@ -261,15 +261,21 @@
 		const map = mapInstance;
 		const adjacentWays = wayState.adjacentWays;
 		const additionalSelectedWayIds = wayState.additionalSelectedWayIds;
+		const selectedWay = wayState.selectedWay;
 		const clickHandler = wayState.onAdjacentWayClick;
 
 		if (!map) return;
 
+		const selectedWayId = selectedWay?.id;
+
 		// Filter out ways that have been selected (convert IDs to numbers for comparison)
+		// Also exclude the original selected way (shown in blue)
 		const unselectedAdjacentWays = adjacentWays.filter((way) => {
 			const wayId = way.properties?.id;
 			if (wayId === undefined) return true;
-			return !additionalSelectedWayIds.includes(Number(wayId));
+			const numWayId = Number(wayId);
+			// Exclude if it's in additional selected or is the original selected way
+			return !additionalSelectedWayIds.includes(numWayId) && numWayId !== selectedWayId;
 		});
 
 		if (unselectedAdjacentWays.length > 0) {
@@ -282,12 +288,14 @@
 			map.removeAdjacentWaysLayer();
 		}
 
-		// Show selected adjacent ways in green
+		// Show selected adjacent ways in green (but NOT the original selected way)
 		if (additionalSelectedWayIds.length > 0) {
 			const selectedAdjacentWays = adjacentWays.filter((way) => {
 				const wayId = way.properties?.id;
 				if (wayId === undefined) return false;
-				return additionalSelectedWayIds.includes(Number(wayId));
+				const numWayId = Number(wayId);
+				// Include only if in additional selected AND not the original selected way
+				return additionalSelectedWayIds.includes(numWayId) && numWayId !== selectedWayId;
 			});
 			if (selectedAdjacentWays.length > 0) {
 				const selectedFeatureCollection: GeoJSON.FeatureCollection = {
