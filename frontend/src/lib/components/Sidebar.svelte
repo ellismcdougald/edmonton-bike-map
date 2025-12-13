@@ -41,18 +41,17 @@
 	}
 </script>
 
-{#if sidebarLoaded}
-	<div id="hide-sidebar-button-container" class="flex ml-auto">
-		<button
-			id="hide-sidebar-button"
-			class="absolute bottom-2 right-2 bg-gray-300 hover:bg-gray-400 text-gray-800 px-3 py-1 rounded z-20"
-			onclick={toggleSidebar}>{isVisible ? 'Hide' : 'Show'}</button
-		>
-	</div>
-{/if}
-
 {#if isVisible && way}
-	<div id="sidebar-content" class="w-full p-2 h-full bg-white shadow-2xl pb-12">
+	<div id="sidebar-content" class="relative w-full p-2 h-full bg-white shadow-2xl pb-16 pr-16">
+		{#if sidebarLoaded}
+			<div id="hide-sidebar-button-container" class="absolute bottom-2 right-2">
+				<button
+					id="hide-sidebar-button"
+					class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-3 py-1 rounded z-20"
+					onclick={toggleSidebar}>{isVisible ? 'Hide' : 'Show'}</button
+				>
+			</div>
+		{/if}
 		<h1 class="text-xl font-bold">{way.tags?.name ? way?.tags?.name : 'Unnamed Route'}</h1>
 
 		<section class="mb-2">
