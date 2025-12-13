@@ -19,20 +19,28 @@ func NewSQLReviewRepository(db *sql.DB) repository.ReviewRepository {
 	return &SQLReviewRepository{DB: db}
 }
 
-// CreateReview inserts a new review and its way links (review_ways).
-func (r *SQLReviewRepository) CreateReview(review *models.Review) error {
+// CreateReview inserts a new review and its way links (review_ways) within a single transaction.
+func (r *SQLReviewRepository) CreateReview(review *models.Review) (err error) {
 	if review == nil {
 		return fmt.Errorf("nil review")
-	}
-	// Require WayIDs to be provided (multi-way schema)
-	if len(review.WayIDs) == 0 {
-		return fmt.Errorf("review must include at least one way ID")
 	}
 	if len(review.WayIDs) == 0 {
 		return fmt.Errorf("review must include at least one way ID")
 	}
 
-	// Insert the review and get its ID
+	tx, err := r.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Printf("rollback failed after CreateReview error: %v", rbErr)
+			}
+		}
+	}()
+
 	insertReview := `
 		INSERT INTO reviews (
 			user_id,
@@ -42,16 +50,19 @@ func (r *SQLReviewRepository) CreateReview(review *models.Review) error {
 		RETURNING id
 	`
 	var reviewID int64
-	if err := r.DB.QueryRow(insertReview, review.UserID, review.Rating, review.Comment).Scan(&reviewID); err != nil {
+	if err = tx.QueryRow(insertReview, review.UserID, review.Rating, review.Comment).Scan(&reviewID); err != nil {
 		return err
 	}
 
-	// Link the review to its ways
 	linkStmt := `INSERT INTO review_ways (review_id, way_id) VALUES ($1, $2)`
 	for _, wayID := range review.WayIDs {
-		if _, err := r.DB.Exec(linkStmt, reviewID, wayID); err != nil {
+		if _, err = tx.Exec(linkStmt, reviewID, wayID); err != nil {
 			return err
 		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
 	}
 	return nil
 }
