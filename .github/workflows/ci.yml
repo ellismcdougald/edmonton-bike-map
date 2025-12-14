@@ -71,10 +71,11 @@ jobs:
     name: E2E Tests
     runs-on: ubuntu-latest
     steps:
-      - name: Set up PostgreSQL
+      - name: Set up PostgreSQL with PostGIS
         run: |
           sudo apt-get update
-          sudo apt-get install -y postgresql postgresql-contrib
+          # Install PostgreSQL + PostGIS
+          sudo apt-get install -y postgresql postgresql-contrib postgis
           sudo service postgresql start
           sudo -u postgres psql -c "CREATE USER testuser WITH PASSWORD 'testpass';"
           sudo -u postgres psql -c "CREATE DATABASE bikemap_test OWNER testuser;"
@@ -98,6 +99,10 @@ jobs:
             echo "Still waiting..."
             sleep 2
           done
+      - name: Enable PostGIS extension
+        run: |
+          # Create the PostGIS extension in the test database
+          sudo -u postgres psql -d bikemap_test -c "CREATE EXTENSION IF NOT EXISTS postgis;"
       - name: Install golang-migrate CLI
         run: |
           version=v4.18.3
