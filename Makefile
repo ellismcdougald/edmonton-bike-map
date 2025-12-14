@@ -8,11 +8,13 @@ DEV_PROJECT=bike-map-dev
 TEST_PROJECT=bike-map-test
 
 .PHONY: help dev-build dev-start dev-stop dev-restart dev-fl dev-bl dev-fr dev-br \
-        test-build test-start test-stop test-restart test-fl test-bl test-fr test-br
+        test-build test-start test-stop test-restart test-fl test-bl test-fr test-br \
+        update-db update-test-db
 
 help:
 	@echo "Available targets: dev-build dev-start dev-stop dev-restart dev-fl dev-bl dev-fr dev-br"
 	@echo "                 test-build test-start test-stop test-restart test-fl test-bl test-fr test-br"
+	@echo "                 update-db update-test-db"
 
 # Dev targets
 dev-build:
@@ -61,3 +63,12 @@ test-fr:
 
 test-br:
 	$(DC) -p $(TEST_PROJECT) restart test-backend
+
+# Database update
+update-db:
+	set -a && source $(ENV_FILE) && set +a && \
+	cd backend/cmd/update_db && DATABASE_URL=$$INIT_DATABASE_URL go run main.go
+
+update-test-db:
+	set -a && source $(TEST_ENV_FILE) && set +a && \
+	cd backend/cmd/update_db && DATABASE_URL=$$INIT_DATABASE_URL go run main.go
