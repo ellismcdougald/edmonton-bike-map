@@ -49,3 +49,21 @@
         recreate: never
         files:
           - db-compose.yml
+
+    - name: Wait for Postgres readiness
+      shell: |
+        set -a; . /root/app/.env; set +a
+        for i in {1..30}; do
+          if docker exec edmonton_bike_map_db pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"; then
+            echo "Postgres is ready!"
+            exit 0
+          fi
+          echo "Waiting for Postgres..."
+          sleep 2
+        done
+        exit 1
+
+    - name: Enable PostGIS extension
+      shell: |
+        set -a; . /root/app/.env; set +a
+        docker exec edmonton_bike_map_db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE EXTENSION IF NOT EXISTS postgis;"
