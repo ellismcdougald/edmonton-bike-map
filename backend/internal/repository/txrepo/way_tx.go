@@ -216,7 +216,7 @@ func (r *TxWayRepository) GetNearestWay(latitude, longitude float64) (*models.Wa
 			FROM nodes n
 			ORDER BY ST_SetSRID(ST_MakePoint(n.longitude, n.latitude), 4326)
 					 <-> ST_SetSRID(ST_MakePoint($2, $1), 4326)
-			LIMIT 400
+			LIMIT 10
 		),
 		candidate_ways AS (
 			SELECT DISTINCT wn.way_id
@@ -244,8 +244,8 @@ func (r *TxWayRepository) GetNearestWay(latitude, longitude float64) (*models.Wa
 				id,
 				tags,
 				ST_Distance(
-					geom::geography,
-					ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography
+					geom,
+					ST_SetSRID(ST_MakePoint($2, $1), 4326)
 				)::double precision AS distance
 			FROM way_geometries
 			ORDER BY distance ASC
