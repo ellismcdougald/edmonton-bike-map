@@ -137,16 +137,27 @@ test.describe("reviews e2e", () => {
     });
 
     // Click an adjacent orange way (skip the original selected blue way)
-    // Target by class added to adjacent ways layer
-    await page.waitForSelector(".adjacent-way.leaflet-interactive", {
-      timeout: 5000,
-    });
+    // Wait for at least one visible adjacent path (non-zero bounding box).
+    await page.waitForFunction(
+      () =>
+        Array.from(
+          document.querySelectorAll("svg path.adjacent-way.leaflet-interactive")
+        ).some((p) => {
+          const r = p.getBoundingClientRect();
+          return r.width > 0 && r.height > 0;
+        }),
+      { timeout: 15000 }
+    );
     await page.evaluate(() => {
-      const path = document.querySelector(
-        "svg path.adjacent-way.leaflet-interactive"
+      const paths = Array.from(
+        document.querySelectorAll("svg path.adjacent-way.leaflet-interactive")
       );
-      if (!path) throw new Error("Adjacent path not found");
-      path.dispatchEvent(
+      const target = paths.find((p) => {
+        const r = p.getBoundingClientRect();
+        return r.width > 0 && r.height > 0;
+      });
+      if (!target) throw new Error("No visible adjacent-way paths found");
+      target.dispatchEvent(
         new MouseEvent("click", {
           bubbles: true,
           cancelable: true,
