@@ -157,32 +157,8 @@ func TestTxWayRepository_GetNearestWay(t *testing.T) {
 		tags := map[string]string{"highway": "cycleway"}
 		tagsJSON, _ := json.Marshal(tags)
 
-		mock.ExpectQuery(regexp.QuoteMeta(`
-			WITH distances AS (
-				SELECT DISTINCT
-					w.id,
-					w.tags,
-					MIN(
-						SQRT(
-							POW(n.latitude - $1, 2) + POW(n.longitude - $2, 2)
-						)
-					) as min_distance
-				FROM ways w
-				JOIN way_nodes wn ON wn.way_id = w.id
-				JOIN nodes n ON n.id = wn.node_id
-				GROUP BY w.id, w.tags
-				ORDER BY min_distance ASC
-				LIMIT 1
-			)
-			SELECT 
-				w.id,
-				w.tags,
-				ARRAY_AGG(wn.node_id ORDER BY wn.sequence_id) AS node_ids
-			FROM distances d
-			JOIN ways w ON w.id = d.id
-			JOIN way_nodes wn ON wn.way_id = w.id
-			GROUP BY w.id, w.tags
-		`)).
+		queryPattern := "(?s)WITH nearest_nodes.*candidate_ways.*way_geometries.*closest.*ARRAY_AGG"
+		mock.ExpectQuery(queryPattern).
 			WithArgs(53.5, -113.5).
 			WillReturnRows(sqlmock.NewRows([]string{"id", "tags", "node_ids"}).AddRow(int64(7), tagsJSON, "{11,22}"))
 
@@ -209,32 +185,8 @@ func TestTxWayRepository_GetNearestWay(t *testing.T) {
 
 		repo := NewTxWayRepository(tx)
 
-		mock.ExpectQuery(regexp.QuoteMeta(`
-			WITH distances AS (
-				SELECT DISTINCT
-					w.id,
-					w.tags,
-					MIN(
-						SQRT(
-							POW(n.latitude - $1, 2) + POW(n.longitude - $2, 2)
-						)
-					) as min_distance
-				FROM ways w
-				JOIN way_nodes wn ON wn.way_id = w.id
-				JOIN nodes n ON n.id = wn.node_id
-				GROUP BY w.id, w.tags
-				ORDER BY min_distance ASC
-				LIMIT 1
-			)
-			SELECT 
-				w.id,
-				w.tags,
-				ARRAY_AGG(wn.node_id ORDER BY wn.sequence_id) AS node_ids
-			FROM distances d
-			JOIN ways w ON w.id = d.id
-			JOIN way_nodes wn ON wn.way_id = w.id
-			GROUP BY w.id, w.tags
-		`)).
+		queryPattern := "(?s)WITH nearest_nodes.*candidate_ways.*way_geometries.*closest.*ARRAY_AGG"
+		mock.ExpectQuery(queryPattern).
 			WithArgs(0.0, 0.0).
 			WillReturnError(sql.ErrNoRows)
 
