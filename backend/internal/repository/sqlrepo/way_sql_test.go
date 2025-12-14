@@ -140,7 +140,7 @@ func TestSQLWayRepository_GetAllWays(t *testing.T) {
 func TestSQLWayRepository_GetNearestWay(t *testing.T) {
 	// Query matcher anchors: ensure key fragments appear in order with flexible whitespace.
 	// (?s) enables dot to match newlines so multi-line SQL is matched reliably.
-	const queryAnchors = "WITH distances(?s).*JOIN nodes(?s).*LIMIT 1(?s).*ARRAY_AGG"
+	const queryAnchors = "(?s)WITH nearest_nodes.*candidate_ways.*way_geometries.*closest.*ARRAY_AGG"
 
 	t.Run("returns nearest way", func(t *testing.T) {
 		db, mock, err := sqlmock.New()

@@ -207,33 +207,56 @@ func (r *TxWayRepository) GetAllWays() ([]models.Way, error) {
 	return ways, nil
 }
 
-// GetNearestWay retrieves the way whose nodes are closest to the given coordinates using the transaction.
-// Uses a simple distance calculation based on latitude/longitude differences.
-// This avoids requiring PostGIS extensions.
+// GetNearestWay retrieves the way whose geometry (constructed from ordered nodes) is closest to the given coordinates using the transaction.
+// Uses PostGIS ST_Distance to find the closest point on the way line to the click point.
 func (r *TxWayRepository) GetNearestWay(latitude, longitude float64) (*models.Way, error) {
 	query := `
-		WITH distances AS (
-			SELECT DISTINCT
+		WITH nearest_nodes AS (
+			SELECT n.id
+			FROM nodes n
+			ORDER BY ST_SetSRID(ST_MakePoint(n.longitude, n.latitude), 4326)
+					 <-> ST_SetSRID(ST_MakePoint($2, $1), 4326)
+			LIMIT 10
+		),
+		candidate_ways AS (
+			SELECT DISTINCT wn.way_id
+			FROM way_nodes wn
+			WHERE wn.node_id IN (SELECT id FROM nearest_nodes)
+		),
+		way_geometries AS (
+			SELECT 
 				w.id,
 				w.tags,
-				MIN(
-					SQRT(
-						POW(n.latitude - $1, 2) + POW(n.longitude - $2, 2)
+				ST_MakeLine(
+					ARRAY_AGG(
+						ST_SetSRID(ST_MakePoint(n.longitude, n.latitude), 4326)
+						ORDER BY wn.sequence_id
 					)
-				) as min_distance
+				) AS geom
 			FROM ways w
 			JOIN way_nodes wn ON wn.way_id = w.id
 			JOIN nodes n ON n.id = wn.node_id
+			WHERE w.id IN (SELECT way_id FROM candidate_ways)
 			GROUP BY w.id, w.tags
-			ORDER BY min_distance ASC
+		),
+		closest AS (
+			SELECT 
+				id,
+				tags,
+				ST_Distance(
+					geom,
+					ST_SetSRID(ST_MakePoint($2, $1), 4326)
+				)::double precision AS distance
+			FROM way_geometries
+			ORDER BY distance ASC
 			LIMIT 1
 		)
 		SELECT 
 			w.id,
 			w.tags,
 			ARRAY_AGG(wn.node_id ORDER BY wn.sequence_id) AS node_ids
-		FROM distances d
-		JOIN ways w ON w.id = d.id
+		FROM closest c
+		JOIN ways w ON w.id = c.id
 		JOIN way_nodes wn ON wn.way_id = w.id
 		GROUP BY w.id, w.tags
 	`
