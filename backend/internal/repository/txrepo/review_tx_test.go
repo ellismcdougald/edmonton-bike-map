@@ -1,6 +1,7 @@
 package txrepo
 
 import (
+	"database/sql"
 	"fmt"
 	"regexp"
 	"testing"
@@ -32,6 +33,50 @@ func TestTxReviewRepository_CreateReview(t *testing.T) {
 	repo := NewTxReviewRepository(tx)
 	err = repo.CreateReview(rev)
 	require.NoError(t, err)
+
+	mock.ExpectCommit()
+	require.NoError(t, tx.Commit())
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestTxReviewRepository_DeleteUserReviewForWay(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+
+	mock.ExpectBegin()
+	tx, err := db.Begin()
+	require.NoError(t, err)
+
+	repo := &TxReviewRepository{Tx: tx}
+
+	find := `
+		SELECT r.id
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = $2
+		LIMIT 1
+	`
+
+	// happy path
+	mock.ExpectQuery(regexp.QuoteMeta(find)).
+		WithArgs(int64(5), int64(12)).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(77)))
+	mock.ExpectExec(regexp.QuoteMeta("DELETE FROM review_ways WHERE review_id = $1")).
+		WithArgs(int64(77)).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(regexp.QuoteMeta("DELETE FROM reviews WHERE id = $1")).
+		WithArgs(int64(77)).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	require.NoError(t, repo.DeleteUserReviewForWay(5, 12))
+
+	// no rows path
+	mock.ExpectQuery(regexp.QuoteMeta(find)).
+		WithArgs(int64(6), int64(99)).
+		WillReturnError(sql.ErrNoRows)
+
+	require.NoError(t, repo.DeleteUserReviewForWay(6, 99))
 
 	mock.ExpectCommit()
 	require.NoError(t, tx.Commit())
