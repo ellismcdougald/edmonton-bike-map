@@ -7,6 +7,7 @@ import (
 
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/repository"
+	"github.com/lib/pq"
 )
 
 // SQLReviewRepository implements ReviewRepository using a SQL database.
@@ -28,23 +29,6 @@ func (r *SQLReviewRepository) CreateReview(review *models.Review) (err error) {
 		return fmt.Errorf("review must include at least one way ID")
 	}
 
-	// Prevent duplicate reviews by the same user for the same way
-	for _, wayID := range review.WayIDs {
-		var exists int
-		dupQuery := `
-			SELECT COUNT(1)
-			FROM reviews r
-			JOIN review_ways rw ON rw.review_id = r.id
-			WHERE r.user_id = $1 AND rw.way_id = $2
-		`
-		if err := r.DB.QueryRow(dupQuery, review.UserID, wayID).Scan(&exists); err != nil {
-			return err
-		}
-		if exists > 0 {
-			return fmt.Errorf("user already reviewed this way")
-		}
-	}
-
 	tx, err := r.DB.Begin()
 	if err != nil {
 		return err
@@ -57,6 +41,22 @@ func (r *SQLReviewRepository) CreateReview(review *models.Review) (err error) {
 			}
 		}
 	}()
+
+	// Prevent duplicate reviews by the same user for any of the provided ways
+	var exists int
+	dupQuery := `
+		SELECT COUNT(1)
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = ANY($2)
+	`
+	if err = tx.QueryRow(dupQuery, review.UserID, pq.Array(review.WayIDs)).Scan(&exists); err != nil {
+		return err
+	}
+	if exists > 0 {
+		err = fmt.Errorf("user already reviewed one or more of these ways")
+		return err
+	}
 
 	insertReview := `
 		INSERT INTO reviews (

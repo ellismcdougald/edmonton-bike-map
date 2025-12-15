@@ -7,6 +7,7 @@ import (
 
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/repository"
+	"github.com/lib/pq"
 )
 
 // TxReviewRepository provides review operations within an existing transaction.
@@ -26,6 +27,21 @@ func (r *TxReviewRepository) CreateReview(review *models.Review) error {
 	}
 	if len(review.WayIDs) == 0 {
 		return fmt.Errorf("review must include at least one way ID")
+	}
+
+	// Prevent duplicate reviews by the same user for any of the provided ways
+	var exists int
+	dupQuery := `
+		SELECT COUNT(1)
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = ANY($2)
+	`
+	if err := r.Tx.QueryRow(dupQuery, review.UserID, pq.Array(review.WayIDs)).Scan(&exists); err != nil {
+		return err
+	}
+	if exists > 0 {
+		return fmt.Errorf("user already reviewed one or more of these ways")
 	}
 
 	insertReview := `

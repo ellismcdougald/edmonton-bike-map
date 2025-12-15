@@ -23,6 +23,16 @@ func TestTxReviewRepository_CreateReview(t *testing.T) {
 
 	rev := &models.Review{WayIDs: []int64{1}, UserID: 2, Rating: 5, Comment: "nice"}
 
+	// Expect duplicate check
+	mock.ExpectQuery(regexp.QuoteMeta(`
+		SELECT COUNT(1)
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = ANY($2)
+	`)).
+		WithArgs(int64(2), `{1}`).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int64(0)))
+
 	mock.ExpectQuery(regexp.QuoteMeta("INSERT INTO reviews (\n            user_id,\n            rating,\n            comment\n        ) VALUES ($1, $2, $3)\n        RETURNING id")).
 		WithArgs(int64(2), 5, "nice").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(200)))
@@ -94,12 +104,32 @@ func TestTxReviewRepository_InsertBatches(t *testing.T) {
 
 	repo := NewTxReviewRepository(tx)
 
+	// First review duplicate check
+	mock.ExpectQuery(regexp.QuoteMeta(`
+		SELECT COUNT(1)
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = ANY($2)
+	`)).
+		WithArgs(int64(5), `{20}`).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int64(0)))
+
 	mock.ExpectQuery(regexp.QuoteMeta("INSERT INTO reviews (\n            user_id,\n            rating,\n            comment\n        ) VALUES ($1, $2, $3)\n        RETURNING id")).
 		WithArgs(int64(5), 5, "super").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(201)))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO review_ways (review_id, way_id) VALUES ($1, $2)")).
 		WithArgs(int64(201), int64(20)).
 		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	// Second review duplicate check
+	mock.ExpectQuery(regexp.QuoteMeta(`
+		SELECT COUNT(1)
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = ANY($2)
+	`)).
+		WithArgs(int64(6), `{21}`).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int64(0)))
 
 	mock.ExpectQuery(regexp.QuoteMeta("INSERT INTO reviews (\n            user_id,\n            rating,\n            comment\n        ) VALUES ($1, $2, $3)\n        RETURNING id")).
 		WithArgs(int64(6), 4, "nice").
@@ -116,7 +146,16 @@ func TestTxReviewRepository_InsertBatches(t *testing.T) {
 	reqErr = repo.InsertBatches([]models.Review{}, 2)
 	require.NoError(t, reqErr)
 
-	// exec error
+	// exec error - duplicate check passes but insert fails
+	mock.ExpectQuery(regexp.QuoteMeta(`
+		SELECT COUNT(1)
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = ANY($2)
+	`)).
+		WithArgs(int64(7), `{22}`).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int64(0)))
+
 	mock.ExpectQuery(regexp.QuoteMeta("INSERT INTO reviews (\n            user_id,\n            rating,\n            comment\n        ) VALUES ($1, $2, $3)\n        RETURNING id")).
 		WithArgs(int64(7), 2, "bad").
 		WillReturnError(fmt.Errorf("insert failure"))
