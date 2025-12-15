@@ -79,4 +79,17 @@ describe('ReviewContainer.svelte', () => {
 		const addButton = container.querySelector('#addReviewButton');
 		expect(addButton).toBeNull();
 	});
+
+	it('prevents adding when user already reviewed and shows message', async () => {
+		const { container, getByText } = render(ReviewContainer, {
+			props: { wayId, reviews: mockReviews, username: 'Alice' }
+		});
+
+		await waitFor(() => {
+			expect(getByText('You’ve already reviewed this route.')).toBeTruthy();
+		});
+
+		const addButton = container.querySelector('#addReviewButton');
+		expect(addButton).toBeNull();
+	});
 });
