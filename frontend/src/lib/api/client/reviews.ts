@@ -51,3 +51,26 @@ export async function fetchReviews(wayId: number): Promise<ReviewObj[]> {
 
 	return res.json();
 }
+
+/**
+ * Delete the current user's review for a specific way.
+ *
+ * Sends a DELETE to the backend; on 401 it logs out and navigates to the login page.
+ *
+ * @param wayId - ID of the way whose review should be removed for the current user
+ */
+export async function deleteReview(wayId: number): Promise<void> {
+	const res = await fetch(`/api/reviews/${wayId}`, {
+		method: 'DELETE'
+	});
+
+	if (!res.ok) {
+		if (res.status === 401) {
+			await fetch('/logout', { method: 'POST' });
+			goto('/login');
+			return;
+		}
+		const text = await res.text();
+		throw new Error(text || 'Failed to delete review');
+	}
+}

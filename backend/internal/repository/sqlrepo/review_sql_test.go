@@ -1,6 +1,7 @@
 package sqlrepo
 
 import (
+	"database/sql"
 	"fmt"
 	"regexp"
 	"testing"
@@ -24,6 +25,16 @@ func TestSQLReviewRepository_CreateReview(t *testing.T) {
 	// Expect transaction begin
 	mock.ExpectBegin()
 
+	// Expect duplicate check inside transaction with ANY
+	mock.ExpectQuery(regexp.QuoteMeta(`
+		SELECT COUNT(1)
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = ANY($2)
+	`)).
+		WithArgs(int64(2), `{1}`).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int64(0)))
+
 	// Expect insert of review returning id
 	mock.ExpectQuery(regexp.QuoteMeta("INSERT INTO reviews (\n            user_id,\n            rating,\n            comment\n        ) VALUES ($1, $2, $3)\n        RETURNING id")).
 		WithArgs(int64(2), 5, "nice").
@@ -41,6 +52,37 @@ func TestSQLReviewRepository_CreateReview(t *testing.T) {
 	err = repo.CreateReview(rev)
 	require.NoError(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestSQLReviewRepository_CreateReview_DuplicateFails(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { mock.ExpectClose(); _ = db.Close() }()
+
+	repo := NewSQLReviewRepository(db)
+
+	rev := &models.Review{WayIDs: []int64{2}, UserID: 5, Rating: 5}
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(`
+		SELECT COUNT(1)
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = ANY($2)
+	`)).
+		WithArgs(int64(5), `{2}`).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int64(1)))
+	mock.ExpectRollback()
+
+	err = repo.CreateReview(rev)
+	require.Error(t, err)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestSQLReviewRepository_CreateReview_Validation(t *testing.T) {
+	repo := NewSQLReviewRepository(nil)
+	require.Error(t, repo.CreateReview(nil))
+	require.Error(t, repo.CreateReview(&models.Review{}))
 }
 
 func TestSQLReviewRepository_GetReviews(t *testing.T) {
@@ -105,6 +147,14 @@ func TestSQLReviewRepository_InsertBatches(t *testing.T) {
 	// normal batch of two reviews - expect two insert+link sequences with transactions
 	// First review transaction
 	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(`
+		SELECT COUNT(1)
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = ANY($2)
+	`)).
+		WithArgs(int64(2), `{10}`).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int64(0)))
 	mock.ExpectQuery(regexp.QuoteMeta("INSERT INTO reviews (\n            user_id,\n            rating,\n            comment\n        ) VALUES ($1, $2, $3)\n        RETURNING id")).
 		WithArgs(int64(2), 5, "great").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(100)))
@@ -115,6 +165,14 @@ func TestSQLReviewRepository_InsertBatches(t *testing.T) {
 
 	// Second review transaction
 	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(`
+		SELECT COUNT(1)
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = ANY($2)
+	`)).
+		WithArgs(int64(3), `{11}`).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int64(0)))
 	mock.ExpectQuery(regexp.QuoteMeta("INSERT INTO reviews (\n            user_id,\n            rating,\n            comment\n        ) VALUES ($1, $2, $3)\n        RETURNING id")).
 		WithArgs(int64(3), 4, "ok").
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(101)))
@@ -133,6 +191,14 @@ func TestSQLReviewRepository_InsertBatches(t *testing.T) {
 
 	// insert error on review insert
 	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(`
+		SELECT COUNT(1)
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = ANY($2)
+	`)).
+		WithArgs(int64(4), `{12}`).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int64(0)))
 	mock.ExpectQuery(regexp.QuoteMeta("INSERT INTO reviews (\n            user_id,\n            rating,\n            comment\n        ) VALUES ($1, $2, $3)\n        RETURNING id")).
 		WithArgs(int64(4), 3, "meh").
 		WillReturnError(fmt.Errorf("insert failure"))
@@ -141,5 +207,57 @@ func TestSQLReviewRepository_InsertBatches(t *testing.T) {
 	reqErr = repo.InsertBatches([]models.Review{{WayIDs: []int64{12}, UserID: 4, Rating: 3, Comment: "meh"}}, 1)
 	require.Error(t, reqErr)
 
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestSQLReviewRepository_DeleteUserReviewForWay(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { mock.ExpectClose(); _ = db.Close() }()
+
+	repo := NewSQLReviewRepository(db)
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(`
+		SELECT r.id
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = $2
+		LIMIT 1
+	`)).
+		WithArgs(int64(9), int64(44)).
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(int64(99)))
+	mock.ExpectExec(regexp.QuoteMeta("DELETE FROM review_ways WHERE review_id = $1")).
+		WithArgs(int64(99)).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectExec(regexp.QuoteMeta("DELETE FROM reviews WHERE id = $1")).
+		WithArgs(int64(99)).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
+
+	require.NoError(t, repo.DeleteUserReviewForWay(9, 44))
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestSQLReviewRepository_DeleteUserReviewForWay_NoRows(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { mock.ExpectClose(); _ = db.Close() }()
+
+	repo := NewSQLReviewRepository(db)
+
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(`
+		SELECT r.id
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = $2
+		LIMIT 1
+	`)).
+		WithArgs(int64(1), int64(2)).
+		WillReturnError(sql.ErrNoRows)
+	mock.ExpectCommit()
+
+	require.NoError(t, repo.DeleteUserReviewForWay(1, 2))
 	require.NoError(t, mock.ExpectationsWereMet())
 }

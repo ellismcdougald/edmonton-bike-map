@@ -27,6 +27,9 @@ type ReviewRepository interface {
 	GetAllReviews() (map[int64][]models.Review, error)
 	// InsertBatches inserts reviews in batches of the specified size.
 	InsertBatches(reviews []models.Review, batchSize int) error
+	// DeleteUserReviewForWay deletes the current user's review link for a specific way.
+	// If the review is no longer linked to any ways after deletion, the review row may be removed.
+	DeleteUserReviewForWay(userID int64, wayID int64) error
 }
 
 // UserRepository defines methods to interact with User data.

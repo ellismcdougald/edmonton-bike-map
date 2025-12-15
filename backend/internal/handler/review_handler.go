@@ -2,9 +2,12 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/ellismcdougald/edmonton-bike-map/internal/middleware"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
@@ -28,10 +31,22 @@ func NewReviewHandler(reviewService *service.ReviewService) *ReviewHandler {
 // and HTTP 500 Internal Server Error if fetching reviews fails.
 func (h *ReviewHandler) HandleGetReviews() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Support either query param (?wayID=) or path segment (/api/reviews/{wayID})
+		var wayID int64
+		var err error
 		wayIDStr := r.URL.Query().Get("wayID")
-		wayID, err := strconv.ParseInt(wayIDStr, 10, 64)
-		if err != nil {
-			log.Printf("Invalid wayID: %v", err)
+		if wayIDStr != "" {
+			wayID, err = strconv.ParseInt(wayIDStr, 10, 64)
+		} else {
+			parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+			if len(parts) >= 3 { // [api, reviews, {id}]
+				wayID, err = strconv.ParseInt(parts[len(parts)-1], 10, 64)
+			} else {
+				err = fmt.Errorf("missing wayID")
+			}
+		}
+		if err != nil || wayID == 0 {
+			log.Printf("Invalid or missing wayID: %v", err)
 			http.Error(w, "Invalid wayID", http.StatusBadRequest)
 			return
 		}
@@ -109,5 +124,54 @@ func (h *ReviewHandler) HandlePostReview() http.HandlerFunc {
 		}
 
 		w.WriteHeader(http.StatusCreated)
+	}
+}
+
+// HandleDeleteReview deletes the current user's review for a specific way.
+// Supports two usage modes:
+// 1. JSON body (optional): { "wayId": number } - deletes review for the specified way
+// 2. Path parameter: /api/reviews/{wayId} - deletes review extracted from URL path
+// If both are provided, the JSON body takes precedence. If neither is provided, returns 400.
+// Requires authentication via middleware.
+func (h *ReviewHandler) HandleDeleteReview() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		type deleteReq struct {
+			WayID int64 `json:"wayId"`
+		}
+		var req deleteReq
+		// Body is optional; try path param if not provided
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil && err != io.EOF {
+			log.Printf("Failed to decode JSON body: %v", err)
+			http.Error(w, fmt.Sprintf("invalid JSON: %s", err.Error()), http.StatusBadRequest)
+			return
+		}
+		if req.WayID == 0 {
+			parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+			if len(parts) >= 3 {
+				if id, err := strconv.ParseInt(parts[len(parts)-1], 10, 64); err == nil {
+					req.WayID = id
+				}
+			}
+		}
+		if req.WayID == 0 {
+			http.Error(w, "wayId is required", http.StatusBadRequest)
+			return
+		}
+
+		userID, ok := middleware.UserIDFromContext(r.Context())
+		if !ok {
+			log.Printf("User ID not found in context")
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		if err := h.ReviewService.DeleteUserReviewForWay(userID, req.WayID); err != nil {
+			log.Printf("Failed to delete review for user %d way %d: %v", userID, req.WayID, err)
+			http.Error(w, "Failed to delete review", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
 	}
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/repository"
+	"github.com/lib/pq"
 )
 
 // SQLReviewRepository implements ReviewRepository using a SQL database.
@@ -40,6 +41,22 @@ func (r *SQLReviewRepository) CreateReview(review *models.Review) (err error) {
 			}
 		}
 	}()
+
+	// Prevent duplicate reviews by the same user for any of the provided ways
+	var exists int
+	dupQuery := `
+		SELECT COUNT(1)
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = ANY($2)
+	`
+	if err = tx.QueryRow(dupQuery, review.UserID, pq.Array(review.WayIDs)).Scan(&exists); err != nil {
+		return err
+	}
+	if exists > 0 {
+		err = fmt.Errorf("user already reviewed one or more of these ways")
+		return err
+	}
 
 	insertReview := `
 		INSERT INTO reviews (
@@ -178,6 +195,57 @@ func (r *SQLReviewRepository) InsertBatches(reviews []models.Review, batchSize i
 		if err := r.insertBatch(reviews[i:end]); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// DeleteUserReviewForWay locates the authenticated user's review associated with the given way,
+// then removes all link rows (review_ways) for that review and deletes the review itself.
+// Deletion is unconditional once the review is found and affects all ways the review was linked to.
+func (r *SQLReviewRepository) DeleteUserReviewForWay(userID int64, wayID int64) error {
+	tx, err := r.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			if rbErr := tx.Rollback(); rbErr != nil {
+				log.Printf("rollback failed after DeleteUserReviewForWay error: %v", rbErr)
+			}
+		}
+	}()
+
+	// Find the review ID for this user that is linked to the given way.
+	var reviewID int64
+	query := `
+		SELECT r.id
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = $2
+		LIMIT 1
+	`
+	if err = tx.QueryRow(query, userID, wayID).Scan(&reviewID); err != nil {
+		if err == sql.ErrNoRows {
+			// nothing to delete
+			err = nil
+			if cerr := tx.Commit(); cerr != nil {
+				return cerr
+			}
+			return nil
+		}
+		return err
+	}
+
+	// Delete ALL links for this review, then delete the review itself.
+	if _, err = tx.Exec(`DELETE FROM review_ways WHERE review_id = $1`, reviewID); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(`DELETE FROM reviews WHERE id = $1`, reviewID); err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
 	}
 	return nil
 }

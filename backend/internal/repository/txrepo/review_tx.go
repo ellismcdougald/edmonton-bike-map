@@ -7,6 +7,7 @@ import (
 
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/repository"
+	"github.com/lib/pq"
 )
 
 // TxReviewRepository provides review operations within an existing transaction.
@@ -26,6 +27,21 @@ func (r *TxReviewRepository) CreateReview(review *models.Review) error {
 	}
 	if len(review.WayIDs) == 0 {
 		return fmt.Errorf("review must include at least one way ID")
+	}
+
+	// Prevent duplicate reviews by the same user for any of the provided ways
+	var exists int
+	dupQuery := `
+		SELECT COUNT(1)
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = ANY($2)
+	`
+	if err := r.Tx.QueryRow(dupQuery, review.UserID, pq.Array(review.WayIDs)).Scan(&exists); err != nil {
+		return err
+	}
+	if exists > 0 {
+		return fmt.Errorf("user already reviewed one or more of these ways")
 	}
 
 	insertReview := `
@@ -166,6 +182,33 @@ func (r *TxReviewRepository) InsertBatches(reviews []models.Review, batchSize in
 		if err := r.insertBatch(reviews[i:end]); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+// DeleteUserReviewForWay removes the review for a user and all its way links within the transaction.
+func (r *TxReviewRepository) DeleteUserReviewForWay(userID int64, wayID int64) error {
+	// Locate the review id for this user tied to the given way
+	var reviewID int64
+	find := `
+		SELECT r.id
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = $2
+		LIMIT 1
+	`
+	if err := r.Tx.QueryRow(find, userID, wayID).Scan(&reviewID); err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+		return err
+	}
+
+	if _, err := r.Tx.Exec(`DELETE FROM review_ways WHERE review_id = $1`, reviewID); err != nil {
+		return err
+	}
+	if _, err := r.Tx.Exec(`DELETE FROM reviews WHERE id = $1`, reviewID); err != nil {
+		return err
 	}
 	return nil
 }

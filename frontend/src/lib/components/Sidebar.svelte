@@ -78,7 +78,8 @@
 				<ReviewContainer
 					wayId={way.id}
 					{reviews}
-					canReview={Boolean(username)}
+					{username}
+					canReview={Boolean(username) && !reviews.some((r) => r.username === username)}
 					onReviewAdded={() => loadReviews(way.id)}
 				/>
 			</div>

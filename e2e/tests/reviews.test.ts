@@ -95,7 +95,9 @@ test.describe("reviews e2e", () => {
     await expect(page.locator(`text=${uniqueComment}`)).toBeVisible({
       timeout: 5000,
     });
-    await expect(page.locator(`text=User: ${testUsername}`)).toBeVisible({
+    await expect(
+      page.locator(`#review-container >> text=${testUsername}`)
+    ).toBeVisible({
       timeout: 5000,
     });
   });
@@ -187,7 +189,9 @@ test.describe("reviews e2e", () => {
     await expect(page.locator(`text=${uniqueComment}`)).toBeVisible({
       timeout: 5000,
     });
-    await expect(page.locator(`text=User: ${testUsername}`)).toBeVisible({
+    await expect(
+      page.locator(`#review-container >> text=${testUsername}`)
+    ).toBeVisible({
       timeout: 5000,
     });
 
@@ -202,7 +206,9 @@ test.describe("reviews e2e", () => {
       await expect(page.locator(`text=${uniqueComment}`)).toBeVisible({
         timeout: 5000,
       });
-      await expect(page.locator(`text=User: ${testUsername}`)).toBeVisible({
+      await expect(
+        page.locator(`#review-container >> text=${testUsername}`)
+      ).toBeVisible({
         timeout: 5000,
       });
     }
@@ -253,8 +259,127 @@ test.describe("reviews e2e", () => {
     await expect(page.locator(`text=${existingComment}`)).toBeVisible({
       timeout: 5000,
     });
-    await expect(page.locator(`text=User: ${seededUsername}`)).toBeVisible({
+    await expect(
+      page.locator(`#review-container >> text=${seededUsername}`)
+    ).toBeVisible({
       timeout: 5000,
     });
+  });
+
+  // User can delete their own review
+  test("user can delete their own review and it disappears from sidebar", async ({
+    page,
+  }) => {
+    const hashedPassword = await bcrypt.hash(
+      testPassword,
+      bcrypt.genSaltSync()
+    );
+    await client.query(
+      "INSERT INTO users (username, password) VALUES ($1, $2)",
+      [testUsername, hashedPassword]
+    );
+
+    await page.goto(`${FRONTEND_URL}/login`);
+    await page.fill('input[name="username"]', testUsername);
+    await page.fill('input[name="password"]', testPassword);
+    await page.locator("#submitButton").click();
+
+    await page.goto(`${FRONTEND_URL}/map?way=20948648`);
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("#sidebar-content", {
+      state: "attached",
+      timeout: 20000,
+    });
+
+    // Add a review
+    const addButton = page.locator("#addReviewButton");
+    await expect(addButton).toBeVisible({ timeout: 5000 });
+    await addButton.click();
+    await expect(page.locator("text=Add Review")).toBeVisible({
+      timeout: 2000,
+    });
+
+    const uniqueComment = `review to delete ${Date.now()}`;
+    await page.fill("#rating", "6");
+    await page.fill("#comment", uniqueComment);
+    await page.locator("#submitButton").click();
+
+    // Verify review appears
+    await expect(page.locator("text=Reviews")).toBeVisible({
+      timeout: 5000,
+    });
+    await expect(page.locator(`text=${uniqueComment}`)).toBeVisible({
+      timeout: 5000,
+    });
+
+    // Click delete button
+    const deleteButton = page.locator('button:has-text("Delete")');
+    await expect(deleteButton).toBeVisible({ timeout: 5000 });
+    await deleteButton.click();
+
+    // Verify review is removed from sidebar
+    await expect(page.locator(`text=${uniqueComment}`)).not.toBeVisible({
+      timeout: 5000,
+    });
+
+    // Verify add review button appears again (since user no longer has review)
+    await expect(page.locator("#addReviewButton")).toBeVisible({
+      timeout: 5000,
+    });
+  });
+
+  // User cannot delete other users' reviews (button not shown)
+  test("user cannot delete other users' reviews", async ({ page }) => {
+    const otherUsername = `other-user-${Date.now()}`;
+    const otherPassword = "other-password";
+    const otherHashed = await bcrypt.hash(otherPassword, bcrypt.genSaltSync());
+    const otherRes = await client.query(
+      "INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id",
+      [otherUsername, otherHashed]
+    );
+    const otherUserId = otherRes.rows[0].id;
+
+    const wayId = 20948648;
+    const otherComment = `other user review ${Date.now()}`;
+    const insertRes = await client.query(
+      "INSERT INTO reviews (user_id, rating, comment, created_at) VALUES ($1, $2, $3, now()) RETURNING id",
+      [otherUserId, 8, otherComment]
+    );
+    const reviewId = insertRes.rows[0].id as number;
+    await client.query(
+      "INSERT INTO review_ways (review_id, way_id) VALUES ($1, $2)",
+      [reviewId, wayId]
+    );
+
+    // Login as testUsername (different user)
+    const hashedPassword = await bcrypt.hash(
+      testPassword,
+      bcrypt.genSaltSync()
+    );
+    await client.query(
+      "INSERT INTO users (username, password) VALUES ($1, $2)",
+      [testUsername, hashedPassword]
+    );
+
+    await page.goto(`${FRONTEND_URL}/login`);
+    await page.fill('input[name="username"]', testUsername);
+    await page.fill('input[name="password"]', testPassword);
+    await page.locator("#submitButton").click();
+
+    await page.goto(`${FRONTEND_URL}/map?way=${wayId}`);
+    await page.waitForLoadState("networkidle");
+    await page.waitForSelector("#sidebar-content", {
+      state: "attached",
+      timeout: 20000,
+    });
+
+    // Verify other user's review appears
+    await expect(page.locator(`text=${otherComment}`)).toBeVisible({
+      timeout: 5000,
+    });
+
+    // Verify delete button is NOT visible for other user's review
+    const deleteButtons = page.locator('button:has-text("Delete")');
+    await expect(deleteButtons).toHaveCount(0);
   });
 });
