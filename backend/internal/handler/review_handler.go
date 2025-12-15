@@ -127,7 +127,10 @@ func (h *ReviewHandler) HandlePostReview() http.HandlerFunc {
 }
 
 // HandleDeleteReview deletes the current user's review for a specific way.
-// Expects JSON body: { "wayId": number }
+// Supports two usage modes:
+// 1. JSON body (optional): { "wayId": number } - deletes review for the specified way
+// 2. Path parameter: /api/reviews/{wayId} - deletes review extracted from URL path
+// If both are provided, the JSON body takes precedence. If neither is provided, returns 400.
 // Requires authentication via middleware.
 func (h *ReviewHandler) HandleDeleteReview() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
