@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -139,7 +140,12 @@ func (h *ReviewHandler) HandleDeleteReview() http.HandlerFunc {
 		}
 		var req deleteReq
 		// Body is optional; try path param if not provided
-		_ = json.NewDecoder(r.Body).Decode(&req)
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil && err != io.EOF {
+			log.Printf("Failed to decode JSON body: %v", err)
+			http.Error(w, fmt.Sprintf("invalid JSON: %s", err.Error()), http.StatusBadRequest)
+			return
+		}
 		if req.WayID == 0 {
 			parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 			if len(parts) >= 3 {
