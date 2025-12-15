@@ -82,7 +82,7 @@ func RegisterRoutes(mux *http.ServeMux, handlers handler.Handlers) {
 		"optional",
 	))
 
-	// REVIEWS (GET is optional, POST requires auth):
+	// REVIEWS (GET is optional, POST/DELETE require auth):
 	mux.Handle("/api/reviews", wrap(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
@@ -97,12 +97,41 @@ func RegisterRoutes(mux *http.ServeMux, handlers handler.Handlers) {
 					},
 				))
 				authHandler.ServeHTTP(w, r)
+			case http.MethodDelete:
+				// DELETE reviews requires authentication
+				authHandler := middleware.AuthMiddleware(http.HandlerFunc(
+					func(w http.ResponseWriter, r *http.Request) {
+						handlers.ReviewHandler.HandleDeleteReview()(w, r)
+					},
+				))
+				authHandler.ServeHTTP(w, r)
 			default:
 				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			}
 		}),
-		[]string{"GET", "POST", "OPTIONS"},
+		[]string{"GET", "POST", "DELETE", "OPTIONS"},
 		"none", // We handle auth manually per method above
+	))
+
+	// Also handle path-style IDs (e.g., /api/reviews/{wayId})
+	mux.Handle("/api/reviews/", wrap(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			switch r.Method {
+			case http.MethodGet:
+				handlers.ReviewHandler.HandleGetReviews()(w, r)
+			case http.MethodDelete:
+				authHandler := middleware.AuthMiddleware(http.HandlerFunc(
+					func(w http.ResponseWriter, r *http.Request) {
+						handlers.ReviewHandler.HandleDeleteReview()(w, r)
+					},
+				))
+				authHandler.ServeHTTP(w, r)
+			default:
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+		}),
+		[]string{"GET", "DELETE", "OPTIONS"},
+		"none",
 	))
 
 	// PROTECTED (require auth):

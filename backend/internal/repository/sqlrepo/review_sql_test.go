@@ -21,6 +21,16 @@ func TestSQLReviewRepository_CreateReview(t *testing.T) {
 
 	rev := &models.Review{WayIDs: []int64{1}, UserID: 2, Rating: 5, Comment: "nice"}
 
+	// Expect duplicate check before transaction
+	mock.ExpectQuery(regexp.QuoteMeta(`
+				SELECT COUNT(1)
+				FROM reviews r
+				JOIN review_ways rw ON rw.review_id = r.id
+				WHERE r.user_id = $1 AND rw.way_id = $2
+			`)).
+		WithArgs(int64(2), int64(1)).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int64(0)))
+
 	// Expect transaction begin
 	mock.ExpectBegin()
 
@@ -104,6 +114,14 @@ func TestSQLReviewRepository_InsertBatches(t *testing.T) {
 
 	// normal batch of two reviews - expect two insert+link sequences with transactions
 	// First review transaction
+	mock.ExpectQuery(regexp.QuoteMeta(`
+				SELECT COUNT(1)
+				FROM reviews r
+				JOIN review_ways rw ON rw.review_id = r.id
+				WHERE r.user_id = $1 AND rw.way_id = $2
+			`)).
+		WithArgs(int64(2), int64(10)).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int64(0)))
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta("INSERT INTO reviews (\n            user_id,\n            rating,\n            comment\n        ) VALUES ($1, $2, $3)\n        RETURNING id")).
 		WithArgs(int64(2), 5, "great").
@@ -114,6 +132,14 @@ func TestSQLReviewRepository_InsertBatches(t *testing.T) {
 	mock.ExpectCommit()
 
 	// Second review transaction
+	mock.ExpectQuery(regexp.QuoteMeta(`
+				SELECT COUNT(1)
+				FROM reviews r
+				JOIN review_ways rw ON rw.review_id = r.id
+				WHERE r.user_id = $1 AND rw.way_id = $2
+			`)).
+		WithArgs(int64(3), int64(11)).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int64(0)))
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta("INSERT INTO reviews (\n            user_id,\n            rating,\n            comment\n        ) VALUES ($1, $2, $3)\n        RETURNING id")).
 		WithArgs(int64(3), 4, "ok").
@@ -132,6 +158,14 @@ func TestSQLReviewRepository_InsertBatches(t *testing.T) {
 	require.NoError(t, reqErr)
 
 	// insert error on review insert
+	mock.ExpectQuery(regexp.QuoteMeta(`
+				SELECT COUNT(1)
+				FROM reviews r
+				JOIN review_ways rw ON rw.review_id = r.id
+				WHERE r.user_id = $1 AND rw.way_id = $2
+			`)).
+		WithArgs(int64(4), int64(12)).
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(int64(0)))
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta("INSERT INTO reviews (\n            user_id,\n            rating,\n            comment\n        ) VALUES ($1, $2, $3)\n        RETURNING id")).
 		WithArgs(int64(4), 3, "meh").

@@ -43,3 +43,28 @@ export const GET: RequestHandler = async ({ params, fetch }) => {
 		return new Response(`Server error: ${err}`, { status: 500 });
 	}
 };
+
+export const DELETE: RequestHandler = async ({ params, locals, fetch }) => {
+	const wayId = Number(params.wayId);
+	if (isNaN(wayId)) {
+		return new Response('Invalid Way ID', { status: 400 });
+	}
+
+	const token = locals.token;
+	const headers: Record<string, string> = {};
+	if (token) {
+		headers.Authorization = `Bearer ${token}`;
+	}
+
+	const res = await fetch(`${API_URL}/api/reviews/${wayId}`, {
+		method: 'DELETE',
+		headers
+	});
+
+	if (!res.ok) {
+		const text = await res.text();
+		return new Response(text || 'Failed to delete review', { status: res.status });
+	}
+
+	return new Response(null, { status: 204 });
+};

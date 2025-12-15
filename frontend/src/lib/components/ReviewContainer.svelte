@@ -30,12 +30,14 @@
 		wayId,
 		reviews,
 		onReviewAdded,
-		canReview = true
+		canReview = true,
+		username
 	}: {
 		wayId: number;
 		reviews: ReviewObj[];
 		onReviewAdded?: () => void;
 		canReview?: boolean;
+		username?: string | null;
 	} = $props();
 
 	let showForm: boolean = $state(false);
@@ -50,13 +52,20 @@
 		if (onReviewAdded && typeof onReviewAdded === 'function') onReviewAdded();
 		showForm = false;
 	}
+
+	// Determine if the current user has already reviewed this way
+	const hasReviewed: boolean = $derived(
+		Boolean(username) && Array.isArray(reviews) && reviews.some((r) => r.username === username)
+	);
+
+	const canAddReview: boolean = $derived(Boolean(canReview) && !hasReviewed);
 </script>
 
 <div id="review-container" class="border-t">
 	<!-- Header at the top: title + action button -->
 	<div class="flex justify-between items-center mt-1 mb-2">
 		<h1 class="text-2xl font-bold mb-2 mt-1">{showForm ? 'Add Review' : 'Reviews'}</h1>
-		{#if canReview}
+		{#if canAddReview}
 			{#if showForm}
 				<button
 					type="button"
@@ -79,13 +88,19 @@
 				</button>
 			{/if}
 		{:else}
-			<span class="text-sm text-gray-600">Log in to add a review.</span>
+			<span class="text-sm text-gray-600">
+				{#if !username}
+					Log in to add a review.
+				{:else}
+					You’ve already reviewed this route.
+				{/if}
+			</span>
 		{/if}
 	</div>
 
 	{#if showForm}
 		<AddReview {wayId} onSubmitted={handleSubmitted} />
 	{:else}
-		<ViewReviews {reviews} />
+		<ViewReviews {reviews} currentUser={username} {wayId} onDeleted={onReviewAdded} />
 	{/if}
 </div>

@@ -31,3 +31,8 @@ func (s *ReviewService) GetReviewsForWay(wayID int64) ([]models.Review, error) {
 func (s *ReviewService) GetAllReviews() (map[int64][]models.Review, error) {
 	return s.ReviewRepository.GetAllReviews()
 }
+
+// DeleteUserReviewForWay removes the authenticated user's review association with a given way.
+func (s *ReviewService) DeleteUserReviewForWay(userID int64, wayID int64) error {
+	return s.ReviewRepository.DeleteUserReviewForWay(userID, wayID)
+}

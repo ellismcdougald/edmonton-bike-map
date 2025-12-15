@@ -169,3 +169,30 @@ func (r *TxReviewRepository) InsertBatches(reviews []models.Review, batchSize in
 	}
 	return nil
 }
+
+// DeleteUserReviewForWay removes the review for a user and all its way links within the transaction.
+func (r *TxReviewRepository) DeleteUserReviewForWay(userID int64, wayID int64) error {
+	// Locate the review id for this user tied to the given way
+	var reviewID int64
+	find := `
+		SELECT r.id
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = $2
+		LIMIT 1
+	`
+	if err := r.Tx.QueryRow(find, userID, wayID).Scan(&reviewID); err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+		return err
+	}
+
+	if _, err := r.Tx.Exec(`DELETE FROM review_ways WHERE review_id = $1`, reviewID); err != nil {
+		return err
+	}
+	if _, err := r.Tx.Exec(`DELETE FROM reviews WHERE id = $1`, reviewID); err != nil {
+		return err
+	}
+	return nil
+}

@@ -56,6 +56,12 @@ func (m *mockReviewRepo) InsertBatches(reviews []models.Review, batchSize int) e
 	}
 	return nil
 }
+func (m *mockReviewRepo) DeleteUserReviewForWay(userID int64, wayID int64) error {
+	if m.err != nil {
+		return m.err
+	}
+	return nil
+}
 
 func TestReviewHandler_HandleGetReviews_Success(t *testing.T) {
 	repo := &mockReviewRepo{reviews: map[int64][]models.Review{
