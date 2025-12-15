@@ -199,8 +199,9 @@ func (r *SQLReviewRepository) InsertBatches(reviews []models.Review, batchSize i
 	return nil
 }
 
-// DeleteUserReviewForWay removes the association between the authenticated user's review and a specific way.
-// If the review is no longer associated with any ways afterward, the review itself is deleted.
+// DeleteUserReviewForWay locates the authenticated user's review associated with the given way,
+// then removes all link rows (review_ways) for that review and deletes the review itself.
+// Deletion is unconditional once the review is found and affects all ways the review was linked to.
 func (r *SQLReviewRepository) DeleteUserReviewForWay(userID int64, wayID int64) error {
 	tx, err := r.DB.Begin()
 	if err != nil {
