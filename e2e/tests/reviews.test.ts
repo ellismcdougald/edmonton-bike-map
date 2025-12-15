@@ -95,7 +95,9 @@ test.describe("reviews e2e", () => {
     await expect(page.locator(`text=${uniqueComment}`)).toBeVisible({
       timeout: 5000,
     });
-    await expect(page.locator(`text=User: ${testUsername}`)).toBeVisible({
+    await expect(
+      page.locator(`#review-container >> text=${testUsername}`)
+    ).toBeVisible({
       timeout: 5000,
     });
   });
@@ -187,7 +189,9 @@ test.describe("reviews e2e", () => {
     await expect(page.locator(`text=${uniqueComment}`)).toBeVisible({
       timeout: 5000,
     });
-    await expect(page.locator(`text=User: ${testUsername}`)).toBeVisible({
+    await expect(
+      page.locator(`#review-container >> text=${testUsername}`)
+    ).toBeVisible({
       timeout: 5000,
     });
 
@@ -202,7 +206,9 @@ test.describe("reviews e2e", () => {
       await expect(page.locator(`text=${uniqueComment}`)).toBeVisible({
         timeout: 5000,
       });
-      await expect(page.locator(`text=User: ${testUsername}`)).toBeVisible({
+      await expect(
+        page.locator(`#review-container >> text=${testUsername}`)
+      ).toBeVisible({
         timeout: 5000,
       });
     }
@@ -253,7 +259,9 @@ test.describe("reviews e2e", () => {
     await expect(page.locator(`text=${existingComment}`)).toBeVisible({
       timeout: 5000,
     });
-    await expect(page.locator(`text=User: ${seededUsername}`)).toBeVisible({
+    await expect(
+      page.locator(`#review-container >> text=${seededUsername}`)
+    ).toBeVisible({
       timeout: 5000,
     });
   });
