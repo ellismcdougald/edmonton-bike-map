@@ -136,9 +136,7 @@ func (h *ReviewHandler) HandleDeleteReview() http.HandlerFunc {
 		}
 		var req deleteReq
 		// Body is optional; try path param if not provided
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			// fall through and try path
-		}
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		if req.WayID == 0 {
 			parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 			if len(parts) >= 3 {
