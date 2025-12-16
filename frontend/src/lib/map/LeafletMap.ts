@@ -198,8 +198,32 @@ export class LeafletMap {
 			style: { color: 'blue', weight: 5 },
 			interactive: true,
 			onEachFeature: (feature, layer) => {
-				const name = feature.properties?.name || 'Unnamed route segment';
-				layer.bindPopup(`<strong>${name}</strong>`);
+				const routeIndex = feature.properties?.['route_index'];
+				const distance = feature.properties?.['distance_km'];
+				const time = feature.properties?.['time_minutes'];
+
+				let popupContent = '<strong>Route';
+				if (routeIndex !== undefined) {
+					if (routeIndex == 1) {
+						popupContent = '<strong>Shortest Route';
+					} else {
+						popupContent += ` ${routeIndex}`;
+					}
+				}
+				popupContent += '</strong><br/>';
+
+				if (distance !== undefined) {
+					const distNum = typeof distance === 'number' ? distance : parseFloat(distance);
+					popupContent += `Distance: ${distNum.toFixed(2)} km<br/>`;
+				}
+
+				if (time !== undefined) {
+					const timeNum =
+						typeof time === 'number' ? Math.round(time) : Math.round(parseFloat(time));
+					popupContent += `Time: ${timeNum} min`;
+				}
+
+				layer.bindPopup(popupContent);
 			}
 		}).addTo(this.map);
 
