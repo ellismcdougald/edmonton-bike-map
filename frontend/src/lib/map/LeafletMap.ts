@@ -193,72 +193,122 @@ export class LeafletMap {
 		}
 		this.endMarker?.closePopup();
 
-		this.routeLayer = this.L.geoJSON(geojson, {
-			pane: 'routePane',
-			style: { color: 'blue', weight: 5 },
-			interactive: true,
-			onEachFeature: (feature, layer) => {
-				const routeIndex = feature.properties?.['route_index'];
-				const distance = feature.properties?.['distance_km'];
-				const time = feature.properties?.['time_minutes'];
-
-				let popupContent = '<strong>Route';
-				if (routeIndex !== undefined) {
-					if (routeIndex == 1) {
-						popupContent = '<strong>Shortest Route';
-					} else {
-						popupContent += ` ${routeIndex}`;
-					}
-				}
-				popupContent += '</strong><br/>';
-
-				if (distance !== undefined) {
-					const distNum = typeof distance === 'number' ? distance : parseFloat(distance);
-					popupContent += `Distance: ${distNum.toFixed(2)} km<br/>`;
-				}
-
-				if (time !== undefined) {
-					const timeNum =
-						typeof time === 'number' ? Math.round(time) : Math.round(parseFloat(time));
-					popupContent += `Time: ${timeNum} min`;
-				}
-
-				layer.bindPopup(popupContent);
-			}
-		}).addTo(this.map);
-
-		const bounds = this.routeLayer.getBounds();
-		if (bounds.isValid()) {
-			this.map.fitBounds(bounds);
-		}
-
-		// Find the shortest route (route_index: 0) to display distance and time
-		let shortestRouteFeature: GeoJSON.Feature | null = null;
 		const featureCollection = geojson as GeoJSON.FeatureCollection;
-		if (featureCollection.features) {
-			shortestRouteFeature =
-				featureCollection.features.find(
-					(f) => f.properties?.['route_index'] === 0 || f.properties?.['route_index'] === '0'
-				) ||
-				featureCollection.features[0] ||
-				null;
+
+		// Split geojson into shortest feature and other features
+		const shortestFeature = featureCollection.features?.find(
+			(f) => f.properties?.['route_index'] === 1 || f.properties?.['route_index'] === '1'
+		);
+		const otherFeatures = featureCollection.features?.filter(
+			(f) => f.properties?.['route_index'] !== 1 && f.properties?.['route_index'] !== '1'
+		);
+
+		// Helper to create popup content
+		const createPopupContent = (feature: GeoJSON.Feature): string => {
+			const routeIndex = feature.properties?.['route_index'];
+			const distance = feature.properties?.['distance_km'];
+			const time = feature.properties?.['time_minutes'];
+
+			let popupContent = '<strong>Route';
+			if (routeIndex !== undefined) {
+				if (routeIndex == 1) {
+					popupContent = '<strong>Shortest Route';
+				} else {
+					popupContent += ` ${routeIndex}`;
+				}
+			}
+			popupContent += '</strong><br/>';
+
+			if (distance !== undefined) {
+				const distNum = typeof distance === 'number' ? distance : parseFloat(distance);
+				popupContent += `Distance: ${distNum.toFixed(2)} km<br/>`;
+			}
+
+			if (time !== undefined) {
+				const timeNum = typeof time === 'number' ? Math.round(time) : Math.round(parseFloat(time));
+				popupContent += `Time: ${timeNum} min`;
+			}
+
+			return popupContent;
+		};
+
+		// Helper to create GeoJSON layer with specified style
+		const createRouteLayer = (
+			data: GeoJSON.FeatureCollection | null,
+			style: PathOptions
+		): GeoJSON | null => {
+			if (!data) return null;
+			return this.L.geoJSON(data, {
+				pane: 'routePane',
+				style,
+				interactive: true,
+				onEachFeature: (feature, layer) => {
+					layer.bindPopup(createPopupContent(feature));
+				}
+			});
+		};
+
+		// Create layers for shortest and other routes
+		const shortestLayer = createRouteLayer(
+			shortestFeature
+				? ({ type: 'FeatureCollection', features: [shortestFeature] } as GeoJSON.FeatureCollection)
+				: null,
+			{ color: 'blue', weight: 5 }
+		);
+		const othersLayer = createRouteLayer(
+			otherFeatures && otherFeatures.length > 0
+				? ({ type: 'FeatureCollection', features: otherFeatures } as GeoJSON.FeatureCollection)
+				: null,
+			{ color: 'green', weight: 5 }
+		);
+
+		// Add layers to map
+		if (shortestLayer) {
+			this.routeLayer = shortestLayer.addTo(this.map);
 		}
-		// Fallback: if geojson is a single Feature
-		if (!shortestRouteFeature && (geojson as GeoJSON.Feature).properties) {
-			shortestRouteFeature = geojson as GeoJSON.Feature;
+		if (othersLayer) {
+			othersLayer.addTo(this.map);
 		}
 
-		// read distance and time from backend properties if available
-		const rawDistance = shortestRouteFeature?.properties?.['distance_km'];
-		let distanceNum = 0;
-		if (typeof rawDistance === 'number') {
-			distanceNum = rawDistance;
-		} else if (typeof rawDistance === 'string') {
-			const parsed = parseFloat(rawDistance as string);
-			distanceNum = Number.isFinite(parsed) ? parsed : 0;
+		// Fit bounds
+		if (this.routeLayer) {
+			const bounds = this.routeLayer.getBounds();
+			if (bounds.isValid()) {
+				this.map.fitBounds(bounds);
+			}
 		}
 
-		// Add distance control (safe formatting)
+		// Find shortest route for distance/time display
+		const shortestRouteFeature =
+			featureCollection.features?.find(
+				(f) => f.properties?.['route_index'] === 0 || f.properties?.['route_index'] === '0'
+			) ||
+			featureCollection.features?.[0] ||
+			((geojson as GeoJSON.Feature).properties ? (geojson as GeoJSON.Feature) : null);
+
+		// Helper to parse numeric value
+		const parseNumericValue = (value: unknown): number => {
+			if (typeof value === 'number') return value;
+			if (typeof value === 'string') {
+				const parsed = parseFloat(value);
+				return Number.isFinite(parsed) ? parsed : 0;
+			}
+			return 0;
+		};
+
+		const distanceNum = parseNumericValue(shortestRouteFeature?.properties?.['distance_km']);
+		const rawTime = shortestRouteFeature?.properties?.['time_minutes'];
+		let timeMin = parseNumericValue(rawTime);
+
+		// Fallback estimate if time not provided
+		if (timeMin === 0 && rawTime === undefined) {
+			const avgSpeedKmh = 20;
+			timeMin = Math.round((distanceNum / avgSpeedKmh) * 60);
+		} else if (rawTime !== undefined) {
+			timeMin = Math.round(timeMin);
+		}
+
+		// Add distance control
 		this.distanceControl = new (this.L.Control.extend({
 			onAdd: () => {
 				const div = this.L.DomUtil.create('div', 'distance-control') as HTMLDivElement;
@@ -268,21 +318,7 @@ export class LeafletMap {
 		}))({ position: 'topright' });
 		this.distanceControl.addTo(this.map);
 
-		// Determine time in minutes: prefer backend-provided `time_minutes`, fall back to estimate
-		const rawTime = shortestRouteFeature?.properties?.['time_minutes'];
-		let timeMin = 0;
-		if (typeof rawTime === 'number') {
-			timeMin = Math.round(rawTime as number);
-		} else if (typeof rawTime === 'string') {
-			const parsed = parseFloat(rawTime as string);
-			timeMin = Number.isFinite(parsed) ? Math.round(parsed) : 0;
-		} else {
-			// fallback estimate using a sensible default speed
-			const avgSpeedKmh = 20; // commuter average speed fallback
-			const timeH = distanceNum / avgSpeedKmh;
-			timeMin = Math.round(timeH * 60);
-		}
-
+		// Add time control
 		this.timeControl = new (this.L.Control.extend({
 			onAdd: () => {
 				const div = this.L.DomUtil.create('div', 'time-control') as HTMLDivElement;
