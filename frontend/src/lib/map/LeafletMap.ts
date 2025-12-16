@@ -60,6 +60,7 @@ export class LeafletMap {
 	private startMarker: Marker | null = null;
 	private endMarker: Marker | null = null;
 	private routeLayer: GeoJSON | null = null;
+	private otherRoutesLayer: GeoJSON | null = null;
 	private infoLayer: GeoJSON | null = null;
 	private selectedWayLayer: GeoJSON | null = null;
 	private adjacentWaysLayer: GeoJSON | null = null;
@@ -267,7 +268,7 @@ export class LeafletMap {
 			this.routeLayer = shortestLayer.addTo(this.map);
 		}
 		if (othersLayer) {
-			othersLayer.addTo(this.map);
+			this.otherRoutesLayer = othersLayer.addTo(this.map);
 		}
 
 		// Fit bounds
@@ -337,6 +338,11 @@ export class LeafletMap {
 			this.distanceControl = null;
 			this.timeControl?.remove();
 			this.timeControl = null;
+		}
+
+		if (this.otherRoutesLayer) {
+			this.map.removeLayer(this.otherRoutesLayer);
+			this.otherRoutesLayer = null;
 		}
 	}
 
