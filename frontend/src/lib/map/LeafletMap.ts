@@ -281,7 +281,7 @@ export class LeafletMap {
 		// Find shortest route for distance/time display
 		const shortestRouteFeature =
 			featureCollection.features?.find(
-				(f) => f.properties?.['route_index'] === 0 || f.properties?.['route_index'] === '0'
+				(f) => f.properties?.['route_index'] === 1 || f.properties?.['route_index'] === '1'
 			) ||
 			featureCollection.features?.[0] ||
 			((geojson as GeoJSON.Feature).properties ? (geojson as GeoJSON.Feature) : null);
