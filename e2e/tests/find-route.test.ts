@@ -97,10 +97,27 @@ test.describe("route finding with a test user", () => {
 
     await page.locator("#findRouteButton").click();
 
+    // Should display 3 alternative routes
     const routePaths = page.locator("path.leaflet-interactive");
     await expect(routePaths.first()).toBeVisible({ timeout: 10000 });
     const count = await routePaths.count();
-    expect(count).toBeGreaterThan(0);
+    expect(count).toBeGreaterThanOrEqual(3);
+
+    // Verify colors: one blue route (fastest) and at least two green routes
+    let blueRoutes = 0;
+    let greenRoutes = 0;
+    let bluePathIndex = -1;
+    for (let i = 0; i < count; i++) {
+      const path = routePaths.nth(i);
+      const stroke = await path.getAttribute("stroke");
+      if (stroke === "blue") {
+        blueRoutes++;
+        bluePathIndex = i;
+      }
+      if (stroke === "green") greenRoutes++;
+    }
+    expect(blueRoutes).toBe(1);
+    expect(greenRoutes).toBeGreaterThanOrEqual(2);
 
     const distanceControl = page.locator(".distance-control");
     await expect(distanceControl).toBeVisible({ timeout: 5000 });
@@ -157,10 +174,27 @@ test.describe("route finding with a test user", () => {
 
     await page.locator("#findRouteButton").click();
 
+    // Should display 3 alternative routes
     const routePaths = page.locator("path.leaflet-interactive");
     await expect(routePaths.first()).toBeVisible({ timeout: 10000 });
     const count = await routePaths.count();
-    expect(count).toBeGreaterThan(0);
+    expect(count).toBeGreaterThanOrEqual(3);
+
+    // Verify colors: one blue route (fastest) and at least two green routes
+    let blueRoutes = 0;
+    let greenRoutes = 0;
+    let greenPathIndex = -1;
+    for (let i = 0; i < count; i++) {
+      const path = routePaths.nth(i);
+      const stroke = await path.getAttribute("stroke");
+      if (stroke === "blue") blueRoutes++;
+      if (stroke === "green") {
+        greenRoutes++;
+        if (greenPathIndex === -1) greenPathIndex = i;
+      }
+    }
+    expect(blueRoutes).toBe(1);
+    expect(greenRoutes).toBeGreaterThanOrEqual(2);
 
     await page.locator("#resetButton").click();
 
