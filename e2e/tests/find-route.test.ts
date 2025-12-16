@@ -106,14 +106,10 @@ test.describe("route finding with a test user", () => {
     // Verify colors: one blue route (fastest) and at least two green routes
     let blueRoutes = 0;
     let greenRoutes = 0;
-    let bluePathIndex = -1;
     for (let i = 0; i < count; i++) {
       const path = routePaths.nth(i);
       const stroke = await path.getAttribute("stroke");
-      if (stroke === "blue") {
-        blueRoutes++;
-        bluePathIndex = i;
-      }
+      if (stroke === "blue") blueRoutes++;
       if (stroke === "green") greenRoutes++;
     }
     expect(blueRoutes).toBe(1);
@@ -183,15 +179,11 @@ test.describe("route finding with a test user", () => {
     // Verify colors: one blue route (fastest) and at least two green routes
     let blueRoutes = 0;
     let greenRoutes = 0;
-    let greenPathIndex = -1;
     for (let i = 0; i < count; i++) {
       const path = routePaths.nth(i);
       const stroke = await path.getAttribute("stroke");
       if (stroke === "blue") blueRoutes++;
-      if (stroke === "green") {
-        greenRoutes++;
-        if (greenPathIndex === -1) greenPathIndex = i;
-      }
+      if (stroke === "green") greenRoutes++;
     }
     expect(blueRoutes).toBe(1);
     expect(greenRoutes).toBeGreaterThanOrEqual(2);
