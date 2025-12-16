@@ -9,7 +9,7 @@ import (
 
 // findRoute returns the lowest-cost route between two nodes using Dijkstra's algorithm.
 func findRoute(network *models.Network, start, end int64) (dist float64, path []int64) {
-	_, prev, found := dijkstra(network, start, end)
+	_, prev, found := dijkstra(network, start, end, nil)
 	if !found {
 		return -1, nil
 	}
@@ -19,11 +19,12 @@ func findRoute(network *models.Network, start, end int64) (dist float64, path []
 }
 
 // dijkstra finds the shortest path from start to goal and stops early when goal is reached.
+// edgeWeights is an optional map of edge weights to use instead of network edges (for penalization).
 // Returns:
 // - dist: map[nodeID]distance from start to each node
 // - prev: map[nodeID]previous node in path for reconstruction
 // - found: true if goal reachable, false otherwise
-func dijkstra(g *models.Network, start, goal int64) (dist map[int64]float64, prev map[int64]int64, found bool) {
+func dijkstra(g *models.Network, start, goal int64, edgeWeights map[[2]int64]float64) (dist map[int64]float64, prev map[int64]int64, found bool) {
 	dist = make(map[int64]float64)
 	prev = make(map[int64]int64)
 
@@ -56,7 +57,16 @@ func dijkstra(g *models.Network, start, goal int64) (dist map[int64]float64, pre
 
 		for _, edge := range g.Edges[u] {
 			v := edge.To
-			alt := dist[u] + edge.Weight
+
+			// Use overridden weight if provided, otherwise use edge weight
+			weight := edge.Weight
+			if edgeWeights != nil {
+				if w, ok := edgeWeights[[2]int64{u, v}]; ok {
+					weight = w
+				}
+			}
+
+			alt := dist[u] + weight
 			if alt < dist[v] {
 				dist[v] = alt
 				prev[v] = u
