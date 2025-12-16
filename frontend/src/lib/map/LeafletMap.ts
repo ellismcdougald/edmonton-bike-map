@@ -208,9 +208,24 @@ export class LeafletMap {
 			this.map.fitBounds(bounds);
 		}
 
-		const feature = geojson as GeoJSON.Feature;
+		// Find the shortest route (route_index: 0) to display distance and time
+		let shortestRouteFeature: GeoJSON.Feature | null = null;
+		const featureCollection = geojson as GeoJSON.FeatureCollection;
+		if (featureCollection.features) {
+			shortestRouteFeature =
+				featureCollection.features.find(
+					(f) => f.properties?.['route_index'] === 0 || f.properties?.['route_index'] === '0'
+				) ||
+				featureCollection.features[0] ||
+				null;
+		}
+		// Fallback: if geojson is a single Feature
+		if (!shortestRouteFeature && (geojson as GeoJSON.Feature).properties) {
+			shortestRouteFeature = geojson as GeoJSON.Feature;
+		}
+
 		// read distance and time from backend properties if available
-		const rawDistance = feature.properties?.['distance_km'];
+		const rawDistance = shortestRouteFeature?.properties?.['distance_km'];
 		let distanceNum = 0;
 		if (typeof rawDistance === 'number') {
 			distanceNum = rawDistance;
@@ -230,7 +245,7 @@ export class LeafletMap {
 		this.distanceControl.addTo(this.map);
 
 		// Determine time in minutes: prefer backend-provided `time_minutes`, fall back to estimate
-		const rawTime = feature.properties?.['time_minutes'];
+		const rawTime = shortestRouteFeature?.properties?.['time_minutes'];
 		let timeMin = 0;
 		if (typeof rawTime === 'number') {
 			timeMin = Math.round(rawTime as number);
