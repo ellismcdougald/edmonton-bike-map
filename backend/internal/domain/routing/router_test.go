@@ -30,7 +30,7 @@ func TestDijkstraSimple(t *testing.T) {
 		},
 	}
 
-	dist, prev, found := dijkstra(g, 1, 3)
+	dist, prev, found := dijkstra(g, 1, 3, nil)
 	require.True(t, found)
 	require.InDelta(t, 4.0, dist[3], 1e-9)
 	require.Equal(t, int64(2), prev[3])
@@ -49,7 +49,7 @@ func TestDijkstraUnreachable(t *testing.T) {
 		},
 	}
 
-	dist, _, found := dijkstra(g, 1, 3)
+	dist, _, found := dijkstra(g, 1, 3, nil)
 	require.False(t, found)
 	require.True(t, math.IsInf(dist[3], 1))
 }
@@ -114,7 +114,7 @@ func TestDijkstra_EqualWeightPaths(t *testing.T) {
 		},
 	}
 
-	_, prev, found := dijkstra(g, 1, 4)
+	_, prev, found := dijkstra(g, 1, 4, nil)
 	require.True(t, found)
 	// reconstructPath should return a valid shortest path of length 3
 	path := reconstructPath(prev, 4)
@@ -138,7 +138,7 @@ func TestDijkstra_WithCycle(t *testing.T) {
 		},
 	}
 
-	dist, _, found := dijkstra(g, 1, 3)
+	dist, _, found := dijkstra(g, 1, 3, nil)
 	require.True(t, found)
 	require.InDelta(t, 2.0, dist[3], 1e-9)
 }
@@ -156,7 +156,7 @@ func TestDijkstra_SelfLoop(t *testing.T) {
 		},
 	}
 
-	dist, _, found := dijkstra(g, 1, 2)
+	dist, _, found := dijkstra(g, 1, 2, nil)
 	require.True(t, found)
 	require.InDelta(t, 1.0, dist[2], 1e-9)
 }

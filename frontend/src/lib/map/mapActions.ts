@@ -119,3 +119,67 @@ function applyRouteToMap(mapInstance: LeafletMap, geojson: FeatureCollection) {
 	mapInstance.removeRouteLayer();
 	mapInstance.loadRouteLayer(geojson);
 }
+
+interface FindRoutesOptions {
+	mapInstance: LeafletMap | null;
+	k?: number;
+}
+
+/**
+ * Fetches multiple routes between the map's selected start and end points and renders them on the provided LeafletMap.
+ *
+ * @param mapInstance - The LeafletMap to read start/end points from and to render the routes
+ * @param k - Number of alternative routes to find (default: 3)
+ */
+export async function findRoutes({ mapInstance, k = 3 }: FindRoutesOptions) {
+	if (!mapInstance) return;
+
+	const startLatLng = mapInstance.getStartLatLng();
+	const endLatLng = mapInstance.getEndLatLng();
+
+	if (!startLatLng || !endLatLng) {
+		alert('Make sure you have selected both a start and an end point!');
+		return;
+	}
+
+	const params = buildRouteParams(startLatLng, endLatLng);
+	params.set('k', k.toString());
+
+	try {
+		const geojson = await fetchRoutes(params);
+		applyRouteToMap(mapInstance, geojson);
+	} catch (err: unknown) {
+		if (err instanceof Error) {
+			if (err.message === 'Unauthorized') throw err;
+
+			alert('Error fetching or displaying routes: ' + err.message);
+			console.error(err);
+		} else {
+			alert('Error fetching or displaying routes: ' + String(err));
+			console.error(err);
+		}
+	}
+}
+
+/**
+ * Fetches multiple routes GeoJSON from the backend using the provided query parameters.
+ *
+ * @param params - URLSearchParams containing route query keys including k parameter
+ * @returns The GeoJSON FeatureCollection describing multiple routes
+ */
+async function fetchRoutes(params: URLSearchParams): Promise<FeatureCollection> {
+	const query = params.toString();
+	const url = query ? `/api/routes?${query}` : '/api/routes';
+
+	try {
+		const res = await fetch(url);
+
+		if (res.status === 401) throw new Error('Unauthorized');
+		if (!res.ok) throw new Error('Failed to get routes data');
+
+		return await res.json();
+	} catch (err) {
+		console.error('Error fetching routes:', err);
+		throw err;
+	}
+}

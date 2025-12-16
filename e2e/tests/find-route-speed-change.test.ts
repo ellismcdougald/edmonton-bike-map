@@ -73,6 +73,24 @@ test.describe("route time updates with cycling speed", () => {
 
     await page.locator("#findRouteButton").click();
 
+    // Verify multiple routes are displayed
+    const routePaths = page.locator("path.leaflet-interactive");
+    await expect(routePaths.first()).toBeVisible({ timeout: 10000 });
+    const routeCount = await routePaths.count();
+    expect(routeCount).toBeGreaterThanOrEqual(3);
+
+    // Verify one blue route and at least two green routes
+    let blueRoutes = 0;
+    let greenRoutes = 0;
+    for (let i = 0; i < routeCount; i++) {
+      const path = routePaths.nth(i);
+      const stroke = await path.getAttribute("stroke");
+      if (stroke === "blue") blueRoutes++;
+      if (stroke === "green") greenRoutes++;
+    }
+    expect(blueRoutes).toBe(1);
+    expect(greenRoutes).toBeGreaterThanOrEqual(2);
+
     const timeControl = page.locator(".time-control");
     await expect(timeControl).toBeVisible({ timeout: 10000 });
     const timeText1 = await timeControl.textContent();
@@ -103,6 +121,23 @@ test.describe("route time updates with cycling speed", () => {
     await page.locator("#selectEndButton").click();
     await page.mouse.click(endX, endY);
     await page.locator("#findRouteButton").click();
+
+    // Verify multiple routes are displayed again
+    await expect(routePaths.first()).toBeVisible({ timeout: 10000 });
+    const routeCount2 = await routePaths.count();
+    expect(routeCount2).toBeGreaterThanOrEqual(3);
+
+    // Verify colors are still correct (one blue, at least two green)
+    let blueRoutes2 = 0;
+    let greenRoutes2 = 0;
+    for (let i = 0; i < routeCount2; i++) {
+      const path = routePaths.nth(i);
+      const stroke = await path.getAttribute("stroke");
+      if (stroke === "blue") blueRoutes2++;
+      if (stroke === "green") greenRoutes2++;
+    }
+    expect(blueRoutes2).toBe(1);
+    expect(greenRoutes2).toBeGreaterThanOrEqual(2);
 
     await expect(timeControl).toBeVisible({ timeout: 10000 });
     const timeText2 = await timeControl.textContent();

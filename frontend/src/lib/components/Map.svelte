@@ -41,7 +41,7 @@
 	import { toggleSelectStart, toggleSelectEnd } from '$lib/map/mapModes';
 	import { wayState } from '$lib/state.svelte';
 	import { loadLeaflet } from '$lib/map/loadLeaflet';
-	import { findRoute } from '$lib/map/mapActions';
+	import { findRoutes } from '$lib/map/mapActions';
 	import type { WayFeatureGeoJSON } from '$lib/types';
 
 	let mapInstance: InstanceType<typeof import('$lib/map/LeafletMap').LeafletMap> | null = null;
@@ -236,7 +236,7 @@
 	async function handleFindRouteClick() {
 		if (!mapInstance) return;
 		try {
-			await findRoute({ mapInstance });
+			await findRoutes({ mapInstance, k: 3 });
 		} catch (err) {
 			if (err instanceof Error && err.message === 'Unauthorized') {
 				await fetch('/logout', { method: 'POST' });
