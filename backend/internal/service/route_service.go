@@ -28,6 +28,10 @@ func (s *RouteService) FindRoute(startLatitude, startLongitude, endLatitude, end
 
 	nodes := make([]models.Node, 0, len(ids))
 	for _, id := range ids {
+		// Check for invalid node IDs (negative values indicate no route)
+		if id < 0 {
+			return -1, nil, nil
+		}
 		n, ok := s.network.Nodes[id]
 		if !ok {
 			return 0, nil, fmt.Errorf("node id %d not found in network", id)
