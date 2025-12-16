@@ -7,7 +7,9 @@ import (
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
 )
 
-// findRoute returns the lowest-cost route between two nodes using Dijkstra's algorithm.
+// findRoute finds the lowest-cost route between two nodes in the network.
+// It returns the total estimated distance along the route and the sequence of node IDs from start to end.
+// If no route exists between the nodes, it returns -1 and nil.
 func findRoute(network *models.Network, start, end int64) (dist float64, path []int64) {
 	_, prev, found := dijkstra(network, start, end, nil)
 	if !found {
@@ -18,12 +20,18 @@ func findRoute(network *models.Network, start, end int64) (dist float64, path []
 	return dist, path
 }
 
-// dijkstra finds the shortest path from start to goal and stops early when goal is reached.
-// edgeWeights is an optional map of edge weights to use instead of network edges (for penalization).
+// dijkstra computes shortest paths from `start` to `goal`, stopping early when `goal` is reached.
+//
+// Parameters:
+//   - g: network graph containing nodes and adjacency lists
+//   - start, goal: node IDs defining the source and target
+//   - edgeWeights: optional overrides keyed by [2]int64{u, v} to replace the weight of edge u→v
+//     (useful for penalizing edges from previously found routes)
+//
 // Returns:
-// - dist: map[nodeID]distance from start to each node
-// - prev: map[nodeID]previous node in path for reconstruction
-// - found: true if goal reachable, false otherwise
+// - dist: map of shortest distances from `start` to each node (math.Inf(1) for unreachable nodes)
+// - prev: predecessor map for reconstructing a shortest path from `start`
+// - found: true if `goal` was reached (finite distance), false otherwise
 func dijkstra(g *models.Network, start, goal int64, edgeWeights map[[2]int64]float64) (dist map[int64]float64, prev map[int64]int64, found bool) {
 	dist = make(map[int64]float64)
 	prev = make(map[int64]int64)

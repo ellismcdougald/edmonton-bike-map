@@ -10,11 +10,14 @@ type Route struct {
 	Path     []int64 // sequence of node IDs
 }
 
-// FindMultipleRoutes returns k diverse paths between two nodes using a perturbation-based approach.
-// It runs Dijkstra k times, penalizing edges from previously found routes to encourage
-// different paths. The first route is always the shortest path.
-// Returns a slice of routes sorted by distance (shortest first).
-// Duplicate paths are automatically skipped with aggressive penalties to avoid them.
+// FindMultipleRoutes finds up to k diverse routes between two nodes using a perturbation-based approach.
+//
+// Behavior:
+//   - Runs Dijkstra repeatedly (up to k times), penalizing edges from previously found routes
+//     to encourage different paths.
+//   - The first route is always the shortest path; subsequent routes aim for diversity.
+//   - Suppresses duplicate paths and returns routes ordered by distance/discovery.
+//   - Returns an empty slice if k <= 0 and may stop early if no more paths exist.
 func FindMultipleRoutes(network *models.Network, start, end int64, k int) []Route {
 	if k <= 0 {
 		return []Route{}
@@ -75,14 +78,16 @@ func FindMultipleRoutes(network *models.Network, start, end int64, k int) []Rout
 	return routes
 }
 
-// FindMultipleRoutesFromCoordinates returns k diverse paths between two latitude-longitude pairs.
+// FindMultipleRoutesFromCoordinates finds up to k diverse routes between the network nodes nearest the given start and end latitude/longitude coordinates.
+// It maps each coordinate to the nearest node in the network and returns up to k distinct routes connecting those nodes.
 func FindMultipleRoutesFromCoordinates(network *models.Network, startLatitude, startLongitude, endLatitude, endLongitude float64, k int) []Route {
 	startNodeID := nearestNode(startLatitude, startLongitude, network.Nodes)
 	endNodeID := nearestNode(endLatitude, endLongitude, network.Nodes)
 	return FindMultipleRoutes(network, startNodeID, endNodeID, k)
 }
 
-// pathsEqual checks if two paths are identical.
+// pathsEqual reports whether two paths contain the same sequence of node IDs.
+// It returns true if both slices have the same length and identical elements in the same order.
 func pathsEqual(path1, path2 []int64) bool {
 	if len(path1) != len(path2) {
 		return false
