@@ -22,12 +22,16 @@ func NewRouteService(network *models.Network) *RouteService {
 // If no route is found, distance will be -1 and nodes will be nil.
 func (s *RouteService) FindRoute(startLatitude, startLongitude, endLatitude, endLongitude float64) (float64, []models.Node, error) {
 	dist, ids := routing.FindRouteFromCoordinates(s.network, startLatitude, startLongitude, endLatitude, endLongitude)
-	if dist < 0 || ids == nil {
+	if dist < 0 || ids == nil || len(ids) == 0 {
 		return dist, nil, nil
 	}
 
 	nodes := make([]models.Node, 0, len(ids))
 	for _, id := range ids {
+		// Check for invalid node IDs (negative values indicate no route)
+		if id < 0 {
+			return -1, nil, nil
+		}
 		n, ok := s.network.Nodes[id]
 		if !ok {
 			return 0, nil, fmt.Errorf("node id %d not found in network", id)
@@ -49,18 +53,32 @@ func (s *RouteService) FindMultipleRoutes(startLatitude, startLongitude, endLati
 
 	results := make([]RouteResult, 0, len(routes))
 	for _, route := range routes {
+		// Skip invalid routes (negative distance or empty path)
+		if route.Distance < 0 || len(route.Path) == 0 {
+			continue
+		}
+
 		nodes := make([]models.Node, 0, len(route.Path))
+		valid := true
 		for _, id := range route.Path {
+			// Check for invalid node IDs
+			if id < 0 {
+				valid = false
+				break
+			}
 			n, ok := s.network.Nodes[id]
 			if !ok {
 				return nil, fmt.Errorf("node id %d not found in network", id)
 			}
 			nodes = append(nodes, n)
 		}
-		results = append(results, RouteResult{
-			Distance: route.Distance,
-			Nodes:    nodes,
-		})
+
+		if valid {
+			results = append(results, RouteResult{
+				Distance: route.Distance,
+				Nodes:    nodes,
+			})
+		}
 	}
 
 	return results, nil
