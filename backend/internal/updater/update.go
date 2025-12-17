@@ -3,6 +3,7 @@ package updater
 import (
 	"database/sql"
 	"log"
+	"time"
 
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/repository/txrepo"
@@ -55,11 +56,28 @@ func UpdateDatabase(db *sql.DB, osmResp *OSMResponse) error {
 	}
 	log.Printf("Inserted %d reviews", len(validReviews))
 
+	// Ensure reviews.id sequence is set past the max id to avoid conflicts on future inserts
+	if err := adjustReviewIDSequence(tx); err != nil {
+		return err
+	}
+
 	if err := tx.Commit(); err != nil {
 		return err
 	}
 	log.Print("Database update committed successfully")
 	return nil
+}
+
+// adjustReviewIDSequence sets the reviews.id sequence to the current max(id)
+// to ensure subsequent inserts without explicit IDs do not conflict.
+func adjustReviewIDSequence(tx *sql.Tx) error {
+	_, err := tx.Exec(`
+		SELECT setval(
+			pg_get_serial_sequence('reviews', 'id'),
+			COALESCE((SELECT MAX(id) FROM reviews), 0)
+		)
+	`)
+	return err
 }
 
 // snapshotExistingReviews captures all reviews and their associated way IDs in the current DB state.
@@ -71,11 +89,14 @@ func snapshotExistingReviews(tx *sql.Tx) ([]models.Review, error) {
 			r.user_id,
 			r.rating,
 			r.comment,
+			r.created_at,
+			u.username,
 			COALESCE(array_agg(rw.way_id ORDER BY rw.way_id)
 					 FILTER (WHERE rw.way_id IS NOT NULL), '{}') AS way_ids
 		FROM reviews r
 		LEFT JOIN review_ways rw ON rw.review_id = r.id
-		GROUP BY r.id, r.user_id, r.rating, r.comment;
+		LEFT JOIN users u ON r.user_id = u.id
+		GROUP BY r.id, r.user_id, r.rating, r.comment, r.created_at, u.username;
 	`
 
 	rows, err := tx.Query(query)
@@ -91,20 +112,25 @@ func snapshotExistingReviews(tx *sql.Tx) ([]models.Review, error) {
 	var out []models.Review
 	for rows.Next() {
 		var (
-			reviewID int64
-			userID   int64
-			rating   int
-			comment  string
-			wayIDs   pq.Int64Array
+			reviewID  int64
+			userID    int64
+			rating    int
+			comment   string
+			createdAt time.Time
+			username  string
+			wayIDs    pq.Int64Array
 		)
-		if err := rows.Scan(&reviewID, &userID, &rating, &comment, &wayIDs); err != nil {
+		if err := rows.Scan(&reviewID, &userID, &rating, &comment, &createdAt, &username, &wayIDs); err != nil {
 			return nil, err
 		}
 		out = append(out, models.Review{
-			WayIDs:  []int64(wayIDs),
-			UserID:  userID,
-			Rating:  rating,
-			Comment: comment,
+			ID:        reviewID,
+			WayIDs:    []int64(wayIDs),
+			UserID:    userID,
+			Rating:    rating,
+			Comment:   comment,
+			CreatedAt: createdAt,
+			Username:  username,
 		})
 	}
 	if err := rows.Err(); err != nil {

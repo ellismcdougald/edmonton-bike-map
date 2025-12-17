@@ -44,22 +44,95 @@ func (r *TxReviewRepository) CreateReview(review *models.Review) error {
 		return fmt.Errorf("user already reviewed one or more of these ways")
 	}
 
-	insertReview := `
-		INSERT INTO reviews (
-			user_id,
-			rating,
-			comment
-		) VALUES ($1, $2, $3)
-		RETURNING id
-	`
-	var reviewID int64
-	if err := r.Tx.QueryRow(insertReview, review.UserID, review.Rating, review.Comment).Scan(&reviewID); err != nil {
-		return err
+	var (
+		insertReview string
+		reviewID     int64
+	)
+	if review.CreatedAt.IsZero() {
+		insertReview = `
+			INSERT INTO reviews (
+				user_id,
+				rating,
+				comment
+			) VALUES ($1, $2, $3)
+			RETURNING id
+		`
+		if err := r.Tx.QueryRow(insertReview, review.UserID, review.Rating, review.Comment).Scan(&reviewID); err != nil {
+			return err
+		}
+	} else {
+		insertReview = `
+			INSERT INTO reviews (
+				user_id,
+				rating,
+				comment,
+				created_at
+			) VALUES ($1, $2, $3, $4)
+			RETURNING id
+		`
+		if err := r.Tx.QueryRow(insertReview, review.UserID, review.Rating, review.Comment, review.CreatedAt).Scan(&reviewID); err != nil {
+			return err
+		}
 	}
 
 	linkStmt := `INSERT INTO review_ways (review_id, way_id) VALUES ($1, $2)`
 	for _, wayID := range review.WayIDs {
 		if _, err := r.Tx.Exec(linkStmt, reviewID, wayID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// CreateReviewWithID inserts a review with a specified ID (used during data rebuilds)
+// and links it to ways within the transaction. If CreatedAt is provided (non-zero), it
+// is preserved; otherwise the default timestamp is used.
+func (r *TxReviewRepository) CreateReviewWithID(review *models.Review) error {
+	if review == nil {
+		return fmt.Errorf("nil review")
+	}
+	if review.ID == 0 {
+		return fmt.Errorf("missing review ID")
+	}
+	if len(review.WayIDs) == 0 {
+		return fmt.Errorf("review must include at least one way ID")
+	}
+
+	// Prevent duplicate reviews by the same user for any of the provided ways
+	var exists int
+	dupQuery := `
+		SELECT COUNT(1)
+		FROM reviews r
+		JOIN review_ways rw ON rw.review_id = r.id
+		WHERE r.user_id = $1 AND rw.way_id = ANY($2)
+	`
+	if err := r.Tx.QueryRow(dupQuery, review.UserID, pq.Array(review.WayIDs)).Scan(&exists); err != nil {
+		return err
+	}
+	if exists > 0 {
+		return fmt.Errorf("user already reviewed one or more of these ways")
+	}
+
+	// Insert explicit ID and optional created_at
+	if review.CreatedAt.IsZero() {
+		if _, err := r.Tx.Exec(`
+			INSERT INTO reviews (id, user_id, rating, comment)
+			VALUES ($1, $2, $3, $4)
+		`, review.ID, review.UserID, review.Rating, review.Comment); err != nil {
+			return err
+		}
+	} else {
+		if _, err := r.Tx.Exec(`
+			INSERT INTO reviews (id, user_id, rating, comment, created_at)
+			VALUES ($1, $2, $3, $4, $5)
+		`, review.ID, review.UserID, review.Rating, review.Comment, review.CreatedAt); err != nil {
+			return err
+		}
+	}
+
+	linkStmt := `INSERT INTO review_ways (review_id, way_id) VALUES ($1, $2)`
+	for _, wayID := range review.WayIDs {
+		if _, err := r.Tx.Exec(linkStmt, review.ID, wayID); err != nil {
 			return err
 		}
 	}
@@ -162,7 +235,13 @@ func (r *TxReviewRepository) insertBatch(reviews []models.Review) error {
 	// Re-implement batch insert via repeated CreateReview calls for clarity.
 	for i := range reviews {
 		rev := reviews[i]
-		if err := r.CreateReview(&rev); err != nil {
+		var err error
+		if rev.ID > 0 {
+			err = r.CreateReviewWithID(&rev)
+		} else {
+			err = r.CreateReview(&rev)
+		}
+		if err != nil {
 			return err
 		}
 	}
