@@ -6,6 +6,7 @@ import (
 
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/repository/txrepo"
+	"github.com/lib/pq"
 )
 
 const (
@@ -25,7 +26,8 @@ func UpdateDatabase(db *sql.DB, osmResp *OSMResponse) error {
 	}()
 
 	reviewRepo := txrepo.NewTxReviewRepository(tx)
-	reviews, err := reviewRepo.GetAllReviews()
+	// Snapshot existing reviews with their linked way IDs before clearing tables
+	reviews, err := snapshotExistingReviews(tx)
 	if err != nil {
 		return err
 	}
@@ -46,7 +48,8 @@ func UpdateDatabase(db *sql.DB, osmResp *OSMResponse) error {
 	}
 	log.Printf("Inserted %d ways", len(ways))
 
-	validReviews := filterValidReviews(reviews, wayIDs)
+	// Prune review way mappings to only those that still exist after repopulating ways
+	validReviews := pruneReviewsToExistingWays(reviews, wayIDs)
 	if err := reviewRepo.InsertBatches(validReviews, reviewBatchSize); err != nil {
 		return err
 	}
@@ -57,6 +60,57 @@ func UpdateDatabase(db *sql.DB, osmResp *OSMResponse) error {
 	}
 	log.Print("Database update committed successfully")
 	return nil
+}
+
+// snapshotExistingReviews captures all reviews and their associated way IDs in the current DB state.
+// It groups by review ID to ensure each review's way links are preserved distinctly.
+func snapshotExistingReviews(tx *sql.Tx) ([]models.Review, error) {
+	query := `
+		SELECT
+			r.id,
+			r.user_id,
+			r.rating,
+			r.comment,
+			COALESCE(array_agg(rw.way_id ORDER BY rw.way_id)
+					 FILTER (WHERE rw.way_id IS NOT NULL), '{}') AS way_ids
+		FROM reviews r
+		LEFT JOIN review_ways rw ON rw.review_id = r.id
+		GROUP BY r.id, r.user_id, r.rating, r.comment;
+	`
+
+	rows, err := tx.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if cerr := rows.Close(); cerr != nil {
+			log.Printf("Error closing rows: %v", cerr)
+		}
+	}()
+
+	var out []models.Review
+	for rows.Next() {
+		var (
+			reviewID int64
+			userID   int64
+			rating   int
+			comment  string
+			wayIDs   pq.Int64Array
+		)
+		if err := rows.Scan(&reviewID, &userID, &rating, &comment, &wayIDs); err != nil {
+			return nil, err
+		}
+		out = append(out, models.Review{
+			WayIDs:  []int64(wayIDs),
+			UserID:  userID,
+			Rating:  rating,
+			Comment: comment,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func clearTables(tx *sql.Tx) {
@@ -84,16 +138,25 @@ func extractNodesAndWays(osmResp *OSMResponse) ([]models.Node, []models.Way, map
 	return nodes, ways, wayIDSet
 }
 
-func filterValidReviews(reviewMap map[int64][]models.Review, wayIDs map[int64]struct{}) []models.Review {
-	valid := []models.Review{}
-	for wayID, revs := range reviewMap {
-		if _, exists := wayIDs[wayID]; exists {
-			valid = append(valid, revs...)
-		} else {
-			for _, r := range revs {
-				log.Printf("Skipping review for non-existent way %d: %+v", wayID, r)
+// pruneReviewsToExistingWays removes any way IDs from each review that no longer exist;
+// reviews that end up with zero way IDs are dropped.
+func pruneReviewsToExistingWays(reviews []models.Review, wayIDs map[int64]struct{}) []models.Review {
+	valid := make([]models.Review, 0, len(reviews))
+	for _, r := range reviews {
+		pruned := make([]int64, 0, len(r.WayIDs))
+		for _, wid := range r.WayIDs {
+			if _, ok := wayIDs[wid]; ok {
+				pruned = append(pruned, wid)
+			} else {
+				log.Printf("Skipping non-existent way %d for review by user %d", wid, r.UserID)
 			}
 		}
+		if len(pruned) == 0 {
+			// No valid way links remain; drop this review
+			continue
+		}
+		r.WayIDs = pruned
+		valid = append(valid, r)
 	}
 	return valid
 }
