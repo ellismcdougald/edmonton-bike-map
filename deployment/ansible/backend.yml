@@ -66,10 +66,15 @@
     - name: Run database update
       shell: docker compose -f /root/app/backend-compose.yml run --rm backend ./update_db
       register: update_db_output
+      failed_when: false
 
     - name: Show update_db output
       debug:
         var: update_db_output
+
+    - name: Record update_db failure flag
+      set_fact:
+        update_db_failed: "{{ (update_db_output.rc | int) != 0 }}"
 
     - name: Deploy app with Compose
       community.docker.docker_compose_v2:
@@ -82,3 +87,8 @@
         services:
           - backend
           - traefik
+
+    - name: Fail CI if update_db failed (post-deploy)
+      fail:
+        msg: "update_db failed (rc={{ update_db_output.rc }}). Deployment completed but database update failed."
+      when: update_db_failed | default(false)
