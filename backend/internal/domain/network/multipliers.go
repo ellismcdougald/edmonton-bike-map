@@ -78,10 +78,10 @@ func computeBikeFriendlyMultiplier(tags map[string]string) float64 {
 		bikeFriendlyMultiplier *= 3
 	}
 	if tags[tagMTB] != "" {
-		bikeFriendlyMultiplier *= 1.2
+		bikeFriendlyMultiplier *= 10
 	}
 	if tags["highway"] == "steps" {
-		bikeFriendlyMultiplier *= 2
+		bikeFriendlyMultiplier *= 5
 	}
 	return bikeFriendlyMultiplier
 }
