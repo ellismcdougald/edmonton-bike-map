@@ -263,12 +263,12 @@ export class LeafletMap {
 			{ color: 'green', weight: 5 }
 		);
 
-		// Add layers to map
-		if (shortestLayer) {
-			this.routeLayer = shortestLayer.addTo(this.map);
-		}
+		// Add layers to map (add others first so shortest renders on top)
 		if (othersLayer) {
 			this.otherRoutesLayer = othersLayer.addTo(this.map);
+		}
+		if (shortestLayer) {
+			this.routeLayer = shortestLayer.addTo(this.map);
 		}
 
 		// Fit bounds
