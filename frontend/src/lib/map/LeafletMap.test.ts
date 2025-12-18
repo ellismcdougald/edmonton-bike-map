@@ -198,7 +198,7 @@ describe('LeafletMap.loadRouteLayer', () => {
 
 		const calls = (L as any)._geoJsonCalls;
 		const featureLayer = calls[0].layer._features[0].layer;
-		expect(featureLayer._popupContent).toContain('<strong>Shortest Route</strong>');
+		expect(featureLayer._popupContent).toContain('<strong>Best Route</strong>');
 		expect(featureLayer._popupContent).toContain('Distance: 5.25 km');
 		expect(featureLayer._popupContent).toContain('Time: 15 min');
 	});
