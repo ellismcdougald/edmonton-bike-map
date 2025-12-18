@@ -213,7 +213,7 @@ export class LeafletMap {
 			let popupContent = '<strong>Route';
 			if (routeIndex !== undefined) {
 				if (routeIndex === 1) {
-					popupContent = '<strong>Shortest Route';
+					popupContent = '<strong>Best Route';
 				} else {
 					popupContent += ` ${routeIndex}`;
 				}
@@ -263,12 +263,12 @@ export class LeafletMap {
 			{ color: 'green', weight: 5 }
 		);
 
-		// Add layers to map
-		if (shortestLayer) {
-			this.routeLayer = shortestLayer.addTo(this.map);
-		}
+		// Add layers to map (add others first so shortest renders on top)
 		if (othersLayer) {
 			this.otherRoutesLayer = othersLayer.addTo(this.map);
+		}
+		if (shortestLayer) {
+			this.routeLayer = shortestLayer.addTo(this.map);
 		}
 
 		// Fit bounds
@@ -316,7 +316,7 @@ export class LeafletMap {
 				div.innerHTML = `Distance: ${distanceNum.toFixed(2)} km`;
 				return div;
 			}
-		}))({ position: 'topright' });
+		}))({ position: 'bottomleft' });
 		this.distanceControl.addTo(this.map);
 
 		// Add time control
@@ -326,7 +326,7 @@ export class LeafletMap {
 				div.innerHTML = `Estimated time: ${timeMin} min`;
 				return div;
 			}
-		}))({ position: 'topright' });
+		}))({ position: 'bottomleft' });
 		this.timeControl.addTo(this.map);
 	}
 
