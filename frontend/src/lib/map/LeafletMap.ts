@@ -316,7 +316,7 @@ export class LeafletMap {
 				div.innerHTML = `Distance: ${distanceNum.toFixed(2)} km`;
 				return div;
 			}
-		}))({ position: 'topright' });
+		}))({ position: 'bottomleft' });
 		this.distanceControl.addTo(this.map);
 
 		// Add time control
@@ -326,7 +326,7 @@ export class LeafletMap {
 				div.innerHTML = `Estimated time: ${timeMin} min`;
 				return div;
 			}
-		}))({ position: 'topright' });
+		}))({ position: 'bottomleft' });
 		this.timeControl.addTo(this.map);
 	}
 
