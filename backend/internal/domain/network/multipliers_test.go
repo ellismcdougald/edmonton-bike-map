@@ -45,17 +45,18 @@ func TestComputeReviewMultiplier_Behaviour(t *testing.T) {
 	r := computeReviewMultiplier([]models.Review{})
 	require.InDelta(t, 1.0, r, 1e-9)
 
-	// one review rating 5 -> average 5 -> multiplier = 1.2 - 0.1*5 = 0.7
-	// confidence = 0.1 -> final = 1 + (0.7-1)*0.1 = 0.97
+	// one review rating 5 -> average 5 -> score = 4/9
+	// multiplier = 1.3 - 0.75*score ≈ 0.9666667
+	// confidence = 0.1 -> final ≈ 0.9966667
 	revs := []models.Review{{Rating: 5}}
 	r2 := computeReviewMultiplier(revs)
-	require.InDelta(t, 0.97, r2, 1e-9)
+	require.InDelta(t, 0.9966667, r2, 1e-7)
 
-	// ten reviews -> confidence 1 -> final equals multiplier for avg=5 (0.7)
+	// ten reviews -> confidence 1 -> final equals multiplier for avg=5 (≈0.9666667)
 	ten := make([]models.Review, 10)
 	for i := 0; i < 10; i++ {
 		ten[i] = models.Review{Rating: 5}
 	}
 	r3 := computeReviewMultiplier(ten)
-	require.InDelta(t, 0.7, r3, 1e-9)
+	require.InDelta(t, 0.9666667, r3, 1e-7)
 }

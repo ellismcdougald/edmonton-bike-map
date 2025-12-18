@@ -93,11 +93,18 @@ func computeReviewMultiplier(reviews []models.Review) float64 {
 
 	total := 0
 	for _, review := range reviews {
-		total += review.Rating
+		rating := review.Rating
+		if rating < 1 {
+			rating = 1
+		}
+		if rating > 10 {
+			rating = 10
+		}
+		total += rating
 	}
 	average := float64(total) / float64(len(reviews))
-
-	multiplier := 1.2 - 0.1*average
+	score := (average - 1.0) / 9.0
+	multiplier := 1.3 - 0.75*score
 
 	// Consider number of reviews in strength of multiplier
 	confidence := math.Min(1.0, float64(len(reviews))/10.0)
