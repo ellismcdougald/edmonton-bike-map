@@ -213,7 +213,7 @@ export class LeafletMap {
 			let popupContent = '<strong>Route';
 			if (routeIndex !== undefined) {
 				if (routeIndex === 1) {
-					popupContent = '<strong>Shortest Route';
+					popupContent = '<strong>Best Route';
 				} else {
 					popupContent += ` ${routeIndex}`;
 				}
