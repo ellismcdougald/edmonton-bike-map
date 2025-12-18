@@ -13,11 +13,13 @@ const (
 	tagLCN          = "lcn"
 	tagMotorVehicle = "motor_vehicle"
 	tagOneway       = "one_way"
+	tagMTB          = "mtb:scale:imba"
 )
 
 // computeTagsMultiplier computes a multiplier for a way's weight based on its tags
 func computeTagsMultiplier(tags map[string]string) float64 {
 	highwayMultiplier := computeHighwayMultiplier(tags["highway"])
+	surfaceMultiplier := computeSurfaceMultiplier(tags["surface"])
 	bikeFriendlyMultiplier := computeBikeFriendlyMultiplier(tags)
 
 	// Do not punish non-cycleways if they are cycle designated
@@ -25,7 +27,7 @@ func computeTagsMultiplier(tags map[string]string) float64 {
 		highwayMultiplier = 1
 	}
 
-	return highwayMultiplier * bikeFriendlyMultiplier
+	return highwayMultiplier * surfaceMultiplier * bikeFriendlyMultiplier
 }
 
 // computeHighwayMultiplier computes a multiplier based on the highway tag
@@ -47,6 +49,22 @@ func computeHighwayMultiplier(highwayTag string) float64 {
 	return highwayMultiplier
 }
 
+// computeSurfaceMultiplier computes a multiplier based on the surface tag
+func computeSurfaceMultiplier(surfaceTag string) float64 {
+	surfacePenalty := map[string]float64{
+		"asphalt": 0.95,
+		"gravel":  1.1,
+		"dirt":    1.2,
+	}
+
+	surfaceMultiplier, found := surfacePenalty[surfaceTag]
+	if !found {
+		surfaceMultiplier = 1.0
+	}
+
+	return surfaceMultiplier
+}
+
 // computeBikeFriendlyMultiplier computes a multiplier for a way's weight based on the bike characteristics in its tags
 func computeBikeFriendlyMultiplier(tags map[string]string) float64 {
 	bikeFriendlyMultiplier := 1.0
@@ -58,6 +76,9 @@ func computeBikeFriendlyMultiplier(tags map[string]string) float64 {
 	}
 	if tags[tagBicycle] == "no" || tags[tagBike] == "no" {
 		bikeFriendlyMultiplier *= 3
+	}
+	if tags[tagMTB] != "" {
+		bikeFriendlyMultiplier *= 1.2
 	}
 	return bikeFriendlyMultiplier
 }
