@@ -56,6 +56,9 @@ func computeBikeFriendlyMultiplier(tags map[string]string) float64 {
 	if tags[tagBicycle] == "yes" || tags[tagBike] == "yes" || tags[tagLCN] == "yes" {
 		bikeFriendlyMultiplier *= 0.95
 	}
+	if tags[tagBicycle] == "no" || tags[tagBike] == "no" {
+		bikeFriendlyMultiplier *= 3
+	}
 	return bikeFriendlyMultiplier
 }
 
