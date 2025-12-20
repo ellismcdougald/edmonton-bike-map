@@ -33,8 +33,6 @@
 			isVisible = true;
 			loadReviews(way.id);
 			sidebarLoaded = true;
-
-			console.log(way);
 		}
 	});
 
