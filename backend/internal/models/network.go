@@ -2,6 +2,7 @@ package models
 
 // Edge represents a directed connection from one node to another with a weight
 type Edge struct {
+	WayID  int64   // ID of the way this edge belongs to
 	To     int64   // ID of the destination node
 	Weight float64 // computed weight (distance * multipliers)
 }

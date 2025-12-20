@@ -18,7 +18,7 @@ type Route struct {
 //   - The first route is always the shortest path; subsequent routes aim for diversity.
 //   - Suppresses duplicate paths and returns routes ordered by distance/discovery.
 //   - Returns an empty slice if k <= 0 and may stop early if no more paths exist.
-func FindMultipleRoutes(network *models.Network, start, end int64, k int) []Route {
+func FindMultipleRoutes(network *models.Network, start, end int64, userID *int64, mp *MultiplierProvider, k int) []Route {
 	if k <= 0 {
 		return []Route{}
 	}
@@ -52,7 +52,7 @@ func FindMultipleRoutes(network *models.Network, start, end int64, k int) []Rout
 		}
 
 		// Find shortest path with penalized weights
-		_, prev, found := dijkstra(network, start, end, edgeWeights)
+		_, prev, found := dijkstra(network, start, end, userID, edgeWeights, mp)
 		if !found {
 			// No more paths available
 			break
@@ -80,10 +80,10 @@ func FindMultipleRoutes(network *models.Network, start, end int64, k int) []Rout
 
 // FindMultipleRoutesFromCoordinates finds up to k diverse routes between the network nodes nearest the given start and end latitude/longitude coordinates.
 // It maps each coordinate to the nearest node in the network and returns up to k distinct routes connecting those nodes.
-func FindMultipleRoutesFromCoordinates(network *models.Network, startLatitude, startLongitude, endLatitude, endLongitude float64, k int) []Route {
+func FindMultipleRoutesFromCoordinates(network *models.Network, startLatitude, startLongitude, endLatitude, endLongitude float64, userID *int64, mp *MultiplierProvider, k int) []Route {
 	startNodeID := nearestNode(startLatitude, startLongitude, network.Nodes)
 	endNodeID := nearestNode(endLatitude, endLongitude, network.Nodes)
-	return FindMultipleRoutes(network, startNodeID, endNodeID, k)
+	return FindMultipleRoutes(network, startNodeID, endNodeID, userID, mp, k)
 }
 
 // pathsEqual reports whether two paths contain the same sequence of node IDs.

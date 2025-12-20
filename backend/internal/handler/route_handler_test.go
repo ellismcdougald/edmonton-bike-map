@@ -36,7 +36,7 @@ func TestHandleGetRoute_HappyPath(t *testing.T) {
 	repo := &mockUserRepo{user: &models.User{ID: 42, CyclingSpeed: 15}}
 	userSvc := service.NewUserService(repo)
 
-	rh := NewRouteHandler(service.NewRouteService(g), userSvc)
+	rh := NewRouteHandler(service.NewRouteService(g, nil), userSvc)
 	req, _ := http.NewRequest("GET", "/route?startLatitude=0&startLongitude=0&endLatitude=1&endLongitude=1", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
@@ -57,7 +57,7 @@ func TestHandleGetRoute_HappyPath(t *testing.T) {
 	require.True(t, ok)
 
 	// expected distance should match routing.FindRouteFromCoordinates on the same coords
-	expectedDist, _ := routing.FindRouteFromCoordinates(g, 0, 0, 1, 1)
+	expectedDist, _ := routing.FindRouteFromCoordinates(g, 0, 0, 1, 1, nil, nil)
 	require.InDelta(t, expectedDist, distVal, 1e-6)
 
 	geom, ok := resp["geometry"].(map[string]any)
@@ -81,7 +81,7 @@ func TestHandleGetRoute_Unreachable(t *testing.T) {
 	repo := &mockUserRepo{user: &models.User{ID: 42, CyclingSpeed: 15}}
 	userSvc := service.NewUserService(repo)
 
-	rh := NewRouteHandler(service.NewRouteService(g), userSvc)
+	rh := NewRouteHandler(service.NewRouteService(g, nil), userSvc)
 	req, _ := http.NewRequest("GET", "/route?startLatitude=0&startLongitude=0&endLatitude=10&endLongitude=10", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
@@ -100,7 +100,7 @@ func TestHandleGetRoute_BadRequest(t *testing.T) {
 	repo := &mockUserRepo{user: &models.User{ID: 42, CyclingSpeed: 15}}
 	userSvc := service.NewUserService(repo)
 
-	rh := NewRouteHandler(service.NewRouteService(&models.Network{Nodes: map[int64]models.Node{}, Edges: map[int64][]models.Edge{}}), userSvc)
+	rh := NewRouteHandler(service.NewRouteService(&models.Network{Nodes: map[int64]models.Node{}, Edges: map[int64][]models.Edge{}}, nil), userSvc)
 	req, _ := http.NewRequest("GET", "/route?startLatitude=notanumber&startLongitude=0&endLatitude=0&endLongitude=0", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
@@ -131,7 +131,7 @@ func TestHandleGetRoute_GuestAccess(t *testing.T) {
 	repo := &mockUserRepo{user: &models.User{ID: 42, CyclingSpeed: 20}}
 	userSvc := service.NewUserService(repo)
 
-	rh := NewRouteHandler(service.NewRouteService(g), userSvc)
+	rh := NewRouteHandler(service.NewRouteService(g, nil), userSvc)
 	req, _ := http.NewRequest("GET", "/route?startLatitude=0&startLongitude=0&endLatitude=1&endLongitude=1", nil)
 	// NO Authorization header - guest access
 	rr := httptest.NewRecorder()
@@ -152,7 +152,7 @@ func TestHandleGetRoute_GuestAccess(t *testing.T) {
 	require.True(t, ok)
 
 	// expected distance should match routing.FindRouteFromCoordinates on the same coords
-	expectedDist, _ := routing.FindRouteFromCoordinates(g, 0, 0, 1, 1)
+	expectedDist, _ := routing.FindRouteFromCoordinates(g, 0, 0, 1, 1, nil, nil)
 	require.InDelta(t, expectedDist, distVal, 1e-6)
 
 	geom, ok := resp["geometry"].(map[string]any)
@@ -185,7 +185,7 @@ func TestHandleGetRoutes_HappyPath(t *testing.T) {
 	repo := &mockUserRepo{user: &models.User{ID: 42, CyclingSpeed: 15}}
 	userSvc := service.NewUserService(repo)
 
-	rh := NewRouteHandler(service.NewRouteService(g), userSvc)
+	rh := NewRouteHandler(service.NewRouteService(g, nil), userSvc)
 	req, _ := http.NewRequest("GET", "/routes?startLatitude=0&startLongitude=0&endLatitude=1&endLongitude=1&k=2", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
@@ -249,7 +249,7 @@ func TestHandleGetRoutes_DefaultK(t *testing.T) {
 	repo := &mockUserRepo{user: &models.User{ID: 42, CyclingSpeed: 15}}
 	userSvc := service.NewUserService(repo)
 
-	rh := NewRouteHandler(service.NewRouteService(g), userSvc)
+	rh := NewRouteHandler(service.NewRouteService(g, nil), userSvc)
 	// No k parameter - should default to 3
 	req, _ := http.NewRequest("GET", "/routes?startLatitude=0&startLongitude=0&endLatitude=1&endLongitude=1", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -277,7 +277,7 @@ func TestHandleGetRoutes_InvalidK(t *testing.T) {
 	repo := &mockUserRepo{user: &models.User{ID: 42, CyclingSpeed: 15}}
 	userSvc := service.NewUserService(repo)
 
-	rh := NewRouteHandler(service.NewRouteService(&models.Network{Nodes: map[int64]models.Node{}, Edges: map[int64][]models.Edge{}}), userSvc)
+	rh := NewRouteHandler(service.NewRouteService(&models.Network{Nodes: map[int64]models.Node{}, Edges: map[int64][]models.Edge{}}, nil), userSvc)
 
 	testCases := []struct {
 		name string
@@ -317,7 +317,7 @@ func TestHandleGetRoutes_Unreachable(t *testing.T) {
 	repo := &mockUserRepo{user: &models.User{ID: 42, CyclingSpeed: 15}}
 	userSvc := service.NewUserService(repo)
 
-	rh := NewRouteHandler(service.NewRouteService(g), userSvc)
+	rh := NewRouteHandler(service.NewRouteService(g, nil), userSvc)
 	req, _ := http.NewRequest("GET", "/routes?startLatitude=0&startLongitude=0&endLatitude=10&endLongitude=10&k=3", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
@@ -336,7 +336,7 @@ func TestHandleGetRoutes_BadCoordinates(t *testing.T) {
 	repo := &mockUserRepo{user: &models.User{ID: 42, CyclingSpeed: 15}}
 	userSvc := service.NewUserService(repo)
 
-	rh := NewRouteHandler(service.NewRouteService(&models.Network{Nodes: map[int64]models.Node{}, Edges: map[int64][]models.Edge{}}), userSvc)
+	rh := NewRouteHandler(service.NewRouteService(&models.Network{Nodes: map[int64]models.Node{}, Edges: map[int64][]models.Edge{}}, nil), userSvc)
 	req, _ := http.NewRequest("GET", "/routes?startLatitude=notanumber&startLongitude=0&endLatitude=0&endLongitude=0&k=3", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
@@ -368,7 +368,7 @@ func TestHandleGetRoutes_GuestAccess(t *testing.T) {
 	repo := &mockUserRepo{user: &models.User{ID: 42, CyclingSpeed: 20}}
 	userSvc := service.NewUserService(repo)
 
-	rh := NewRouteHandler(service.NewRouteService(g), userSvc)
+	rh := NewRouteHandler(service.NewRouteService(g, nil), userSvc)
 	req, _ := http.NewRequest("GET", "/routes?startLatitude=0&startLongitude=0&endLatitude=1&endLongitude=1&k=2", nil)
 	// NO Authorization header - guest access
 	rr := httptest.NewRecorder()
@@ -426,7 +426,7 @@ func TestHandleGetRoutes_MultipleRoutesIndexing(t *testing.T) {
 	repo := &mockUserRepo{user: &models.User{ID: 42, CyclingSpeed: 15}}
 	userSvc := service.NewUserService(repo)
 
-	rh := NewRouteHandler(service.NewRouteService(g), userSvc)
+	rh := NewRouteHandler(service.NewRouteService(g, nil), userSvc)
 	req, _ := http.NewRequest("GET", "/routes?startLatitude=0&startLongitude=0&endLatitude=1&endLongitude=1&k=3", nil)
 	req.Header.Set("Authorization", "Bearer "+token)
 	rr := httptest.NewRecorder()
@@ -474,7 +474,7 @@ func TestHandleGetRoutes_FewerRoutesThanK(t *testing.T) {
 	repo := &mockUserRepo{user: &models.User{ID: 42, CyclingSpeed: 15}}
 	userSvc := service.NewUserService(repo)
 
-	rh := NewRouteHandler(service.NewRouteService(g), userSvc)
+	rh := NewRouteHandler(service.NewRouteService(g, nil), userSvc)
 	// Ask for 5 routes but only 1 exists
 	req, _ := http.NewRequest("GET", "/routes?startLatitude=0&startLongitude=0&endLatitude=1&endLongitude=1&k=5", nil)
 	req.Header.Set("Authorization", "Bearer "+token)

@@ -8,20 +8,22 @@ import (
 )
 
 type RouteService struct {
-	network *models.Network
+	network            *models.Network
+	multiplierProvider *routing.MultiplierProvider
 }
 
 // NewRouteService creates a new instance of RouteService.
-func NewRouteService(network *models.Network) *RouteService {
+func NewRouteService(network *models.Network, mp *routing.MultiplierProvider) *RouteService {
 	return &RouteService{
-		network: network,
+		network:            network,
+		multiplierProvider: mp,
 	}
 }
 
 // FindRoute returns the distance (km) and the list of nodes representing the route between two coordinates.
 // If no route is found, distance will be -1 and nodes will be nil.
-func (s *RouteService) FindRoute(startLatitude, startLongitude, endLatitude, endLongitude float64) (float64, []models.Node, error) {
-	dist, ids := routing.FindRouteFromCoordinates(s.network, startLatitude, startLongitude, endLatitude, endLongitude)
+func (s *RouteService) FindRoute(startLatitude, startLongitude, endLatitude, endLongitude float64, userID *int64) (float64, []models.Node, error) {
+	dist, ids := routing.FindRouteFromCoordinates(s.network, startLatitude, startLongitude, endLatitude, endLongitude, userID, s.multiplierProvider)
 	if dist < 0 || ids == nil || len(ids) == 0 {
 		return dist, nil, nil
 	}
@@ -45,8 +47,8 @@ func (s *RouteService) FindRoute(startLatitude, startLongitude, endLatitude, end
 // FindMultipleRoutes returns the k shortest routes between two coordinates.
 // Each route includes the distance (km) and the list of nodes representing the route.
 // If no routes are found, an empty slice is returned.
-func (s *RouteService) FindMultipleRoutes(startLatitude, startLongitude, endLatitude, endLongitude float64, k int) ([]RouteResult, error) {
-	routes := routing.FindMultipleRoutesFromCoordinates(s.network, startLatitude, startLongitude, endLatitude, endLongitude, k)
+func (s *RouteService) FindMultipleRoutes(startLatitude, startLongitude, endLatitude, endLongitude float64, userID *int64, k int) ([]RouteResult, error) {
+	routes := routing.FindMultipleRoutesFromCoordinates(s.network, startLatitude, startLongitude, endLatitude, endLongitude, userID, s.multiplierProvider, k)
 	if len(routes) == 0 {
 		return []RouteResult{}, nil
 	}

@@ -6,16 +6,12 @@ import (
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
 )
 
-// buildGraph constructs a Network graph from nodes, ways, and reviews.
-func buildGraph(nodes map[int64]models.Node, ways []models.Way, reviews map[int64][]models.Review) (*models.Network, error) {
+// buildGraph constructs a Network graph from nodes, ways.
+func buildGraph(nodes map[int64]models.Node, ways []models.Way) (*models.Network, error) {
 	edgesByNode := make(map[int64][]models.Edge, len(nodes))
 
 	for _, way := range ways {
 		tagsMultiplier := computeTagsMultiplier(way.Tags)
-		reviewMultiplier := 1.0
-		if wayReviews, ok := reviews[way.ID]; ok {
-			reviewMultiplier = computeReviewMultiplier(wayReviews)
-		}
 
 		for i := 0; i < len(way.NodeIDs)-1; i++ {
 			fromID := way.NodeIDs[i]
@@ -29,9 +25,10 @@ func buildGraph(nodes map[int64]models.Node, ways []models.Way, reviews map[int6
 			}
 
 			dist := haversineDistance(fromNode.Latitude, fromNode.Longitude, toNode.Latitude, toNode.Longitude)
-			weight := dist * tagsMultiplier * reviewMultiplier
+			weight := dist * tagsMultiplier
 
 			edgesByNode[fromID] = append(edgesByNode[fromID], models.Edge{
+				WayID:  way.ID,
 				To:     toID,
 				Weight: weight,
 			})

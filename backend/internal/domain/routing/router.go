@@ -10,8 +10,8 @@ import (
 // findRoute finds the lowest-cost route between two nodes in the network.
 // It returns the total estimated distance along the route and the sequence of node IDs from start to end.
 // If no route exists between the nodes, it returns -1 and nil.
-func findRoute(network *models.Network, start, end int64) (dist float64, path []int64) {
-	_, prev, found := dijkstra(network, start, end, nil)
+func findRoute(network *models.Network, start, end int64, userId *int64, mp *MultiplierProvider) (dist float64, path []int64) {
+	_, prev, found := dijkstra(network, start, end, userId, nil, mp)
 	if !found {
 		return -1, nil
 	}
@@ -32,7 +32,7 @@ func findRoute(network *models.Network, start, end int64) (dist float64, path []
 // - dist: map of shortest distances from `start` to each node (math.Inf(1) for unreachable nodes)
 // - prev: predecessor map for reconstructing a shortest path from `start`
 // - found: true if `goal` was reached (finite distance), false otherwise
-func dijkstra(g *models.Network, start, goal int64, edgeWeights map[[2]int64]float64) (dist map[int64]float64, prev map[int64]int64, found bool) {
+func dijkstra(g *models.Network, start, goal int64, userId *int64, edgeWeights map[[2]int64]float64, mp *MultiplierProvider) (dist map[int64]float64, prev map[int64]int64, found bool) {
 	dist = make(map[int64]float64)
 	prev = make(map[int64]int64)
 
@@ -72,6 +72,9 @@ func dijkstra(g *models.Network, start, goal int64, edgeWeights map[[2]int64]flo
 				if w, ok := edgeWeights[[2]int64{u, v}]; ok {
 					weight = w
 				}
+			}
+			if mp != nil {
+				weight *= mp.MultiplierFor(edge.WayID, userId)
 			}
 
 			alt := dist[u] + weight

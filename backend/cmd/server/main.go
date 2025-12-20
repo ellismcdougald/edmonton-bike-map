@@ -11,6 +11,7 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/ellismcdougald/edmonton-bike-map/internal/domain/network"
+	"github.com/ellismcdougald/edmonton-bike-map/internal/domain/routing"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/handler"
 	"github.com/ellismcdougald/edmonton-bike-map/internal/repository/sqlrepo"
 	internalserver "github.com/ellismcdougald/edmonton-bike-map/internal/server"
@@ -58,12 +59,18 @@ func main() {
 	waySvc := service.NewWayService(wayRepo)
 	reviewSvc := service.NewReviewService(reviewRepo)
 
-	netw, err := network.BuildNetwork(*nodeSvc, *waySvc, *reviewSvc)
+	netw, err := network.BuildNetwork(*nodeSvc, *waySvc)
 	if err != nil {
 		log.Fatalf("Error building network: %v", err)
 	}
 
-	routeSvc := service.NewRouteService(netw)
+	allReviews, err := reviewSvc.GetAllReviews()
+	if err != nil {
+		log.Fatalf("Error fetching all reviews: %v", err)
+	}
+	mp := routing.NewMultiplierProvider(allReviews)
+
+	routeSvc := service.NewRouteService(netw, mp)
 
 	jwtSecret := []byte(os.Getenv("JWT_SECRET"))
 	tp := token.NewJWTProvider(jwtSecret)

@@ -21,8 +21,8 @@ func TestFindRoute_HappyPath(t *testing.T) {
 		},
 	}
 
-	svc := NewRouteService(network)
-	dist, routeNodes, err := svc.FindRoute(0, 0, 1, 1)
+	svc := NewRouteService(network, nil)
+	dist, routeNodes, err := svc.FindRoute(0, 0, 1, 1, nil)
 
 	require.NoError(t, err)
 	require.Greater(t, dist, 0.0)
@@ -45,8 +45,8 @@ func TestFindRoute_NoRouteExists(t *testing.T) {
 		},
 	}
 
-	svc := NewRouteService(network)
-	dist, routeNodes, err := svc.FindRoute(0, 0, 10, 10)
+	svc := NewRouteService(network, nil)
+	dist, routeNodes, err := svc.FindRoute(0, 0, 10, 10, nil)
 
 	require.NoError(t, err)
 	require.Less(t, dist, 0.0)
@@ -59,8 +59,8 @@ func TestFindRoute_EmptyNetwork(t *testing.T) {
 		Edges: map[int64][]models.Edge{},
 	}
 
-	svc := NewRouteService(network)
-	dist, routeNodes, err := svc.FindRoute(0, 0, 1, 1)
+	svc := NewRouteService(network, nil)
+	dist, routeNodes, err := svc.FindRoute(0, 0, 1, 1, nil)
 
 	require.NoError(t, err)
 	require.Less(t, dist, 0.0)
@@ -83,8 +83,8 @@ func TestFindMultipleRoutes_HappyPath(t *testing.T) {
 		},
 	}
 
-	svc := NewRouteService(network)
-	results, err := svc.FindMultipleRoutes(0, 0, 1, 1, 2)
+	svc := NewRouteService(network, nil)
+	results, err := svc.FindMultipleRoutes(0, 0, 1, 1, nil, 2)
 
 	require.NoError(t, err)
 	require.NotEmpty(t, results)
@@ -118,8 +118,8 @@ func TestFindMultipleRoutes_NoRoutesExist(t *testing.T) {
 		},
 	}
 
-	svc := NewRouteService(network)
-	results, err := svc.FindMultipleRoutes(0, 0, 10, 10, 3)
+	svc := NewRouteService(network, nil)
+	results, err := svc.FindMultipleRoutes(0, 0, 10, 10, nil, 3)
 
 	require.NoError(t, err)
 	require.Empty(t, results)
@@ -140,8 +140,8 @@ func TestFindMultipleRoutes_FewerRoutesThanK(t *testing.T) {
 		},
 	}
 
-	svc := NewRouteService(network)
-	results, err := svc.FindMultipleRoutes(0, 0, 1, 1, 5)
+	svc := NewRouteService(network, nil)
+	results, err := svc.FindMultipleRoutes(0, 0, 1, 1, nil, 5)
 
 	require.NoError(t, err)
 	require.NotEmpty(t, results)
@@ -156,8 +156,8 @@ func TestFindMultipleRoutes_EmptyNetwork(t *testing.T) {
 		Edges: map[int64][]models.Edge{},
 	}
 
-	svc := NewRouteService(network)
-	results, err := svc.FindMultipleRoutes(0, 0, 1, 1, 3)
+	svc := NewRouteService(network, nil)
+	results, err := svc.FindMultipleRoutes(0, 0, 1, 1, nil, 3)
 
 	require.NoError(t, err)
 	require.Empty(t, results)
@@ -181,8 +181,8 @@ func TestFindMultipleRoutes_MultipleRoutesOrdering(t *testing.T) {
 		},
 	}
 
-	svc := NewRouteService(network)
-	results, err := svc.FindMultipleRoutes(0, 0, 1, 1, 3)
+	svc := NewRouteService(network, nil)
+	results, err := svc.FindMultipleRoutes(0, 0, 1, 1, nil, 3)
 
 	require.NoError(t, err)
 	require.NotEmpty(t, results)
@@ -206,7 +206,7 @@ func TestNewRouteService(t *testing.T) {
 		Edges: map[int64][]models.Edge{},
 	}
 
-	svc := NewRouteService(network)
+	svc := NewRouteService(network, nil)
 
 	require.NotNil(t, svc)
 	require.Equal(t, network, svc.network)

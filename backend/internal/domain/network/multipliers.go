@@ -1,11 +1,5 @@
 package network
 
-import (
-	"math"
-
-	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
-)
-
 const (
 	tagBicycle      = "bicycle"
 	tagBike         = "bike"
@@ -84,23 +78,4 @@ func computeBikeFriendlyMultiplier(tags map[string]string) float64 {
 		bikeFriendlyMultiplier *= 5
 	}
 	return bikeFriendlyMultiplier
-}
-
-func computeReviewMultiplier(reviews []models.Review) float64 {
-	if len(reviews) == 0 {
-		return 1.0
-	}
-
-	total := 0
-	for _, review := range reviews {
-		total += review.Rating
-	}
-	average := float64(total) / float64(len(reviews))
-
-	multiplier := 1.2 - 0.1*average
-
-	// Consider number of reviews in strength of multiplier
-	confidence := math.Min(1.0, float64(len(reviews))/10.0)
-
-	return 1.0 + (multiplier-1.0)*confidence
 }
