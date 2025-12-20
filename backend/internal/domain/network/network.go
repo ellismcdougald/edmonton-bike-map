@@ -5,7 +5,7 @@ import (
 	"github.com/ellismcdougald/edmonton-bike-map/internal/service"
 )
 
-func BuildNetwork(nodeService service.NodeService, wayService service.WayService, reviewService service.ReviewService) (*models.Network, error) {
+func BuildNetwork(nodeService service.NodeService, wayService service.WayService) (*models.Network, error) {
 	allNodes, err := nodeService.GetAllNodes()
 	if err != nil {
 		return nil, err
@@ -15,11 +15,5 @@ func BuildNetwork(nodeService service.NodeService, wayService service.WayService
 	if err != nil {
 		return nil, err
 	}
-
-	allReviews, err := reviewService.GetAllReviews()
-	if err != nil {
-		return nil, err
-	}
-
-	return buildGraph(allNodes, allWays, allReviews)
+	return buildGraph(allNodes, allWays)
 }

@@ -15,9 +15,8 @@ func TestBuildGraph_BasicEdgesAndOnewayAndMissingNodes(t *testing.T) {
 
 	// basic way (no tags)
 	ways := []models.Way{{ID: 11, Tags: map[string]string{}, NodeIDs: []int64{1, 2}}}
-	reviews := map[int64][]models.Review{}
 
-	net, err := buildGraph(nodes, ways, reviews)
+	net, err := buildGraph(nodes, ways)
 	require.NoError(t, err)
 
 	// edges from 1 -> 2 and 2 -> 1 (not oneway)
@@ -31,14 +30,14 @@ func TestBuildGraph_BasicEdgesAndOnewayAndMissingNodes(t *testing.T) {
 
 	// oneway should prevent reverse edge
 	ways2 := []models.Way{{ID: 12, Tags: map[string]string{"one_way": "yes"}, NodeIDs: []int64{1, 2}}}
-	net2, err := buildGraph(nodes, ways2, reviews)
+	net2, err := buildGraph(nodes, ways2)
 	require.NoError(t, err)
 	require.Len(t, net2.Edges[1], 1)
 	require.Len(t, net2.Edges[2], 0)
 
 	// missing nodes are skipped
 	ways3 := []models.Way{{ID: 13, Tags: map[string]string{}, NodeIDs: []int64{1, 3}}}
-	net3, err := buildGraph(nodes, ways3, reviews)
+	net3, err := buildGraph(nodes, ways3)
 	require.NoError(t, err)
 	// no edges should be added because 3 doesn't exist
 	require.Empty(t, net3.Edges[1])
@@ -51,17 +50,13 @@ func TestBuildGraph_RespectsReviewMultiplier(t *testing.T) {
 	}
 
 	ways := []models.Way{{ID: 21, Tags: map[string]string{}, NodeIDs: []int64{1, 2}}}
-	// one review with rating 5 -> review multiplier ~0.97
-	reviews := map[int64][]models.Review{
-		21: {{WayIDs: []int64{21}, Rating: 5}},
-	}
 
-	net, err := buildGraph(nodes, ways, reviews)
+	net, err := buildGraph(nodes, ways)
 	require.NoError(t, err)
 
 	require.Len(t, net.Edges[1], 1)
 	w := net.Edges[1][0].Weight
 	expectedDist := haversineDistance(nodes[1].Latitude, nodes[1].Longitude, nodes[2].Latitude, nodes[2].Longitude)
-	expected := expectedDist * computeTagsMultiplier(map[string]string{}) * computeReviewMultiplier(reviews[21])
+	expected := expectedDist * computeTagsMultiplier(map[string]string{})
 	require.InDelta(t, expected, w, 1e-6)
 }

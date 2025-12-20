@@ -59,7 +59,7 @@ func main() {
 	waySvc := service.NewWayService(wayRepo)
 	reviewSvc := service.NewReviewService(reviewRepo)
 
-	netw, err := network.BuildNetwork(*nodeSvc, *waySvc, *reviewSvc)
+	netw, err := network.BuildNetwork(*nodeSvc, *waySvc)
 	if err != nil {
 		log.Fatalf("Error building network: %v", err)
 	}
