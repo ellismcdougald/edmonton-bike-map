@@ -14,5 +14,10 @@ func NewMultiplierProvider(reviews map[int64][]models.Review) *MultiplierProvide
 
 // MultiplierFor returns the weight multiplier for a given way and user.
 func (mp *MultiplierProvider) MultiplierFor(wayID int64, userID *int64) float64 {
-	return 1.0
+	reviewMultiplier := 1.0
+	if reviews, exists := mp.reviews[wayID]; exists {
+		reviewMultiplier = computeReviewMultiplier(reviews, userID)
+	}
+
+	return reviewMultiplier
 }
