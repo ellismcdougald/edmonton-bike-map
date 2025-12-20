@@ -6,7 +6,7 @@ import (
 	"github.com/ellismcdougald/edmonton-bike-map/internal/models"
 )
 
-// buildGraph constructs a Network graph from nodes, ways, and reviews.
+// buildGraph constructs a Network graph from nodes, ways.
 func buildGraph(nodes map[int64]models.Node, ways []models.Way) (*models.Network, error) {
 	edgesByNode := make(map[int64][]models.Edge, len(nodes))
 
