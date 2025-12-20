@@ -30,7 +30,7 @@ func TestDijkstraSimple(t *testing.T) {
 		},
 	}
 
-	dist, prev, found := dijkstra(g, 1, 3, nil)
+	dist, prev, found := dijkstra(g, 1, 3, nil, nil, nil)
 	require.True(t, found)
 	require.InDelta(t, 4.0, dist[3], 1e-9)
 	require.Equal(t, int64(2), prev[3])
@@ -49,7 +49,7 @@ func TestDijkstraUnreachable(t *testing.T) {
 		},
 	}
 
-	dist, _, found := dijkstra(g, 1, 3, nil)
+	dist, _, found := dijkstra(g, 1, 3, nil, nil, nil)
 	require.False(t, found)
 	require.True(t, math.IsInf(dist[3], 1))
 }
@@ -69,7 +69,7 @@ func TestFindRoute_EndToEnd(t *testing.T) {
 		},
 	}
 
-	d, path := findRoute(g, 1, 3)
+	d, path := findRoute(g, 1, 3, nil, nil)
 	require.Equal(t, []int64{1, 2, 3}, path)
 	// distance returned by findRoute is estimateDistance(path, nodes)
 	want := estimateDistance(path, nodes)
@@ -88,12 +88,12 @@ func TestFindRoute_UnreachableAndSameNode(t *testing.T) {
 	}
 
 	// unreachable
-	d, path := findRoute(g, 2, 1)
+	d, path := findRoute(g, 2, 1, nil, nil)
 	require.Equal(t, -1.0, d)
 	require.Nil(t, path)
 
 	// same node
-	d2, path2 := findRoute(g, 1, 1)
+	d2, path2 := findRoute(g, 1, 1, nil, nil)
 	require.Equal(t, 0.0, d2)
 	require.Equal(t, []int64{1}, path2)
 }
@@ -114,7 +114,7 @@ func TestDijkstra_EqualWeightPaths(t *testing.T) {
 		},
 	}
 
-	_, prev, found := dijkstra(g, 1, 4, nil)
+	_, prev, found := dijkstra(g, 1, 4, nil, nil, nil)
 	require.True(t, found)
 	// reconstructPath should return a valid shortest path of length 3
 	path := reconstructPath(prev, 4)
@@ -138,7 +138,7 @@ func TestDijkstra_WithCycle(t *testing.T) {
 		},
 	}
 
-	dist, _, found := dijkstra(g, 1, 3, nil)
+	dist, _, found := dijkstra(g, 1, 3, nil, nil, nil)
 	require.True(t, found)
 	require.InDelta(t, 2.0, dist[3], 1e-9)
 }
@@ -156,7 +156,7 @@ func TestDijkstra_SelfLoop(t *testing.T) {
 		},
 	}
 
-	dist, _, found := dijkstra(g, 1, 2, nil)
+	dist, _, found := dijkstra(g, 1, 2, nil, nil, nil)
 	require.True(t, found)
 	require.InDelta(t, 1.0, dist[2], 1e-9)
 }

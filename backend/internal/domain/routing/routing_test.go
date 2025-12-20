@@ -21,7 +21,7 @@ func TestFindRouteFromCoordinates_HappyPath(t *testing.T) {
 		},
 	}
 
-	d, path := FindRouteFromCoordinates(g, 0, 0, 1, 1)
+	d, path := FindRouteFromCoordinates(g, 0, 0, 1, 1, nil, nil)
 	require.Equal(t, []int64{1, 2, 3}, path)
 	want := estimateDistance(path, nodes)
 	require.InDelta(t, want, d, 1e-9)
@@ -33,7 +33,7 @@ func TestFindRouteFromCoordinates_SameNode(t *testing.T) {
 	}
 	g := &models.Network{Nodes: nodes, Edges: map[int64][]models.Edge{}}
 
-	d, path := FindRouteFromCoordinates(g, 53.5461, -113.4938, 53.5461, -113.4938)
+	d, path := FindRouteFromCoordinates(g, 53.5461, -113.4938, 53.5461, -113.4938, nil, nil)
 	require.Equal(t, []int64{1}, path)
 	require.Equal(t, 0.0, d)
 }
@@ -48,7 +48,7 @@ func TestFindRouteFromCoordinates_Unreachable(t *testing.T) {
 		2: {},
 	}}
 
-	d, path := FindRouteFromCoordinates(g, 0, 0, 10, 10)
+	d, path := FindRouteFromCoordinates(g, 0, 0, 10, 10, nil, nil)
 	require.Equal(t, -1.0, d)
 	require.Nil(t, path)
 }

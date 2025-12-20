@@ -22,7 +22,7 @@ func TestFindMultipleRoutes_HappyPath(t *testing.T) {
 		},
 	}
 
-	routes := FindMultipleRoutes(g, 1, 3, 1)
+	routes := FindMultipleRoutes(g, 1, 3, nil, nil, 1)
 	require.Equal(t, 1, len(routes))
 	require.Equal(t, []int64{1, 2, 3}, routes[0].Path)
 }
@@ -46,7 +46,7 @@ func TestFindMultipleRoutes_MultipleAlternatives(t *testing.T) {
 		},
 	}
 
-	routes := FindMultipleRoutes(g, 1, 4, 2)
+	routes := FindMultipleRoutes(g, 1, 4, nil, nil, 2)
 	require.Equal(t, 2, len(routes))
 
 	// First route should be cheapest
@@ -71,7 +71,7 @@ func TestFindMultipleRoutes_K_Greater_Than_Paths(t *testing.T) {
 		},
 	}
 
-	routes := FindMultipleRoutes(g, 1, 3, 5)
+	routes := FindMultipleRoutes(g, 1, 3, nil, nil, 5)
 	// Only 1 path exists in this linear graph
 	require.Equal(t, 1, len(routes))
 	require.Equal(t, []int64{1, 2, 3}, routes[0].Path)
@@ -83,7 +83,7 @@ func TestFindMultipleRoutes_SameNode(t *testing.T) {
 	}
 	g := &models.Network{Nodes: nodes, Edges: map[int64][]models.Edge{}}
 
-	routes := FindMultipleRoutes(g, 1, 1, 1)
+	routes := FindMultipleRoutes(g, 1, 1, nil, nil, 1)
 	require.Equal(t, 1, len(routes))
 	require.Equal(t, []int64{1}, routes[0].Path)
 	require.Equal(t, 0.0, routes[0].Distance)
@@ -103,7 +103,7 @@ func TestFindMultipleRoutes_Unreachable(t *testing.T) {
 		},
 	}
 
-	routes := FindMultipleRoutes(g, 1, 2, 1)
+	routes := FindMultipleRoutes(g, 1, 2, nil, nil, 1)
 	require.Equal(t, 0, len(routes))
 }
 
@@ -119,7 +119,7 @@ func TestFindMultipleRoutes_ZeroK(t *testing.T) {
 		},
 	}
 
-	routes := FindMultipleRoutes(g, 1, 2, 0)
+	routes := FindMultipleRoutes(g, 1, 2, nil, nil, 0)
 	require.Equal(t, 0, len(routes))
 }
 
@@ -138,7 +138,7 @@ func TestFindMultipleRoutesFromCoordinates(t *testing.T) {
 	}
 
 	// Both coordinates map to node 1
-	routes := FindMultipleRoutesFromCoordinates(g, 0, 0, 1, 1, 1)
+	routes := FindMultipleRoutesFromCoordinates(g, 0, 0, 1, 1, nil, nil, 1)
 	require.Equal(t, 1, len(routes))
 	require.Equal(t, []int64{1, 2, 3}, routes[0].Path)
 }
@@ -165,7 +165,7 @@ func TestFindMultipleRoutes_ComplexGraph(t *testing.T) {
 		},
 	}
 
-	routes := FindMultipleRoutes(g, 1, 5, 3)
+	routes := FindMultipleRoutes(g, 1, 5, nil, nil, 3)
 	// Should find at least 2 distinct paths
 	require.True(t, len(routes) >= 1)
 
@@ -192,7 +192,7 @@ func TestFindMultipleRoutes_NoDuplicates(t *testing.T) {
 		},
 	}
 
-	routes := FindMultipleRoutes(g, 1, 4, 10)
+	routes := FindMultipleRoutes(g, 1, 4, nil, nil, 10)
 
 	// Check for duplicates
 	for i := 0; i < len(routes); i++ {

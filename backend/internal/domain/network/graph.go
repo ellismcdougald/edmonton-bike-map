@@ -32,6 +32,7 @@ func buildGraph(nodes map[int64]models.Node, ways []models.Way, reviews map[int6
 			weight := dist * tagsMultiplier * reviewMultiplier
 
 			edgesByNode[fromID] = append(edgesByNode[fromID], models.Edge{
+				WayID:  way.ID,
 				To:     toID,
 				Weight: weight,
 			})

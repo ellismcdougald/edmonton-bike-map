@@ -58,7 +58,13 @@ func (h *RouteHandler) HandleGetRoute() http.HandlerFunc {
 			return
 		}
 
-		dist, nodes, err := h.RouteService.FindRoute(startLatitude, startLongitude, endLatitude, endLongitude)
+		var userIDPtr *int64
+		userID, ok := middleware.UserIDFromContext(request.Context())
+		if ok {
+			userIDPtr = &userID
+		}
+
+		dist, nodes, err := h.RouteService.FindRoute(startLatitude, startLongitude, endLatitude, endLongitude, userIDPtr)
 		if err != nil {
 			log.Printf("error finding route: %v", err)
 			http.Error(writer, "internal server error", http.StatusInternalServerError)
@@ -80,7 +86,6 @@ func (h *RouteHandler) HandleGetRoute() http.HandlerFunc {
 
 		// Get cycling speed: use user's preferred speed if authenticated, otherwise use default
 		cyclingSpeed := DefaultCyclingSpeed
-		userID, ok := middleware.UserIDFromContext(request.Context())
 		if ok {
 			userSpeed, err := h.UserService.GetCyclingSpeed(userID)
 			if err != nil {
@@ -159,7 +164,13 @@ func (h *RouteHandler) HandleGetRoutes() http.HandlerFunc {
 			k = parsedK
 		}
 
-		routes, err := h.RouteService.FindMultipleRoutes(startLatitude, startLongitude, endLatitude, endLongitude, k)
+		var userIDPtr *int64
+		userID, ok := middleware.UserIDFromContext(request.Context())
+		if ok {
+			userIDPtr = &userID
+		}
+
+		routes, err := h.RouteService.FindMultipleRoutes(startLatitude, startLongitude, endLatitude, endLongitude, userIDPtr, k)
 		if err != nil {
 			log.Printf("error finding routes: %v", err)
 			http.Error(writer, "internal server error", http.StatusInternalServerError)
@@ -173,7 +184,6 @@ func (h *RouteHandler) HandleGetRoutes() http.HandlerFunc {
 
 		// Get cycling speed: use user's preferred speed if authenticated, otherwise use default
 		cyclingSpeed := DefaultCyclingSpeed
-		userID, ok := middleware.UserIDFromContext(request.Context())
 		if ok {
 			userSpeed, err := h.UserService.GetCyclingSpeed(userID)
 			if err != nil {
